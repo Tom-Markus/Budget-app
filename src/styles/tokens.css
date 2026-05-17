@@ -1,0 +1,133 @@
+/* ============================================================================
+   Tom's Cabinet — Design Tokens
+   ----------------------------------------------------------------------------
+   Source de vérité pour toutes les valeurs visuelles.
+   À importer en premier dans src/main.jsx ou src/index.css.
+   ============================================================================ */
+
+:root {
+  /* --- COULEURS NOBLES ----------------------------------------------------- */
+  --velin: #F4EFE6;
+  --velin-clair: #FAF6EE;
+  --velin-fonce: #E8E1D2;
+
+  --encre: #1F1810;
+  --encre-secondaire: #5C5147;
+  --encre-tertiaire: #8A8073;
+
+  --nuit: #0E1F3A;
+  --nuit-clair: #1A2D52;
+  --nuit-tres-fonce: #08152A;
+
+  --bordeaux: #5C1A24;
+  --bordeaux-clair: #7A2632;
+  --bordeaux-tres-fonce: #3D0F18;
+
+  --or: #B8954A;
+  --or-clair: #D4B16A;
+  --or-fonce: #8E6F2F;
+
+  /* --- COULEURS FONCTIONNELLES (signaux trading) -------------------------- */
+  --vert: #0EA371;
+  --vert-clair: #22C088;
+  --vert-fond: #E5F5EE;
+
+  --rouge: #E53935;
+  --rouge-clair: #F25652;
+  --rouge-fond: #FCEAE9;
+
+  --graphite: #3D3934;
+  --graphite-clair: #5C5750;
+
+  /* --- TYPOGRAPHIE -------------------------------------------------------- */
+  --font-serif: 'EB Garamond', 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Outfit', 'Manrope', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* --- ESPACEMENTS -------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  /* --- RAYONS ------------------------------------------------------------- */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* --- OMBRES (chaudes, basées sur la couleur encre brune) --------------- */
+  --shadow-xs: 0 1px 2px rgba(31, 24, 16, 0.04);
+  --shadow-sm: 0 2px 6px rgba(31, 24, 16, 0.06), 0 1px 2px rgba(31, 24, 16, 0.04);
+  --shadow-md: 0 4px 14px rgba(31, 24, 16, 0.08), 0 2px 4px rgba(31, 24, 16, 0.04);
+  --shadow-lg: 0 12px 32px rgba(31, 24, 16, 0.12), 0 4px 8px rgba(31, 24, 16, 0.06);
+
+  /* Glow doré : pour la validation */
+  --shadow-or: 0 0 24px rgba(184, 149, 74, 0.35);
+  --shadow-or-fort: 0 0 48px rgba(184, 149, 74, 0.5), 0 0 16px rgba(184, 149, 74, 0.6);
+
+  /* --- COURBES D'ANIMATION ----------------------------------------------- */
+  --ease-noble: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-liquide: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-bounce-doux: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* --- DURÉES ------------------------------------------------------------ */
+  --duration-instant: 100ms;
+  --duration-fast: 200ms;
+  --duration-base: 300ms;
+  --duration-slow: 500ms;
+  --duration-slower: 700ms;
+  --duration-parchemin: 1400ms;
+
+  /* --- Z-INDEX ----------------------------------------------------------- */
+  --z-base: 0;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 40;
+  --z-modal: 100;
+  --z-toast: 1000;
+
+  /* --- DÉGRADÉ SIGNATURE (uniquement barre menu + liserés enveloppes) --- */
+  --gradient-signature:
+    linear-gradient(135deg,
+      var(--bordeaux) 0%,
+      var(--nuit) 45%,
+      var(--or) 100%);
+
+  --gradient-signature-fin:
+    linear-gradient(90deg,
+      transparent 0%,
+      rgba(184, 149, 74, 0.0) 5%,
+      rgba(184, 149, 74, 0.6) 50%,
+      rgba(92, 26, 36, 0.0) 95%,
+      transparent 100%);
+}
+
+/* ============================================================================
+   Préférence utilisateur — animations réduites
+   ============================================================================ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-instant: 0ms;
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+    --duration-slower: 0ms;
+    --duration-parchemin: 0ms;
+  }
+
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

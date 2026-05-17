@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Tom's Cabinet — App Icon</title>
+
+  <!-- Fond bleu nuit -->
+  <rect width="512" height="512" fill="#0E1F3A"/>
+
+  <!-- Subtil dégradé de profondeur (signature) -->
+  <defs>
+    <radialGradient id="profondeur" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#1A2D52" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#08152A" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#profondeur)"/>
+
+  <!-- Liseré or fin en bas -->
+  <rect x="0" y="500" width="512" height="3" fill="#B8954A" opacity="0.5"/>
+
+  <!-- Fioriture gauche (proportionnée pour 512px) -->
+  <path d="M 110 256 Q 165 226, 195 256 Q 165 286, 110 256 Z" fill="#B8954A" opacity="0.9"/>
+
+  <!-- Fioriture droite -->
+  <path d="M 402 256 Q 347 226, 317 256 Q 347 286, 402 256 Z" fill="#B8954A" opacity="0.9"/>
+
+  <!-- T capital serif italique central (y ajusté pour équilibre optique avec les fioritures) -->
+  <text x="256" y="370" text-anchor="middle"
+        font-family="EB Garamond, Cormorant Garamond, Georgia, serif"
+        font-style="italic" font-weight="500" font-size="340" fill="#B8954A">T</text>
+</svg>

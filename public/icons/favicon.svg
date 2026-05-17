@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" fill="#0E1F3A"/>
+  <path d="M 5 16 Q 9 14, 11 16 Q 9 18, 5 16 Z" fill="#B8954A" opacity="0.85"/>
+  <path d="M 27 16 Q 23 14, 21 16 Q 23 18, 27 16 Z" fill="#B8954A" opacity="0.85"/>
+  <text x="16" y="24" text-anchor="middle"
+        font-family="Georgia, serif"
+        font-style="italic" font-weight="500" font-size="22" fill="#B8954A">T</text>
+</svg>

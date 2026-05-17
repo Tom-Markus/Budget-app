@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <title>Tom's Cabinet — Monomark</title>
+  <!-- Fioriture gauche -->
+  <path d="M 12 50 Q 22 44, 28 50 Q 22 56, 12 50 Z" fill="#B8954A" opacity="0.85"/>
+  <!-- Fioriture droite -->
+  <path d="M 88 50 Q 78 44, 72 50 Q 78 56, 88 50 Z" fill="#B8954A" opacity="0.85"/>
+  <!-- T capital serif italique -->
+  <text x="50" y="74" text-anchor="middle"
+        font-family="EB Garamond, Cormorant Garamond, Georgia, serif"
+        font-style="italic" font-weight="500" font-size="68" fill="#0E1F3A">T</text>
+</svg>
