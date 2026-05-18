@@ -72,7 +72,7 @@ export default function Layout() {
           fixe de 60px masquerait le bas du contenu sans ce padding compensatoire.
           md:py-10 annule le padding-bottom mobile sur desktop (pas de bottom nav).
         */}
-        <main className="container-page pt-6 pb-[calc(96px+env(safe-area-inset-bottom,0px))] md:py-10">
+        <main className="container-page pt-6 pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:py-10">
           <Outlet />
         </main>
       </div>
