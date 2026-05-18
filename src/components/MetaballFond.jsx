@@ -94,18 +94,12 @@ export default function MetaballFond() {
       mouseRef.current.x = e.clientX / width;
       mouseRef.current.y = e.clientY / height;
     };
-    const onTouchMove = (e) => {
-      const pt = e.touches[0];
-      mouseRef.current.x = pt.clientX / width;
-      mouseRef.current.y = pt.clientY / height;
-    };
     const onResize = () => {
       width  = window.innerWidth;
       height = window.innerHeight;
     };
 
     window.addEventListener('mousemove', onMouseMove, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
     window.addEventListener('resize',    onResize,    { passive: true });
 
     function tick(ts) {
@@ -210,7 +204,6 @@ export default function MetaballFond() {
     return () => {
       cancelAnimationFrame(rafId);
       window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('resize',    onResize);
       blobEls.current.forEach((el) => el.remove());
       blobEls.current  = [];
