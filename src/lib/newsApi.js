@@ -2,15 +2,18 @@
  * src/lib/newsApi.js
  * ----------------------------------------------------------------------------
  * Fetching news (GNews) + market data (CoinGecko + Alpha Vantage).
- * Cache sessionStorage 15 min — économise le quota et évite les rate limits.
- * Toutes les fonctions retournent null sur erreur plutôt que de throw,
- * sauf fetchNewsCategory qui throw pour permettre l'affichage d'erreur par colonne.
+ * Cache sessionStorage 15 min.
+ *
+ * Alpha Vantage notes :
+ *   - XAU non supporté en CURRENCY_EXCHANGE_RATE sur plan gratuit → on utilise GLD ETF
+ *   - EUR/USD : FX_DAILY pour avoir la variation 24h
+ *   - Appels AV séquentiels (évite le rate limit 5 req/min)
  * ----------------------------------------------------------------------------
  */
 
 const GNEWS_KEY = import.meta.env.VITE_GNEWS_KEY
 const AV_KEY    = import.meta.env.VITE_ALPHA_VANTAGE_KEY
-const CACHE_TTL = 15 * 60 * 1000 // 15 minutes
+const CACHE_TTL = 15 * 60 * 1000
 
 // ── Cache ──────────────────────────────────────────────────────────────────
 
@@ -28,34 +31,37 @@ function setCache(key, data) {
   } catch {}
 }
 
-const NEWS_CACHE_KEYS  = ['business', 'technology', 'science', 'world'].map(c => `gnews_${c}`)
-const MARKET_CACHE_KEYS = ['coingecko', 'av_EUR_USD', 'av_XAU_USD']
-
 export function clearNewsCache() {
-  ;[...NEWS_CACHE_KEYS, ...MARKET_CACHE_KEYS].forEach(k => sessionStorage.removeItem(k))
+  ['business', 'technology', 'science', 'world'].forEach(c =>
+    sessionStorage.removeItem(`gnews_${c}`)
+  )
+  ;['coingecko', 'av_eurusd_daily', 'av_gold_gld'].forEach(k =>
+    sessionStorage.removeItem(k)
+  )
 }
 
 // ── News — GNews API ───────────────────────────────────────────────────────
 
-/**
- * Récupère les titres d'une catégorie GNews en français.
- * @param {'business'|'technology'|'science'|'world'} category
- * @param {number} max  Nombre d'articles (max 10 sur plan gratuit)
- * @returns {Promise<Array>}
- */
 export async function fetchNewsCategory(category, max = 8) {
   const cacheKey = `gnews_${category}`
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const url = `https://gnews.io/api/v4/top-headlines?category=${category}&lang=fr&max=${max}&apikey=${GNEWS_KEY}`
-  const res = await fetch(url)
+  const url = `https://gnews.io/api/v4/top-headlines?category=${category}&country=fr&max=${max}&apikey=${GNEWS_KEY}`
+  let res
+  try {
+    res = await fetch(url)
+  } catch (e) {
+    throw new Error('Réseau inaccessible (CORS ou hors ligne)')
+  }
 
-  if (res.status === 403) throw new Error('Quota GNews atteint')
-  if (!res.ok) throw new Error(`GNews ${category}: ${res.status}`)
+  if (res.status === 401) throw new Error('Clé API invalide (401)')
+  if (res.status === 403) throw new Error('Quota GNews atteint (403)')
+  if (!res.ok) throw new Error(`Erreur GNews ${res.status}`)
 
   const json = await res.json()
-  if (json.errors?.length) throw new Error(json.errors[0])
+  if (json.errors?.length)   throw new Error(json.errors[0])
+  if (json.status === 'error') throw new Error(json.message || 'Erreur GNews')
 
   const articles = (json.articles || []).map(a => ({
     title:       a.title,
@@ -68,7 +74,7 @@ export async function fetchNewsCategory(category, max = 8) {
   return articles
 }
 
-// ── Marchés — CoinGecko (pas de clé) ──────────────────────────────────────
+// ── Marchés — CoinGecko ────────────────────────────────────────────────────
 
 async function fetchCrypto() {
   const cacheKey = 'coingecko'
@@ -85,49 +91,75 @@ async function fetchCrypto() {
   return data
 }
 
-// ── Marchés — Alpha Vantage (forex + commodités) ──────────────────────────
+// ── Marchés — Alpha Vantage EUR/USD (FX_DAILY → variation 24h) ────────────
 
-async function fetchAVFX(from, to) {
-  const cacheKey = `av_${from}_${to}`
+async function fetchEURUSD() {
+  const cacheKey = 'av_eurusd_daily'
   const cached = getCached(cacheKey)
   if (cached) return cached
 
   const res = await fetch(
-    `https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${from}&to_currency=${to}&apikey=${AV_KEY}`
+    `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=EUR&to_symbol=USD&outputsize=compact&apikey=${AV_KEY}`
   )
   if (!res.ok) return null
 
   const json = await res.json()
-  const rate = json['Realtime Currency Exchange Rate']
-  if (!rate) return null // quota dépassé ou clé invalide
+  const series = json['Time Series FX (Daily)']
+  if (!series) return null
 
-  const data = { rate: parseFloat(rate['5. Exchange Rate']) }
+  const dates = Object.keys(series).sort().reverse()
+  if (dates.length < 2) return null
+
+  const close0 = parseFloat(series[dates[0]]['4. close'])
+  const close1 = parseFloat(series[dates[1]]['4. close'])
+  const data = {
+    rate:   close0,
+    change: ((close0 - close1) / close1) * 100,
+  }
+  setCache(cacheKey, data)
+  return data
+}
+
+// ── Marchés — Alpha Vantage Or via ETF GLD (GLOBAL_QUOTE) ─────────────────
+// XAU n'est pas supporté en CURRENCY_EXCHANGE_RATE sur plan gratuit.
+// GLD (SPDR Gold Trust) ≈ 1/10 d'once d'or → price * 10 ≈ prix spot XAU/USD.
+
+async function fetchGold() {
+  const cacheKey = 'av_gold_gld'
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  const res = await fetch(
+    `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=GLD&apikey=${AV_KEY}`
+  )
+  if (!res.ok) return null
+
+  const json = await res.json()
+  const q = json['Global Quote']
+  if (!q || !q['05. price']) return null
+
+  const data = {
+    price:  parseFloat(q['05. price']) * 10, // approximation prix spot $/oz
+    change: parseFloat((q['10. change percent'] || '0%').replace('%', '')),
+  }
   setCache(cacheKey, data)
   return data
 }
 
 // ── Agrégat marchés ────────────────────────────────────────────────────────
 
-/**
- * Charge toutes les données marché en parallèle.
- * Chaque source est indépendante : une erreur n'en bloque pas une autre.
- * @returns {Promise<{ bitcoin, ethereum, eurusd, gold }>}
- */
 export async function fetchMarkets() {
-  const [cryptoRes, eurusdRes, xauRes] = await Promise.allSettled([
-    fetchCrypto(),
-    fetchAVFX('EUR', 'USD'),
-    fetchAVFX('XAU', 'USD'),
-  ])
+  // CoinGecko en parallèle, AV en séquentiel (rate limit 5 req/min)
+  const [cryptoRes] = await Promise.allSettled([fetchCrypto()])
+  const eurusd = await fetchEURUSD()
+  const gold   = await fetchGold()
 
   const crypto = cryptoRes.status === 'fulfilled' ? cryptoRes.value : null
-  const eurusd = eurusdRes.status === 'fulfilled' ? eurusdRes.value : null
-  const xau    = xauRes.status === 'fulfilled' ? xauRes.value : null
 
   return {
     bitcoin:  crypto?.bitcoin  ?? null,
     ethereum: crypto?.ethereum ?? null,
-    eurusd:   eurusd?.rate     ?? null,
-    gold:     xau?.rate        ?? null,
+    eurusd,
+    gold,
   }
 }
