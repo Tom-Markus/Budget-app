@@ -101,12 +101,10 @@ export default function GrandeEnveloppe({
     <section aria-labelledby="patrimoine-titre" className="w-full">
       {/* ============ Enveloppe principale ============ */}
       <motion.article
-        layout
         className="
           surface-velin liserer-signature
           p-6 md:p-8
           flex flex-col gap-5
-          overflow-hidden
         "
       >
         {/* Ligne 1 : titre + compteur + flèche */}

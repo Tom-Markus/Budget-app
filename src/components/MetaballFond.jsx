@@ -91,6 +91,7 @@ export default function MetaballFond() {
     const dist2  = new Float32Array(BLOB_N * BLOB_N);
 
     const onMouseMove = (e) => {
+      if (e.pointerType && e.pointerType !== 'mouse') return;
       mouseRef.current.x = e.clientX / width;
       mouseRef.current.y = e.clientY / height;
     };
@@ -99,8 +100,8 @@ export default function MetaballFond() {
       height = window.innerHeight;
     };
 
-    window.addEventListener('mousemove', onMouseMove, { passive: true });
-    window.addEventListener('resize',    onResize,    { passive: true });
+    window.addEventListener('pointermove', onMouseMove, { passive: true });
+    window.addEventListener('resize',     onResize,    { passive: true });
 
     function tick(ts) {
       rafId = requestAnimationFrame(tick);
@@ -203,7 +204,7 @@ export default function MetaballFond() {
 
     return () => {
       cancelAnimationFrame(rafId);
-      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('pointermove', onMouseMove);
       window.removeEventListener('resize',    onResize);
       blobEls.current.forEach((el) => el.remove());
       blobEls.current  = [];
