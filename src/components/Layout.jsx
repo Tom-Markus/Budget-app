@@ -12,7 +12,6 @@
  */
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
 import Navbar from './Navbar'
 import MetaballFond from './MetaballFond'
 import CurseurDore from './CurseurDore'
@@ -73,15 +72,9 @@ export default function Layout() {
           fixe de 60px masquerait le bas du contenu sans ce padding compensatoire.
           md:py-10 annule le padding-bottom mobile sur desktop (pas de bottom nav).
         */}
-        <motion.main
-          key={location.pathname}
-          className="container-page pt-6 pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:py-10"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
-        >
+        <main className="container-page pt-6 pb-[calc(60px+env(safe-area-inset-bottom,0px))] md:py-10">
           <Outlet />
-        </motion.main>
+        </main>
       </div>
     </>
   )
