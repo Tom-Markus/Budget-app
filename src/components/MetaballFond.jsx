@@ -43,7 +43,9 @@ const BOUNDARY_PUSH    = 0.07;  // rebond bords
 export default function MetaballFond() {
   const wrapRef  = useRef(null);
   const innerRef = useRef(null);
-  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  // Sur mobile, initialise la souris hors écran pour éviter l'attraction au centre
+  const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+  const mouseRef = useRef({ x: isMouseDevice ? 0.5 : -10, y: isMouseDevice ? 0.5 : -10 });
   const blobEls  = useRef([]);
   const stateRef = useRef(null);
 
@@ -90,7 +92,8 @@ export default function MetaballFond() {
     const BLOB_N = BLOB_DEFS.length;
     const dist2  = new Float32Array(BLOB_N * BLOB_N);
 
-    const isMouseDevice = window.matchMedia('(pointer: fine)').matches;
+    // isMouseDevice est déjà déclaré au niveau du composant, on la récupère via la closure
+    const localIsMouseDevice = isMouseDevice;
 
     const onMouseMove = (e) => {
       mouseRef.current.x = e.clientX / width;
@@ -101,7 +104,7 @@ export default function MetaballFond() {
       height = window.innerHeight;
     };
 
-    if (isMouseDevice) {
+    if (localIsMouseDevice) {
       window.addEventListener('pointermove', onMouseMove, { passive: true });
     }
     window.addEventListener('resize', onResize, { passive: true });
@@ -133,25 +136,32 @@ export default function MetaballFond() {
         const el = blobEls.current[i];
         if (!el) return;
 
-        // --- Attraction souris ---
-        const dx     = mx - s.x;
-        const dy     = my - s.y;
-        const dist   = Math.hypot(dx, dy);
-        const inZone = dist > 1 && dist < ATTRACT_R;
+        // --- Attraction souris (uniquement sur desktop) ---
+        let mfx = 0, mfy = 0, extraDamp = 0;
+        
+        // Drift autonome : base sans atténuation (on l'atténue seulement si souris + en zone)
+        let driftScale = 1;
+        
+        if (localIsMouseDevice) {
+          const dx     = mx - s.x;
+          const dy     = my - s.y;
+          const dist   = Math.hypot(dx, dy);
+          const inZone = dist > 1 && dist < ATTRACT_R;
 
-        // Drift autonome : s'atténue près du curseur pour éviter le tremblement
-        const driftScale = inZone ? dist / ATTRACT_R : 1;
+          // Drift autonome : s'atténue près du curseur pour éviter le tremblement
+          driftScale = inZone ? dist / ATTRACT_R : 1;
+
+          if (inZone) {
+            const ratio = 1 - dist / ATTRACT_R;
+            const force = ratio * ratio * ATTRACT_STR;
+            mfx       = (dx / dist) * force;
+            mfy       = (dy / dist) * force;
+            extraDamp = ratio * 0.35;
+          }
+        }
+
         const fx = Math.sin(t * s.freqX + s.phX) * DRIFT * driftScale;
         const fy = Math.cos(t * s.freqY + s.phY) * DRIFT * driftScale;
-
-        let mfx = 0, mfy = 0, extraDamp = 0;
-        if (inZone) {
-          const ratio = 1 - dist / ATTRACT_R;
-          const force = ratio * ratio * ATTRACT_STR;
-          mfx       = (dx / dist) * force;
-          mfy       = (dy / dist) * force;
-          extraDamp = ratio * 0.35;
-        }
 
         // --- Attraction inter-bulles (3 voisins les plus proches) ---
         // Trouve les 3 indices avec la distance minimale (O(n) scan, pas de sort)
@@ -207,7 +217,7 @@ export default function MetaballFond() {
 
     return () => {
       cancelAnimationFrame(rafId);
-      if (isMouseDevice) {
+      if (localIsMouseDevice) {
         window.removeEventListener('pointermove', onMouseMove);
       }
       window.removeEventListener('resize', onResize);
