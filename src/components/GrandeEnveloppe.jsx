@@ -105,6 +105,7 @@ export default function GrandeEnveloppe({
           surface-velin liserer-signature
           p-6 md:p-8
           flex flex-col gap-5
+          overflow-hidden
         "
       >
         {/* Ligne 1 : titre + compteur + flèche */}
