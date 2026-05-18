@@ -227,10 +227,10 @@ export default function News() {
         change: markets?.eurusd?.change ?? null,
       },
       {
-        label:  'Or (~spot)',
-        prix:   markets?.gold?.price != null ? fmt(markets.gold.price) : null,
+        label:  'Or (XAU)',
+        prix:   markets?.gold?.usd != null ? fmt(markets.gold.usd) : null,
         unite:  '$',
-        change: markets?.gold?.change ?? null,
+        change: markets?.gold?.usd_24h_change ?? null,
       },
     ]
   }, [markets])
