@@ -407,19 +407,19 @@ export default function Accueil() {
 
   // ----- États précoces -----
   if (loading) return <LoaderNoble message="Lecture du grand livre..." />
+  if (error) {
+    return (
+      <div className="surface-velin p-6 max-w-2xl mx-auto">
+        <p style={{ color: 'var(--rouge)' }}>Erreur : {error}</p>
+      </div>
+    )
+  }
   if (!patrimoine) {
     return (
       <div className="surface-velin p-6 max-w-2xl mx-auto">
         <p style={{ color: 'var(--rouge)' }}>
           Patrimoine introuvable — déconnecte-toi et reconnecte-toi, ou contacte le développeur.
         </p>
-      </div>
-    )
-  }
-  if (error) {
-    return (
-      <div className="surface-velin p-6 max-w-2xl mx-auto">
-        <p style={{ color: 'var(--rouge)' }}>Erreur : {error}</p>
       </div>
     )
   }

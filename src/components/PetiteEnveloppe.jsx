@@ -597,6 +597,8 @@ function propsEgales(prev, next) {
     prev.sousEnveloppes.every((s, i) => {
       const n = next.sousEnveloppes[i]
       return s.id === n.id &&
+             s.titre === n.titre &&
+             s.direction === n.direction &&
              s.montant === n.montant &&
              s.modeEdition === n.modeEdition &&
              s.actionInputActive === n.actionInputActive &&

@@ -27,12 +27,15 @@ export default function CurseurDore() {
       ringOpacityMv.set(1);
     };
 
+    let lastOverTarget = null;
     const onOver = (e) => {
+      if (e.target === lastOverTarget) return;
+      lastOverTarget = e.target;
       const ptr = !!e.target.closest('button,a,input,textarea,select,[role="button"],[tabindex]');
       ringSizeMv.set(ptr ? 48 : 36);
     };
 
-    const onLeave = () => ringOpacityMv.set(0);
+    const onLeave = () => { lastOverTarget = null; ringOpacityMv.set(0); };
     const onEnter = () => ringOpacityMv.set(1);
 
     window.addEventListener('mousemove',  onMove,  { passive: true });
@@ -46,7 +49,7 @@ export default function CurseurDore() {
       document.removeEventListener('mouseleave', onLeave);
       document.removeEventListener('mouseenter', onEnter);
     };
-  }, [mx, my, ringOpacityMv, ringSizeMv]);
+  }, []);
 
   if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) {
     return null;

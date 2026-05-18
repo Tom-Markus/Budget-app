@@ -357,7 +357,10 @@ export async function remettreAZero(userId) {
   const { error: e2 } = await supabase
     .from('envelopes').delete()
     .eq('user_id', userId).neq('type', 'total')
-  if (e2) throw new Error(e2.message)
+  if (e2) throw new Error(
+    'Les mouvements ont été supprimés mais les enveloppes n\'ont pas pu l\'être. ' +
+    'Recharge la page et réessaie. (' + e2.message + ')'
+  )
 }
 
 // ===========================================================================
