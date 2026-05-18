@@ -100,7 +100,7 @@ export default function GrandeEnveloppe({
   return (
     <section aria-labelledby="patrimoine-titre" className="w-full">
       {/* ============ Enveloppe principale ============ */}
-      <motion.article
+      <article
         className="
           surface-velin liserer-signature
           p-6 md:p-8
@@ -186,7 +186,7 @@ export default function GrandeEnveloppe({
             )}
           </AnimatePresence>
         </div>
-      </motion.article>
+      </article>
 
       {/* ============ Badge "À répartir" ============ */}
       <div className="mt-3 px-4 md:px-6">
