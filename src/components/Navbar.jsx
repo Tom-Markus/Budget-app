@@ -52,14 +52,40 @@ function formatDateMobile(date) {
  */
 function Monomark({ size = 28, className = '' }) {
   return (
-    <img
-      src="/icons/favicon-48.png"
+    <svg
+      viewBox="0 0 100 100"
       width={size}
       height={size}
-      className={`rounded-sm ${className}`}
-      alt=""
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
       aria-hidden="true"
-    />
+    >
+      {/* Fioriture gauche */}
+      <path
+        d="M 12 50 Q 22 44, 28 50 Q 22 56, 12 50 Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+      {/* Fioriture droite */}
+      <path
+        d="M 88 50 Q 78 44, 72 50 Q 78 56, 88 50 Z"
+        fill="currentColor"
+        opacity="0.7"
+      />
+      {/* T capital serif */}
+      <text
+        x="50"
+        y="74"
+        textAnchor="middle"
+        fontFamily="EB Garamond, Cormorant Garamond, Georgia, serif"
+        fontStyle="italic"
+        fontWeight="500"
+        fontSize="68"
+        fill="currentColor"
+      >
+        T
+      </text>
+    </svg>
   );
 }
 
