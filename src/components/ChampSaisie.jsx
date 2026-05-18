@@ -108,7 +108,19 @@ export default function ChampSaisie({
   }
 
   return (
-    <div className={`flex flex-col gap-2 w-full ${shake ? 'animate-shake-erreur' : ''}`}>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={shake
+        ? { opacity: 1, x: [-4, 4, -3, 3, 0] }
+        : { opacity: 1 }
+      }
+      exit={{ opacity: 0 }}
+      transition={{
+        duration: shake ? 0.22 : 0.18,
+        ease: shake ? [0, 0, 0.2, 1] : 'easeOut',
+      }}
+      className="flex flex-col gap-2 w-full"
+    >
       {/* Ligne principale : montant + sigle € + boutons */}
       <div className="flex items-center gap-2 w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-11 min-h-[44px]">
         <input
@@ -223,6 +235,6 @@ export default function ChampSaisie({
           {disabledReason}
         </span>
       )}
-    </div>
+    </motion.div>
   );
 }
