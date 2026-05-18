@@ -77,7 +77,8 @@ export default function BoutonAction({
       disabled={isDisabled}
       aria-label={ariaLabel}
       aria-busy={state === 'loading'}
-      whileTap={isDisabled ? {} : { scale: 0.96 }}
+      whileHover={isDisabled ? {} : { y: -2, transition: { type: 'spring', stiffness: 380, damping: 22 } }}
+      whileTap={isDisabled ? {} : { scale: 0.96, y: 0 }}
       animate={
         state === 'error'
           ? { x: [-4, 4, -3, 3, 0] }

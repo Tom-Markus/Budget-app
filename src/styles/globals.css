@@ -53,6 +53,24 @@ button {
   cursor: pointer;
 }
 
+/* Lift au survol souris — uniquement sur appareils pointeurs fins */
+@media (hover: hover) {
+  button:not(:disabled) {
+    transition-property: color, background-color, border-color, box-shadow, transform;
+    transition-duration: 220ms, 220ms, 220ms, 220ms, 320ms;
+    transition-timing-function: ease, ease, ease, ease, var(--ease-bounce-doux);
+  }
+
+  button:not(:disabled):hover {
+    transform: translateY(-2px);
+  }
+
+  button:not(:disabled):active {
+    transform: translateY(0);
+    transition-duration: 80ms;
+  }
+}
+
 input {
   font: inherit;
   color: inherit;
