@@ -66,6 +66,7 @@ const Character = memo(function Character({ char, sizeClass, reducedMotion }) {
     >
       <motion.span
         style={{ display: 'flex', flexDirection: 'column' }}
+        initial={false}
         animate={{ y: `-${digit * DIGIT_HEIGHT_EM}em` }}
         transition={
           reducedMotion

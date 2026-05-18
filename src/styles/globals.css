@@ -19,6 +19,10 @@ html, body, #root {
   min-height: 100dvh;
 }
 
+html {
+  scrollbar-gutter: stable;
+}
+
 body {
   background-color: var(--velin);
   background-image: var(--grain-overlay);
