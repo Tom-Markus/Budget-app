@@ -19,6 +19,7 @@ import CurseurDore from './CurseurDore'
 const PAGE_TO_URL = {
   accueil: '/',
   graphes: '/graphes-dettes',
+  news: '/news',
   reglages: '/reglages',
 }
 const URL_TO_PAGE = Object.fromEntries(

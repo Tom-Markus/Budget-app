@@ -18,12 +18,13 @@
  * ----------------------------------------------------------------------------
  */
 import { motion } from 'framer-motion';
-import { Home, PieChart, Settings } from 'lucide-react';
+import { Home, Newspaper, PieChart, Settings } from 'lucide-react';
 import { useMemo } from 'react';
 
 const PAGES = [
   { id: 'accueil', label: 'Accueil', icon: Home },
   { id: 'graphes', label: 'Graphes & Dettes', icon: PieChart },
+  { id: 'news', label: 'Actualités', icon: Newspaper },
   { id: 'reglages', label: 'Réglages', icon: Settings },
 ];
 
