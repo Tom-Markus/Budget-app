@@ -175,11 +175,11 @@ export default function Navbar({
                   onClick={() => onNavigate?.(page.id)}
                   className={`
                     relative px-4 py-2 t-label-noble text-[1rem]
-                    transition-colors duration-300 ease-noble
+                    transition-[color,opacity] duration-300 ease-noble
                     ${
                       isActive
-                        ? 'text-or'
-                        : 'text-velin-clair/88 hover:text-velin-clair'
+                        ? 'text-or opacity-100'
+                        : 'text-velin-clair opacity-75 hover:opacity-100'
                     }
                     focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2 rounded-sm
                   `}
@@ -200,7 +200,7 @@ export default function Navbar({
           </nav>
 
           <div className="flex items-center gap-4">
-            <span className="t-label-noble text-velin-clair/82">
+            <span className="t-label-noble text-velin-clair opacity-70">
               {formatDatePC(currentDate)}
             </span>
             <ConnexionDot isOnline={isOnline} />
@@ -216,7 +216,7 @@ export default function Navbar({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="t-meta text-velin-clair/82 tabular-nums">
+            <span className="t-meta text-velin-clair opacity-70 tabular-nums">
               {formatDateMobile(currentDate)}
             </span>
             <ConnexionDot isOnline={isOnline} />
@@ -255,9 +255,9 @@ export default function Navbar({
               className={`
                 flex-1 flex flex-col items-center justify-center gap-1
                 min-h-[60px] py-2
-                transition-colors duration-300 ease-noble
+                transition-[color,opacity] duration-300 ease-noble
                 relative
-                ${isActive ? 'text-or' : 'text-velin-clair/78 hover:text-velin-clair'}
+                ${isActive ? 'text-or opacity-100' : 'text-velin-clair opacity-70 hover:opacity-100'}
               `}
               aria-current={isActive ? 'page' : undefined}
               aria-label={page.label}
