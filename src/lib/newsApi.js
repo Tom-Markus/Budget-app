@@ -1,15 +1,11 @@
 /**
  * src/lib/newsApi.js
  * ----------------------------------------------------------------------------
- * Fetching news (GNews) + market data (CoinGecko + Alpha Vantage).
- * Cache sessionStorage 15 min.
- *
- * Sources marches :
- *   - BTC, ETH, Or  : CoinGecko (pas de cle, CORS-friendly)
- *                     Or = PAXG (PAX Gold, stablecoin 1:1 avec l'once d'or)
- *   - EUR/USD       : Alpha Vantage FX_DAILY (variation 24h incluse)
- *
- * GNews : sans country= ni lang= (non supportes sur plan gratuit).
+ * Sources :
+ *   News    : GNews /search (plan gratuit ne supporte pas category= en top-headlines)
+ *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (pas de cle)
+ *   Indices : Yahoo Finance via proxy allorigins.win — CAC40, S&P500, BEL20
+ *   Forex   : Alpha Vantage FX_DAILY — EUR/USD avec variation 24h
  * ----------------------------------------------------------------------------
  */
 
@@ -37,20 +33,30 @@ export function clearNewsCache() {
   ;['business', 'technology', 'science', 'world'].forEach(c =>
     sessionStorage.removeItem(`gnews_${c}`)
   )
-  ;['coingecko_markets', 'av_eurusd_daily'].forEach(k =>
+  ;['coingecko_markets', 'av_eurusd_daily', 'indices_yahoo'].forEach(k =>
     sessionStorage.removeItem(k)
   )
 }
 
-// ── News — GNews API ───────────────────────────────────────────────────────
-// Pas de country= ni lang= : parametres non supportes sur plan gratuit (-> 400)
+// ── News — GNews /search ───────────────────────────────────────────────────
+// Le plan gratuit ne supporte pas category= sur /top-headlines → on utilise
+// /search avec des mots-cles thematiques.
+
+const CATEGORY_QUERIES = {
+  business:   'finance economie bourse marchés',
+  technology: 'technologie intelligence artificielle innovation',
+  science:    'science decouverte recherche',
+  world:      'monde international geopolitique actualites',
+}
 
 export async function fetchNewsCategory(category, max = 8) {
   const cacheKey = `gnews_${category}`
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const url = `https://gnews.io/api/v4/top-headlines?category=${category}&max=${max}&apikey=${GNEWS_KEY}`
+  const q = encodeURIComponent(CATEGORY_QUERIES[category] || category)
+  const url = `https://gnews.io/api/v4/search?q=${q}&max=${max}&apikey=${GNEWS_KEY}`
+
   let res
   try {
     res = await fetch(url)
@@ -76,9 +82,7 @@ export async function fetchNewsCategory(category, max = 8) {
   return articles
 }
 
-// ── Marches — CoinGecko (BTC + ETH + Or via PAXG) ─────────────────────────
-// PAXG (PAX Gold) = stablecoin adosse 1:1 a l'once d'or physique.
-// Prix PAXG en USD = prix spot Or/USD.
+// ── Crypto + Or — CoinGecko ────────────────────────────────────────────────
 
 async function fetchCoinGecko() {
   const cacheKey = 'coingecko_markets'
@@ -98,7 +102,7 @@ async function fetchCoinGecko() {
   return data
 }
 
-// ── Marches — Alpha Vantage EUR/USD (FX_DAILY → variation 24h) ────────────
+// ── Forex — Alpha Vantage FX_DAILY ────────────────────────────────────────
 
 async function fetchEURUSD() {
   const cacheKey = 'av_eurusd_daily'
@@ -117,31 +121,70 @@ async function fetchEURUSD() {
   const dates = Object.keys(series).sort().reverse()
   if (dates.length < 2) return null
 
-  const close0 = parseFloat(series[dates[0]]['4. close'])
-  const close1 = parseFloat(series[dates[1]]['4. close'])
-  const data = {
-    rate:   close0,
-    change: ((close0 - close1) / close1) * 100,
-  }
+  const c0 = parseFloat(series[dates[0]]['4. close'])
+  const c1 = parseFloat(series[dates[1]]['4. close'])
+  const data = { rate: c0, change: ((c0 - c1) / c1) * 100 }
   setCache(cacheKey, data)
   return data
+}
+
+// ── Indices boursiers — Yahoo Finance via proxy CORS ──────────────────────
+// allorigins.win proxifie la requete cote serveur → pas de blocage CORS.
+// Symbols : ^GSPC (S&P500), ^FCHI (CAC40), ^BFX (BEL20)
+
+async function fetchIndices() {
+  const cacheKey = 'indices_yahoo'
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+
+  const yahooUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=^GSPC,^FCHI,^BFX'
+  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`
+
+  let res
+  try {
+    res = await fetch(proxyUrl)
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+
+  try {
+    const json = await res.json()
+    const results = json.quoteResponse?.result || []
+    const bySymbol = {}
+    for (const r of results) {
+      bySymbol[r.symbol] = {
+        price:  r.regularMarketPrice,
+        change: r.regularMarketChangePercent,
+      }
+    }
+    setCache(cacheKey, bySymbol)
+    return bySymbol
+  } catch {
+    return null
+  }
 }
 
 // ── Agregat marches ────────────────────────────────────────────────────────
 
 export async function fetchMarkets() {
-  const [cgRes, eurusdRes] = await Promise.allSettled([
+  const [cgRes, eurusdRes, indicesRes] = await Promise.allSettled([
     fetchCoinGecko(),
     fetchEURUSD(),
+    fetchIndices(),
   ])
 
-  const cg     = cgRes.status === 'fulfilled' ? cgRes.value : null
-  const eurusd = eurusdRes.status === 'fulfilled' ? eurusdRes.value : null
+  const cg      = cgRes.status      === 'fulfilled' ? cgRes.value      : null
+  const eurusd  = eurusdRes.status  === 'fulfilled' ? eurusdRes.value  : null
+  const indices = indicesRes.status === 'fulfilled' ? indicesRes.value : null
 
   return {
-    bitcoin:  cg?.bitcoin   ?? null,   // { eur, eur_24h_change }
-    ethereum: cg?.ethereum  ?? null,   // { eur, eur_24h_change }
-    gold:     cg?.['pax-gold'] ?? null, // { usd, usd_24h_change }
-    eurusd,                            // { rate, change }
+    bitcoin:  cg?.bitcoin       ?? null,
+    ethereum: cg?.ethereum      ?? null,
+    gold:     cg?.['pax-gold']  ?? null,
+    eurusd,
+    sp500: indices?.[ '^GSPC'] ?? null,
+    cac40: indices?.[ '^FCHI'] ?? null,
+    bel20: indices?.[ '^BFX']  ?? null,
   }
 }

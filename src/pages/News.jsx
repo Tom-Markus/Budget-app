@@ -232,6 +232,24 @@ export default function News() {
         unite:  '$',
         change: markets?.gold?.usd_24h_change ?? null,
       },
+      {
+        label:  'CAC 40',
+        prix:   markets?.cac40?.price != null ? fmt(markets.cac40.price) : null,
+        unite:  'pts',
+        change: markets?.cac40?.change ?? null,
+      },
+      {
+        label:  'S&P 500',
+        prix:   markets?.sp500?.price != null ? fmt(markets.sp500.price) : null,
+        unite:  'pts',
+        change: markets?.sp500?.change ?? null,
+      },
+      {
+        label:  'BEL 20',
+        prix:   markets?.bel20?.price != null ? fmt(markets.bel20.price) : null,
+        unite:  'pts',
+        change: markets?.bel20?.change ?? null,
+      },
     ]
   }, [markets])
 
