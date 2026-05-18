@@ -11,6 +11,7 @@
 
 const GNEWS_KEY = import.meta.env.VITE_GNEWS_KEY
 const AV_KEY    = import.meta.env.VITE_ALPHA_VANTAGE_KEY
+const TD_KEY    = import.meta.env.VITE_TWELVE_DATA_KEY
 const CACHE_TTL = 15 * 60 * 1000
 
 // ── Cache ──────────────────────────────────────────────────────────────────
@@ -33,7 +34,7 @@ export function clearNewsCache() {
   ;['business', 'technology', 'science', 'world'].forEach(c =>
     sessionStorage.removeItem(`gnews_${c}`)
   )
-  ;['coingecko_markets', 'av_eurusd_daily', 'indices_yahoo'].forEach(k =>
+  ;['coingecko_markets', 'av_eurusd_daily', 'indices_twelvedata', 'indices_yahoo'].forEach(k =>
     sessionStorage.removeItem(k)
   )
 }
@@ -64,8 +65,8 @@ export async function fetchNewsCategory(category, max = 8) {
     throw new Error('Reseau inaccessible (CORS ou hors ligne)')
   }
 
-  if (res.status === 401) throw new Error('Cle GNews invalide (401)')
-  if (res.status === 403) throw new Error('Quota GNews atteint (403)')
+  if (res.status === 401) throw new Error('Cle GNews invalide — verifie VITE_GNEWS_KEY')
+  if (res.status === 403) throw new Error('Compte GNews non verifie — confirme ton email sur gnews.io/dashboard')
   if (!res.ok) throw new Error(`Erreur GNews ${res.status}`)
 
   const json = await res.json()
@@ -128,21 +129,22 @@ async function fetchEURUSD() {
   return data
 }
 
-// ── Indices boursiers — Yahoo Finance via proxy CORS ──────────────────────
-// allorigins.win proxifie la requete cote serveur → pas de blocage CORS.
-// Symbols : ^GSPC (S&P500), ^FCHI (CAC40), ^BFX (BEL20)
+// ── Indices boursiers — Twelve Data (CORS natif, plan gratuit 800 req/jour) ──
+// Symbols : SPX (S&P 500), CAC40 (CAC 40), BEL20 (BEL 20)
+// Cle gratuite : twelvedata.com/pricing → ajouter VITE_TWELVE_DATA_KEY dans .env.local
 
 async function fetchIndices() {
-  const cacheKey = 'indices_yahoo'
+  if (!TD_KEY) return null
+
+  const cacheKey = 'indices_twelvedata'
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const yahooUrl = 'https://query1.finance.yahoo.com/v7/finance/quote?symbols=^GSPC,^FCHI,^BFX'
-  const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(yahooUrl)}`
-
   let res
   try {
-    res = await fetch(proxyUrl)
+    res = await fetch(
+      `https://api.twelvedata.com/quote?symbol=SPX,CAC40,BEL20&apikey=${TD_KEY}`
+    )
   } catch {
     return null
   }
@@ -150,13 +152,20 @@ async function fetchIndices() {
 
   try {
     const json = await res.json()
-    const results = json.quoteResponse?.result || []
-    const bySymbol = {}
-    for (const r of results) {
-      bySymbol[r.symbol] = {
-        price:  r.regularMarketPrice,
-        change: r.regularMarketChangePercent,
-      }
+    if (json.code === 401 || json.status === 'error') return null
+
+    const parse = (sym) => {
+      const d = json[sym]
+      if (!d || d.status === 'error') return null
+      const price  = parseFloat(d.close)
+      const change = parseFloat(d.percent_change)
+      return isNaN(price) ? null : { price, change: isNaN(change) ? null : change }
+    }
+
+    const bySymbol = {
+      sp500: parse('SPX'),
+      cac40: parse('CAC40'),
+      bel20: parse('BEL20'),
     }
     setCache(cacheKey, bySymbol)
     return bySymbol
@@ -183,8 +192,8 @@ export async function fetchMarkets() {
     ethereum: cg?.ethereum      ?? null,
     gold:     cg?.['pax-gold']  ?? null,
     eurusd,
-    sp500: indices?.[ '^GSPC'] ?? null,
-    cac40: indices?.[ '^FCHI'] ?? null,
-    bel20: indices?.[ '^BFX']  ?? null,
+    sp500: indices?.sp500 ?? null,
+    cac40: indices?.cac40 ?? null,
+    bel20: indices?.bel20 ?? null,
   }
 }
