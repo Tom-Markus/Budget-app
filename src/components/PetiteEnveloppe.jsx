@@ -193,6 +193,11 @@ function PetiteEnveloppe({
           ${modeEdition ? 'ring-2 ring-or/60 ring-offset-2 ring-offset-velin' : ''}
         `}
         style={{ borderStyle: modeEdition ? 'dashed' : 'solid' }}
+        whileHover={!modeEdition ? {
+          y: -3,
+          boxShadow: '0 8px 24px rgba(31, 24, 16, 0.10), 0 3px 8px rgba(31, 24, 16, 0.06)',
+        } : {}}
+        transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
         aria-label={`Enveloppe ${titre}`}
       >
         {/* ============ Ligne 1 : Drag + Titre + Actions de coin ============ */}

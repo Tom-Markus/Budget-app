@@ -106,6 +106,10 @@ export default function GrandeEnveloppe({
           p-6 md:p-8
           flex flex-col gap-5
         "
+        style={{
+          border: '1px solid rgba(184, 149, 74, 0.18)',
+          boxShadow: '0 12px 32px rgba(31, 24, 16, 0.12), 0 4px 8px rgba(31, 24, 16, 0.06), inset 0 1px 0 rgba(184, 149, 74, 0.08)',
+        }}
       >
         {/* Ligne 1 : titre + compteur + flèche */}
         <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">

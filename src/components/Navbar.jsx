@@ -179,7 +179,7 @@ export default function Navbar({
                     ${
                       isActive
                         ? 'text-or'
-                        : 'text-velin-clair/70 hover:text-velin-clair'
+                        : 'text-velin-clair/88 hover:text-velin-clair'
                     }
                     focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2 rounded-sm
                   `}
@@ -200,7 +200,7 @@ export default function Navbar({
           </nav>
 
           <div className="flex items-center gap-4">
-            <span className="t-label-noble text-velin-clair/70">
+            <span className="t-label-noble text-velin-clair/82">
               {formatDatePC(currentDate)}
             </span>
             <ConnexionDot isOnline={isOnline} />
@@ -216,7 +216,7 @@ export default function Navbar({
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="t-meta text-velin-clair/70 tabular-nums">
+            <span className="t-meta text-velin-clair/82 tabular-nums">
               {formatDateMobile(currentDate)}
             </span>
             <ConnexionDot isOnline={isOnline} />
@@ -257,7 +257,7 @@ export default function Navbar({
                 min-h-[60px] py-2
                 transition-colors duration-300 ease-noble
                 relative
-                ${isActive ? 'text-or' : 'text-velin-clair/60 hover:text-velin-clair'}
+                ${isActive ? 'text-or' : 'text-velin-clair/78 hover:text-velin-clair'}
               `}
               aria-current={isActive ? 'page' : undefined}
               aria-label={page.label}
