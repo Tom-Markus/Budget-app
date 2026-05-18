@@ -43,9 +43,9 @@ const BOUNDARY_PUSH    = 0.07;  // rebond bords
 export default function MetaballFond() {
   const wrapRef  = useRef(null);
   const innerRef = useRef(null);
-  // Sur mobile, initialise la souris hors écran pour éviter l'attraction au centre
   const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
-  const mouseRef = useRef({ x: isMouseDevice ? 0.5 : -10, y: isMouseDevice ? 0.5 : -10 });
+  // Toujours hors écran au départ : l'attraction ne commence qu'après le 1er vrai mouvement souris
+  const mouseRef = useRef({ x: -10, y: -10 });
   const blobEls  = useRef([]);
   const stateRef = useRef(null);
 
