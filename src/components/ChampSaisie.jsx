@@ -109,18 +109,16 @@ export default function ChampSaisie({
 
   return (
     <motion.div
-      initial={{ opacity: 0, scaleY: 0.6 }}
+      initial={{ opacity: 0 }}
       animate={{
         opacity: 1,
-        scaleY: 1,
         x: shake ? [-4, 4, -3, 3, 0] : 0,
       }}
-      exit={{ opacity: 0, scaleY: 0.6 }}
+      exit={{ opacity: 0 }}
       transition={{
-        duration: shake ? 0.22 : 0.25,
-        ease: shake ? [0, 0, 0.2, 1] : [0.32, 0.72, 0, 1],
+        duration: shake ? 0.22 : 0.18,
+        ease: shake ? [0, 0, 0.2, 1] : 'easeOut',
       }}
-      style={{ originY: 0.5 }}
       className="flex flex-col gap-2 w-full"
     >
       {/* Ligne principale : montant + sigle € + boutons */}
