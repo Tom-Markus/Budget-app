@@ -330,12 +330,11 @@ export default function News() {
     <div className="space-y-5">
       <style>{`
         @keyframes liquid-morph {
-          0%   { border-radius: 56% 44% 52% 48% / 48% 56% 44% 52%; }
-          20%  { border-radius: 44% 56% 46% 54% / 54% 44% 58% 46%; }
-          40%  { border-radius: 52% 48% 58% 42% / 42% 54% 46% 58%; }
-          60%  { border-radius: 46% 54% 42% 58% / 58% 46% 52% 44%; }
-          80%  { border-radius: 54% 46% 50% 50% / 44% 56% 48% 52%; }
-          100% { border-radius: 56% 44% 52% 48% / 48% 56% 44% 52%; }
+          0%   { border-radius: 14px 20px 16px 10px / 10px 14px 20px 16px; }
+          25%  { border-radius: 20px 10px 18px 14px / 16px 10px 14px 20px; }
+          50%  { border-radius: 10px 16px 14px 20px / 20px 16px 10px 14px; }
+          75%  { border-radius: 18px 14px 10px 16px / 12px 20px 16px 10px; }
+          100% { border-radius: 14px 20px 16px 10px / 10px 14px 20px 16px; }
         }
         @keyframes liquid-breathe {
           0%, 100% { box-shadow: 0 10px 40px rgba(14,31,58,0.55), 0 3px 10px rgba(14,31,58,0.3); }
