@@ -314,12 +314,26 @@ function GrapheModal({ item, onClose }) {
     try {
       let data
       if (item.coinId) {
+        // days=7 → bougies 4h depuis CoinGecko ; on agrège en bougies journalières côté client
         const r = await fetch(
           `https://api.coingecko.com/api/v3/coins/${item.coinId}/ohlc?vs_currency=usd&days=7`
         )
         if (!r.ok) throw new Error()
         const raw = await r.json()
-        data = (Array.isArray(raw) ? raw : []).map(([ts, open, high, low, close]) => ({
+        // Agréger les bougies 4h → OHLC journalier
+        const dayMap = new Map()
+        ;(Array.isArray(raw) ? raw : []).forEach(([ts, open, high, low, close]) => {
+          const key = new Date(ts).toISOString().slice(0, 10)
+          if (!dayMap.has(key)) {
+            dayMap.set(key, { ts, open, high, low, close })
+          } else {
+            const d = dayMap.get(key)
+            d.high  = Math.max(d.high, high)
+            d.low   = Math.min(d.low, low)
+            d.close = close
+          }
+        })
+        data = Array.from(dayMap.values()).slice(-7).map(({ ts, open, high, low, close }) => ({
           date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
           ts, open, high, low, close,
         }))
