@@ -827,7 +827,7 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
             text-velin-clair group-hover/w:text-or transition-colors duration-200"
           style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
         >
-          {prix ?? '--'}
+          {prix != null ? prix.replace(',', ' , ') : '--'}
         </span>
         {prix != null && (
           <span className="text-[11px] text-velin-clair/40 font-sans leading-none">{unite}</span>
