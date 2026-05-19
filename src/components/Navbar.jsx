@@ -139,16 +139,11 @@ export default function Navbar({
     <>
       {/* =========================== TOP NAV =========================== */}
       <header
-        className="relative w-full z-20 navbar-glass text-velin-clair"
-        style={{
-          position: 'sticky',
-          top: 0,
-          backdropFilter: 'url(#glass-navbar) blur(14px)',
-          WebkitBackdropFilter: 'url(#glass-navbar) blur(14px)',
-          background:
-            'linear-gradient(135deg, rgba(14,31,58,0.6) 0%, rgba(14,31,58,0.35) 50%, rgba(14,31,58,0.2) 100%)',
-          borderBottom: '1px solid rgba(184,149,74,0.3)',
-        }}
+        className="
+          relative w-full
+          bg-nuit text-velin-clair
+          z-20 shadow-md
+        "
       >
         {/* Dégradé signature : fin liseré sous la barre */}
         <span

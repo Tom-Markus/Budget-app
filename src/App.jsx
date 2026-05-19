@@ -21,7 +21,6 @@ import { ToastProvider } from './contexts/ToastContext'
 import { AppProvider } from './contexts/AppContext'
 import AuthGate from './components/AuthGate'
 import Layout from './components/Layout'
-import GlassFilter from './components/GlassFilter'
 import Accueil from './pages/Accueil'
 import GraphesEtDettes from './pages/GraphesEtDettes'
 import News from './pages/News'
@@ -30,7 +29,6 @@ import Reglages from './pages/Reglages'
 export default function App() {
   return (
     <BrowserRouter>
-      <GlassFilter />
       <AuthProvider>
         <ToastProvider>
           <AuthGate>
