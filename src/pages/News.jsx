@@ -8,14 +8,17 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { RefreshCw, ExternalLink, TrendingUp, TrendingDown, Minus, AlertCircle } from 'lucide-react'
+import {
+  RefreshCw, ExternalLink, TrendingUp, TrendingDown, Minus,
+  AlertCircle, BarChart2, Cpu, FlaskConical, Globe2,
+} from 'lucide-react'
 import { fetchNewsCategory, fetchMarkets, clearNewsCache } from '../lib/newsApi'
 
 const CATEGORIES = [
-  { id: 'business',   label: 'Finance',   labelCourt: 'Finance' },
-  { id: 'technology', label: 'Tech & IA', labelCourt: 'Tech' },
-  { id: 'science',    label: 'Sciences',  labelCourt: 'Sciences' },
-  { id: 'world',      label: 'Monde',     labelCourt: 'Monde' },
+  { id: 'business',   label: 'Finance',   labelCourt: 'Finance',  Icon: BarChart2    },
+  { id: 'technology', label: 'Tech & IA', labelCourt: 'Tech',     Icon: Cpu          },
+  { id: 'science',    label: 'Sciences',  labelCourt: 'Sciences', Icon: FlaskConical },
+  { id: 'world',      label: 'Monde',     labelCourt: 'Monde',    Icon: Globe2       },
 ]
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -25,9 +28,9 @@ function tempsRelatif(dateStr) {
   const h = Math.floor(diff / 3600000)
   const m = Math.floor(diff / 60000)
   if (h >= 48) return `${Math.floor(h / 24)}j`
-  if (h >= 1) return `${h}h`
-  if (m >= 1) return `${m}min`
-  return "A l'instant"
+  if (h >= 1)  return `${h}h`
+  if (m >= 1)  return `${m}min`
+  return "À l'instant"
 }
 
 function fmt(val, dec = 0) {
@@ -38,37 +41,60 @@ function fmt(val, dec = 0) {
 // ── Widget marche ─────────────────────────────────────────────────────────────
 
 function WidgetMarche({ label, prix, unite, change, loading }) {
-  const pos = change != null && change > 0
-  const neg = change != null && change < 0
+  const pos  = change != null && change > 0
+  const neg  = change != null && change < 0
   const Icon = pos ? TrendingUp : neg ? TrendingDown : Minus
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-1.5 px-5 py-4 border-r border-velin-clair/8 last:border-r-0 min-w-[120px]">
-        <div className="h-2.5 w-14 bg-velin-clair/10 rounded animate-pulse" />
-        <div className="h-5 w-20 bg-velin-clair/15 rounded animate-pulse" />
-        <div className="h-2.5 w-10 bg-velin-clair/10 rounded animate-pulse" />
+      <div className="flex flex-col gap-2 px-5 py-4 min-w-[130px] shrink-0">
+        <div className="h-2 w-12 bg-velin-clair/10 rounded animate-pulse" />
+        <div className="h-6 w-24 bg-velin-clair/15 rounded animate-pulse" />
+        <div className="h-4 w-14 bg-velin-clair/10 rounded-full animate-pulse" />
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-0.5 px-5 py-4 border-r border-velin-clair/8 last:border-r-0 min-w-[120px]">
-      <span className="text-[9px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40">
+    <div className="flex flex-col gap-1 px-5 py-4 min-w-[130px] shrink-0">
+      <span className="text-[9px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
         {label}
       </span>
-      <span className="font-serif text-lg font-medium text-velin-clair tabular-nums leading-tight">
-        {prix != null ? `${prix} ${unite}` : '--'}
-      </span>
+
+      <div className="flex items-baseline gap-1.5">
+        <span className="font-serif text-[1.2rem] font-medium text-velin-clair tabular-nums leading-none">
+          {prix ?? '--'}
+        </span>
+        {prix != null && (
+          <span className="text-[10px] text-velin-clair/40 font-sans leading-none">{unite}</span>
+        )}
+      </div>
+
       {change != null ? (
-        <span className={`flex items-center gap-1 text-[11px] font-sans font-medium tabular-nums ${
-          pos ? 'text-vert' : neg ? 'text-rouge' : 'text-velin-clair/35'
+        <span className={`inline-flex items-center gap-1 text-[10px] font-sans font-semibold tabular-nums
+          px-1.5 py-0.5 rounded-full w-fit leading-none ${
+          pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-velin-clair/8 text-velin-clair/35'
         }`}>
-          <Icon size={10} strokeWidth={2.5} aria-hidden="true" />
+          <Icon size={8} strokeWidth={2.5} aria-hidden="true" />
           {change >= 0 ? '+' : ''}{change.toFixed(2)} %
         </span>
       ) : (
-        <span className="text-[11px] text-velin-clair/20 font-sans">--</span>
+        <span className="text-[10px] text-velin-clair/20 font-sans">--</span>
+      )}
+    </div>
+  )
+}
+
+// ── Séparateur de groupe ──────────────────────────────────────────────────────
+
+function SepGroupe({ label }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-2 py-4 shrink-0 select-none">
+      <div className="h-8 w-px bg-velin-clair/10" />
+      {label && (
+        <span className="text-[8px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
+          {label}
+        </span>
       )}
     </div>
   )
@@ -78,10 +104,13 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
 
 function SqueletteArticle() {
   return (
-    <div className="py-4 border-b border-encre/6 last:border-b-0 animate-pulse">
-      <div className="h-4 bg-encre/8 rounded mb-1.5 w-full" />
-      <div className="h-4 bg-encre/8 rounded mb-3 w-4/5" />
-      <div className="h-3 bg-encre/5 rounded w-2/5" />
+    <div className="py-4 border-b border-encre/6 last:border-b-0 animate-pulse flex gap-3">
+      <div className="h-3 w-4 bg-encre/6 rounded mt-0.5 shrink-0" />
+      <div className="flex-1 space-y-2">
+        <div className="h-3.5 bg-encre/8 rounded w-full" />
+        <div className="h-3.5 bg-encre/8 rounded w-4/5" />
+        <div className="h-2.5 bg-encre/5 rounded w-2/5 mt-3" />
+      </div>
     </div>
   )
 }
@@ -94,26 +123,40 @@ function CarteArticle({ article, index }) {
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group block py-4 border-b border-encre/6 last:border-b-0 cursor-pointer"
+      className="group flex gap-3.5 py-4 border-b border-encre/6 last:border-b-0 cursor-pointer"
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay: index * 0.035, ease: [0.32, 0.72, 0, 1] }}
     >
-      <h3 className="font-serif italic text-base leading-snug text-encre group-hover:text-or-fonce transition-colors duration-200 line-clamp-3 mb-2.5">
-        {article.title}
-      </h3>
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[11px] text-encre-tertiaire font-sans truncate">
-          {article.source}
-          <span className="mx-1.5 opacity-40">·</span>
-          {tempsRelatif(article.publishedAt)}
-        </span>
-        <ExternalLink
-          size={11}
-          strokeWidth={1.75}
-          className="shrink-0 opacity-0 group-hover:opacity-100 text-or transition-opacity duration-200"
-          aria-hidden="true"
-        />
+      {/* Numéro éditorial */}
+      <span className="text-[10px] font-sans font-medium tabular-nums text-encre-tertiaire/40
+        group-hover:text-or/70 transition-colors duration-200 mt-0.5 w-4 shrink-0 leading-snug">
+        {String(index + 1).padStart(2, '0')}
+      </span>
+
+      <div className="flex-1 min-w-0">
+        <h3 className="font-serif italic text-[0.9rem] leading-snug text-encre
+          group-hover:text-or-fonce transition-colors duration-200 line-clamp-3 mb-2">
+          {article.title}
+        </h3>
+
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="text-[10px] text-encre-tertiaire font-sans font-medium truncate">
+              {article.source}
+            </span>
+            <span className="text-encre-tertiaire/30 text-[10px]">·</span>
+            <span className="text-[10px] text-encre-tertiaire/60 font-sans shrink-0">
+              {tempsRelatif(article.publishedAt)}
+            </span>
+          </div>
+          <ExternalLink
+            size={10}
+            strokeWidth={1.75}
+            className="shrink-0 opacity-0 group-hover:opacity-60 text-or transition-opacity duration-200"
+            aria-hidden="true"
+          />
+        </div>
       </div>
     </motion.a>
   )
@@ -121,28 +164,41 @@ function CarteArticle({ article, index }) {
 
 // ── Colonne news ──────────────────────────────────────────────────────────────
 
-// error est une string (message) ou null/undefined
 function ColonneNews({ category, articles, loading, error }) {
+  const { Icon } = category
+
   return (
     <div className="surface-velin liserer-signature p-5 flex flex-col">
-      <div className="flex items-baseline justify-between mb-3 pb-3 border-b border-or/20">
-        <h2 className="text-[10px] uppercase font-sans font-semibold text-encre-secondaire" style={{ letterSpacing: '0.18em' }}>
-          {category.label}
-        </h2>
-        {!loading && !error && (
-          <span className="text-[10px] text-encre-tertiaire font-sans tabular-nums">{articles.length}</span>
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-or/15">
+        <div className="flex items-center gap-2">
+          <Icon
+            size={12}
+            strokeWidth={1.75}
+            className="text-or/60 shrink-0"
+            aria-hidden="true"
+          />
+          <h2 className="text-[10px] uppercase font-sans font-semibold text-encre-secondaire"
+            style={{ letterSpacing: '0.18em' }}>
+            {category.label}
+          </h2>
+        </div>
+        {!loading && !error && articles.length > 0 && (
+          <span className="text-[9px] font-sans tabular-nums bg-encre/5 text-encre-tertiaire
+            px-1.5 py-0.5 rounded-full leading-none">
+            {articles.length}
+          </span>
         )}
       </div>
 
       {loading ? (
-        Array.from({ length: 6 }).map((_, i) => <SqueletteArticle key={i} />)
+        Array.from({ length: 5 }).map((_, i) => <SqueletteArticle key={i} />)
       ) : error ? (
-        <div className="py-5 flex flex-col gap-1.5">
-          <div className="flex items-center gap-2 text-rouge/60">
-            <AlertCircle size={14} strokeWidth={1.75} aria-hidden="true" />
-            <span className="text-sm font-serif italic">Source indisponible</span>
+        <div className="py-6 flex flex-col gap-2">
+          <div className="flex items-center gap-2 text-rouge/50">
+            <AlertCircle size={13} strokeWidth={1.75} aria-hidden="true" />
+            <span className="text-[13px] font-serif italic">Source indisponible</span>
           </div>
-          <p className="text-[11px] font-sans text-encre-tertiaire pl-5 break-all">{error}</p>
+          <p className="text-[10px] font-sans text-encre-tertiaire/70 pl-5 leading-relaxed">{error}</p>
         </div>
       ) : articles.length === 0 ? (
         <p className="text-sm font-serif italic text-encre-tertiaire py-5">Aucun article disponible.</p>
@@ -202,53 +258,46 @@ export default function News() {
     setRefreshing(false)
   }, [refreshing, chargerMarches, chargerNews])
 
-  // ── Widgets marchés ──
+  // ── Groupes de widgets marchés ──
 
-  const widgets = useMemo(() => {
+  const widgetGroups = useMemo(() => {
     const btc = markets?.bitcoin
     const eth = markets?.ethereum
     return [
       {
-        label:  'Bitcoin',
-        prix:   btc ? fmt(btc.eur) : null,
-        unite:  '€',
-        change: btc?.eur_24h_change ?? null,
+        key: 'crypto',
+        label: 'Crypto',
+        items: [
+          { label: 'Bitcoin',  prix: btc ? fmt(btc.eur) : null,       unite: '€', change: btc?.eur_24h_change ?? null },
+          { label: 'Ethereum', prix: eth ? fmt(eth.eur) : null,       unite: '€', change: eth?.eur_24h_change ?? null },
+        ],
       },
       {
-        label:  'Ethereum',
-        prix:   eth ? fmt(eth.eur) : null,
-        unite:  '€',
-        change: eth?.eur_24h_change ?? null,
+        key: 'forex',
+        label: 'Forex & Or',
+        items: [
+          {
+            label: 'EUR / USD',
+            prix:  markets?.eurusd?.rate != null ? fmt(markets.eurusd.rate, 4) : null,
+            unite: '$',
+            change: markets?.eurusd?.change ?? null,
+          },
+          {
+            label:  'Or (XAU)',
+            prix:   markets?.gold?.usd != null ? fmt(markets.gold.usd) : null,
+            unite:  '$',
+            change: markets?.gold?.usd_24h_change ?? null,
+          },
+        ],
       },
       {
-        label:  'EUR / USD',
-        prix:   markets?.eurusd?.rate != null ? fmt(markets.eurusd.rate, 4) : null,
-        unite:  '$',
-        change: markets?.eurusd?.change ?? null,
-      },
-      {
-        label:  'Or (XAU)',
-        prix:   markets?.gold?.usd != null ? fmt(markets.gold.usd) : null,
-        unite:  '$',
-        change: markets?.gold?.usd_24h_change ?? null,
-      },
-      {
-        label:  'CAC 40',
-        prix:   markets?.cac40?.price != null ? fmt(markets.cac40.price) : null,
-        unite:  'pts',
-        change: markets?.cac40?.change ?? null,
-      },
-      {
-        label:  'S&P 500',
-        prix:   markets?.sp500?.price != null ? fmt(markets.sp500.price) : null,
-        unite:  'pts',
-        change: markets?.sp500?.change ?? null,
-      },
-      {
-        label:  'BEL 20',
-        prix:   markets?.bel20?.price != null ? fmt(markets.bel20.price) : null,
-        unite:  'pts',
-        change: markets?.bel20?.change ?? null,
+        key: 'indices',
+        label: 'Indices',
+        items: [
+          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price) : null, unite: 'pts', change: markets?.cac40?.change ?? null },
+          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price) : null, unite: 'pts', change: markets?.sp500?.change ?? null },
+          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price) : null, unite: 'pts', change: markets?.bel20?.change ?? null },
+        ],
       },
     ]
   }, [markets])
@@ -261,12 +310,12 @@ export default function News() {
   return (
     <div className="space-y-5">
 
-      {/* En-tete */}
+      {/* En-tête */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-serif italic text-2xl text-encre leading-tight">Briefing du matin</h1>
           <p className="text-[11px] text-encre-tertiaire font-sans mt-0.5">
-            {heureRefresh ? `Actualise a ${heureRefresh} · Cache 15 min` : 'Chargement...'}
+            {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
           </p>
         </div>
 
@@ -274,50 +323,87 @@ export default function News() {
           type="button"
           onClick={handleRefresh}
           disabled={refreshing}
-          aria-label="Actualiser les donnees"
-          className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-or/25 text-encre-secondaire text-xs font-sans hover:bg-velin-fonce hover:border-or/45 transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
+          aria-label="Actualiser les données"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-or/25
+            text-encre-secondaire text-xs font-sans hover:bg-velin-fonce hover:border-or/45
+            transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
         >
           <RefreshCw size={12} strokeWidth={1.75} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
           Actualiser
         </button>
       </div>
 
-      {/* Barre marches */}
+      {/* Barre marchés */}
       <div className="rounded-lg overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
-        <span className="absolute bottom-0 left-0 right-0 h-px pointer-events-none" style={{ background: 'var(--gradient-signature)' }} aria-hidden="true" />
-        <div className="px-5 pt-3 pb-2 border-b" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
-          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
-            Marches — temps reel
+        {/* Trait signature bas */}
+        <span
+          className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+          style={{ background: 'var(--gradient-signature)' }}
+          aria-hidden="true"
+        />
+
+        {/* En-tête barre */}
+        <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
+          {/* Dot live */}
+          <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+              style={{ background: 'var(--vert)' }} />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5"
+              style={{ background: 'var(--vert)' }} />
+          </span>
+          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
+            style={{ color: 'rgba(241,236,224,0.35)' }}>
+            Marchés — temps réel
           </span>
         </div>
-        <div className="flex flex-wrap overflow-x-auto">
-          {widgets.map(w => <WidgetMarche key={w.label} loading={marketsLoading} {...w} />)}
+
+        {/* Widgets avec groupes */}
+        <div className="flex overflow-x-auto scrollbar-none">
+          {widgetGroups.map((group, gi) => (
+            <div key={group.key} className="flex shrink-0">
+              {gi > 0 && <SepGroupe label={group.label} />}
+              {group.items.map(w => (
+                <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
       {/* Tabs mobile */}
-      <div className="md:hidden flex border-b" style={{ borderColor: 'rgba(31,24,16,0.08)' }} role="tablist">
-        {CATEGORIES.map((cat, i) => (
-          <button
-            key={cat.id}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === i}
-            onClick={() => setActiveTab(i)}
-            className={`flex-1 py-2.5 text-[11px] font-sans font-medium uppercase tracking-wider transition-colors duration-200 relative ${activeTab === i ? 'text-or' : 'text-encre-tertiaire hover:text-encre'}`}
-          >
-            {cat.labelCourt}
-            {activeTab === i && (
-              <motion.span
-                layoutId="news-tab"
-                className="absolute bottom-0 left-2 right-2 h-px"
-                style={{ background: 'var(--or)' }}
-                transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-                aria-hidden="true"
-              />
-            )}
-          </button>
-        ))}
+      <div
+        className="md:hidden flex border-b"
+        style={{ borderColor: 'rgba(31,24,16,0.08)' }}
+        role="tablist"
+      >
+        {CATEGORIES.map((cat, i) => {
+          const { Icon } = cat
+          const active = activeTab === i
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setActiveTab(i)}
+              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-sans font-medium
+                uppercase tracking-wider transition-colors duration-200 relative
+                ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre'}`}
+            >
+              <Icon size={13} strokeWidth={active ? 2 : 1.5} aria-hidden="true" />
+              {cat.labelCourt}
+              {active && (
+                <motion.span
+                  layoutId="news-tab"
+                  className="absolute bottom-0 left-2 right-2 h-px"
+                  style={{ background: 'var(--or)' }}
+                  transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+          )
+        })}
       </div>
 
       {/* Grille desktop */}

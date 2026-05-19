@@ -144,6 +144,15 @@ a {
   mix-blend-mode: multiply;
 }
 
+/* Scrollbar invisible — utilisé sur la barre marchés */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 /* Couleurs signal */
 .signal-positif { color: var(--vert); }
 .signal-zero, .signal-negatif { color: var(--rouge); }
