@@ -176,22 +176,40 @@ function GrapheModal({ item, onClose }) {
     let cancelled = false
     const controller = new AbortController()
     const url = item.coinId
-      ? `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart?vs_currency=usd&days=7&interval=daily`
+      ? `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart?vs_currency=usd&days=7`
       : `/api/history?symbol=${encodeURIComponent(item.indexSymbol)}`
     fetch(url, { signal: controller.signal })
       .then(r => r.json())
       .then(data => {
         if (cancelled) return
         if (item.coinId) {
-          // Déduplique par date (CoinGecko renvoie parfois 2 points pour aujourd'hui)
-          const byDate = new Map()
+          // Filtre 00h et 12h UTC pour avoir 2 mesures/jour
+          const seen = new Set()
+          const pts = []
           ;(data.prices || []).forEach(([ts, price]) => {
-            const d = new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
-            byDate.set(d, price)
+            const d   = new Date(ts)
+            const h   = d.getUTCHours()
+            if (h !== 0 && h !== 12) return
+            const key = `${d.toISOString().slice(0, 10)}-${h}`
+            if (seen.has(key)) return
+            seen.add(key)
+            const dayLabel = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+            pts.push({
+              date:         h === 0 ? dayLabel : '',
+              fullDate:     `${dayLabel} · ${h === 0 ? '00h' : '12h'}`,
+              price,
+            })
           })
-          setChartData([...byDate.entries()].map(([date, price]) => ({ date, price })))
+          setChartData(pts)
         } else {
-          setChartData(data.points || [])
+          // Points history.js : ajoute fullDate côté client
+          setChartData((data.points || []).map(p => ({
+            ...p,
+            fullDate: p.ts
+              ? new Date(p.ts).toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }) +
+                (p.isOpen ? ' · ouverture' : ' · clôture')
+              : p.date,
+          })))
         }
       })
       .catch(() => { if (!cancelled) setError(true) })
@@ -251,7 +269,7 @@ function GrapheModal({ item, onClose }) {
           </div>
           <button
             onClick={onClose}
-            className="text-encre-tertiaire hover:text-encre transition-colors p-1 -mr-1 -mt-1 rounded"
+            className="text-encre-tertiaire hover:text-encre hover:bg-encre/8 transition-all duration-200 p-1 -mr-1 -mt-1 rounded-md"
             aria-label="Fermer"
           >
             <X size={18} />
@@ -297,6 +315,7 @@ function GrapheModal({ item, onClose }) {
                   padding: '6px 10px',
                 }}
                 formatter={v => [`${v.toLocaleString('fr-BE', { maximumFractionDigits: 2 })} ${item.unite}`, item.label]}
+                labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate ?? ''}
                 labelStyle={{ color: 'var(--encre-tertiaire)', marginBottom: 2 }}
               />
               <Line
@@ -563,12 +582,12 @@ function WidgetFx({ fx }) {
               key={key}
               onClick={() => !isActive && handleFocus(key)}
               className={`relative overflow-hidden flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
-                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
+                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/40 hover:ring-1 hover:ring-or/15'}`}
             >
               {isActive && (
                 <span
                   className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
-                  style={{ background: 'var(--bordeaux)' }}
+                  style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux) 50%, transparent 100%)' }}
                   aria-hidden="true"
                 />
               )}
@@ -783,7 +802,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
               onClick={() => !isActive && handleFocus(key)}
               className={`relative overflow-hidden flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
                 rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
-                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
+                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/40 hover:ring-1 hover:ring-or/15'}`}
             >
               {isActive && (
                 <span
@@ -857,7 +876,8 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, indexSymbol
     <button
       type="button"
       className="flex flex-col gap-0.5 px-3 py-3 min-w-[100px] shrink-0 group/w text-left
-        hover:bg-velin-clair/6 rounded-lg transition-colors duration-200"
+        rounded-lg transition-all duration-200
+        hover:bg-velin-clair/10 hover:shadow-[0_0_0_1px_rgba(184,149,74,0.14)]"
       onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null, indexSymbol: indexSymbol ?? null })}
     >
       <span className="text-[10px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
@@ -1091,24 +1111,17 @@ export default function News() {
     const doge = markets?.dogecoin
     const fmtS = (v, d = 2) => v != null ? fmt(v, d) : null
     return [
-      // ── Ligne 1 : Crypto + Or + Indices ──────────────────────────────────
+      // ── Ligne 1 : Crypto + Indices ───────────────────────────────────────
       [
         {
           key: 'crypto', label: 'Crypto',
           items: [
-            { label: 'Bitcoin',   prix: fmtS(btc?.usd),  unite: '$', change: btc?.usd_24h_change  ?? null, coinId: 'bitcoin',      indexSymbol: null },
-            { label: 'Ethereum',  prix: fmtS(eth?.usd),  unite: '$', change: eth?.usd_24h_change  ?? null, coinId: 'ethereum',     indexSymbol: null },
-            { label: 'Solana',    prix: fmtS(sol?.usd),  unite: '$', change: sol?.usd_24h_change  ?? null, coinId: 'solana',       indexSymbol: null },
-            { label: 'XRP',       prix: fmtS(xrp?.usd),  unite: '$', change: xrp?.usd_24h_change  ?? null, coinId: 'ripple',       indexSymbol: null },
-            { label: 'BNB',       prix: fmtS(bnb?.usd),  unite: '$', change: bnb?.usd_24h_change  ?? null, coinId: 'binancecoin',  indexSymbol: null },
-            { label: 'AVAX',      prix: fmtS(avax?.usd), unite: '$', change: avax?.usd_24h_change ?? null, coinId: 'avalanche-2',  indexSymbol: null },
-            { label: 'Dogecoin',  prix: fmtS(doge?.usd, 4), unite: '$', change: doge?.usd_24h_change ?? null, coinId: 'dogecoin', indexSymbol: null },
-          ],
-        },
-        {
-          key: 'or', label: 'Or',
-          items: [
-            { label: 'Or (XAU)', prix: fmtS(markets?.gold?.usd), unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null },
+            { label: 'Bitcoin',  prix: fmtS(btc?.usd),  unite: '$', change: btc?.usd_24h_change  ?? null, coinId: 'bitcoin',     indexSymbol: null },
+            { label: 'Ethereum', prix: fmtS(eth?.usd),  unite: '$', change: eth?.usd_24h_change  ?? null, coinId: 'ethereum',    indexSymbol: null },
+            { label: 'Solana',   prix: fmtS(sol?.usd),  unite: '$', change: sol?.usd_24h_change  ?? null, coinId: 'solana',      indexSymbol: null },
+            { label: 'XRP',      prix: fmtS(xrp?.usd),  unite: '$', change: xrp?.usd_24h_change  ?? null, coinId: 'ripple',      indexSymbol: null },
+            { label: 'BNB',      prix: fmtS(bnb?.usd),  unite: '$', change: bnb?.usd_24h_change  ?? null, coinId: 'binancecoin', indexSymbol: null },
+            { label: 'AVAX',     prix: fmtS(avax?.usd), unite: '$', change: avax?.usd_24h_change ?? null, coinId: 'avalanche-2', indexSymbol: null },
           ],
         },
         {
@@ -1120,8 +1133,14 @@ export default function News() {
           ],
         },
       ],
-      // ── Ligne 2 : Actions ─────────────────────────────────────────────────
+      // ── Ligne 2 : Or + Actions ────────────────────────────────────────────
       [
+        {
+          key: 'or', label: 'Or',
+          items: [
+            { label: 'Or (XAU)', prix: fmtS(markets?.gold?.usd), unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null },
+          ],
+        },
         {
           key: 'actions', label: 'Actions',
           items: [
@@ -1160,11 +1179,11 @@ export default function News() {
           onClick={handleRefresh}
           disabled={refreshing}
           aria-label="Actualiser les données"
-          className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-or/25
-            text-encre-secondaire text-[13px] font-sans hover:bg-velin-fonce hover:border-or/45
+          className="group flex items-center gap-2 px-3.5 py-2 rounded-md border border-or/25
+            text-encre-secondaire text-[13px] font-sans hover:bg-velin-fonce hover:border-or/45 hover:text-encre
             transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
         >
-          <RefreshCw size={12} strokeWidth={1.75} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
+          <RefreshCw size={12} strokeWidth={1.75} className={refreshing ? 'animate-spin' : 'group-hover:text-or/80 transition-colors duration-200'} aria-hidden="true" />
           Actualiser
         </button>
       </div>
@@ -1253,7 +1272,7 @@ export default function News() {
               onClick={() => setActiveTab(i)}
               className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
                 uppercase tracking-wider transition-colors duration-200 relative
-                ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre'}`}
+                ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
             >
               <Icon size={13} strokeWidth={active ? 2 : 1.5} aria-hidden="true" />
               {cat.labelCourt}

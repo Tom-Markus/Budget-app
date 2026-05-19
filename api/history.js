@@ -1,5 +1,13 @@
-// Vercel serverless — historique 7 jours Yahoo Finance pour indices boursiers
-// Utilisé par GrapheModal quand item.indexSymbol est défini.
+// Vercel serverless — historique Yahoo Finance pour indices et actions
+// Renvoie 2 points par jour de bourse : ouverture (premier prix) + clôture (dernier prix).
+const YF_HEADERS = {
+  'User-Agent':
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+  Accept: 'application/json',
+  'Accept-Language': 'en-US,en;q=0.9',
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
 
@@ -13,22 +21,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'symbole non autorisé' })
   }
 
+  // interval=1h pour avoir ouverture + clôture par jour de bourse
   const url =
     `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}` +
-    `?interval=1d&range=10d`
+    `?interval=1h&range=8d`
 
   let r
   try {
-    r = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-          '(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        Accept: 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-      },
-    })
-  } catch (e) {
+    r = await fetch(url, { headers: YF_HEADERS })
+  } catch {
     return res.status(502).json({ error: 'Réseau inaccessible' })
   }
 
@@ -43,14 +44,45 @@ export default async function handler(req, res) {
   const timestamps = result.timestamp || []
   const closes    = result.indicators?.quote?.[0]?.close || []
 
-  const points = timestamps
-    .map((ts, i) => ({
-      date:  new Date(ts * 1000).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
-      price: closes[i] ?? null,
-    }))
-    .filter(p => p.price != null)
-    .slice(-7) // 7 derniers jours de bourse
+  // Grouper par date calendaire, garder premier (ouverture) + dernier (clôture)
+  const dayMap = new Map()
+  timestamps.forEach((ts, i) => {
+    const price = closes[i]
+    if (price == null) return
+    const dateKey = new Date(ts * 1000).toDateString()
+    if (!dayMap.has(dateKey)) {
+      dayMap.set(dateKey, { openTs: ts, openPrice: price, closeTs: ts, closePrice: price })
+    } else {
+      const d = dayMap.get(dateKey)
+      d.closeTs    = ts
+      d.closePrice = price
+    }
+  })
+
+  const points = []
+  dayMap.forEach(({ openTs, openPrice, closeTs, closePrice }) => {
+    // Point ouverture — affiche le nom du jour sur l'axe X
+    points.push({ date: '', ts: openTs * 1000, isOpen: true,  price: openPrice  })
+    // Point clôture — label vide sur l'axe X (même jour)
+    if (closeTs !== openTs) {
+      points.push({ date: '', ts: closeTs * 1000, isOpen: false, price: closePrice })
+    }
+  })
+
+  // 5 derniers jours × 2 points = 10 points max
+  const sliced = points.slice(-10)
+
+  // Attribuer les labels de l'axe X : seulement sur le point d'ouverture de chaque jour
+  // On reconstruit en annotant correctement
+  let lastDay = ''
+  sliced.forEach(p => {
+    const dayStr = new Date(p.ts).toDateString()
+    if (p.isOpen && dayStr !== lastDay) {
+      lastDay = dayStr
+      p.date = new Date(p.ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+    }
+  })
 
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate')
-  return res.json({ points })
+  return res.json({ points: sliced })
 }
