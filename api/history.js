@@ -4,7 +4,11 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
 
   const { symbol } = req.query
-  const ALLOWED = { '^FCHI': 'CAC 40', '^GSPC': 'S&P 500', '^BFX': 'BEL 20' }
+  const ALLOWED = {
+    '^FCHI': 'CAC 40', '^GSPC': 'S&P 500', '^BFX': 'BEL 20',
+    'NVDA': 'NVIDIA', 'TSLA': 'Tesla', 'AAPL': 'Apple',
+    'ORCL': 'Oracle', 'MSFT': 'Microsoft', 'META': 'Meta',
+  }
   if (!symbol || !ALLOWED[symbol]) {
     return res.status(400).json({ error: 'symbole non autorisé' })
   }

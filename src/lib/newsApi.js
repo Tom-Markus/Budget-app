@@ -33,7 +33,7 @@ export function clearNewsCache() {
     sessionStorage.removeItem(`gnews_${c}`)
     sessionStorage.removeItem(`rss_${c}`)
   })
-  ;['coingecko_markets', 'av_eurusd_daily', 'indices_stooq', 'indices_twelvedata', 'indices_yahoo'].forEach(k =>
+  ;['coingecko_markets', 'av_eurusd_daily', 'indices_stooq', 'indices_twelvedata', 'indices_yahoo', 'stocks_yahoo'].forEach(k =>
     sessionStorage.removeItem(k)
   )
 }
@@ -78,7 +78,7 @@ async function fetchCoinGecko() {
 
   const res = await fetch(
     'https://api.coingecko.com/api/v3/simple/price' +
-    '?ids=bitcoin,ethereum,solana,ripple,binancecoin,pax-gold' +
+    '?ids=bitcoin,ethereum,solana,ripple,binancecoin,pax-gold,avalanche-2,dogecoin' +
     '&vs_currencies=eur,usd' +
     '&include_24hr_change=true'
   )
@@ -141,6 +141,29 @@ async function fetchIndices() {
   }
 }
 
+// ── Actions — Yahoo Finance via /api/stocks ───────────────────────────────
+
+export async function fetchStocks() {
+  const cacheKey = 'stocks_yahoo'
+  const cached = getCached(cacheKey)
+  if (cached) return cached
+  let res
+  try {
+    res = await fetch('/api/stocks')
+  } catch {
+    return null
+  }
+  if (!res.ok) return null
+  try {
+    const data = await res.json()
+    if (!data || data.error) return null
+    setCache(cacheKey, data)
+    return data
+  } catch {
+    return null
+  }
+}
+
 // ── Agrégat marchés ────────────────────────────────────────────────────────
 
 export async function fetchMarkets() {
@@ -155,12 +178,14 @@ export async function fetchMarkets() {
   const indices = indicesRes.status === 'fulfilled' ? indicesRes.value : null
 
   return {
-    bitcoin:     cg?.bitcoin       ?? null,
-    ethereum:    cg?.ethereum      ?? null,
-    solana:      cg?.solana        ?? null,
-    ripple:      cg?.ripple        ?? null,
-    binancecoin: cg?.binancecoin   ?? null,
-    gold:        cg?.['pax-gold']  ?? null,
+    bitcoin:     cg?.bitcoin          ?? null,
+    ethereum:    cg?.ethereum         ?? null,
+    solana:      cg?.solana           ?? null,
+    ripple:      cg?.ripple           ?? null,
+    binancecoin: cg?.binancecoin      ?? null,
+    avalanche:   cg?.['avalanche-2']  ?? null,
+    dogecoin:    cg?.dogecoin         ?? null,
+    gold:        cg?.['pax-gold']     ?? null,
     eurusd,
     sp500: indices?.sp500 ?? null,
     cac40: indices?.cac40 ?? null,

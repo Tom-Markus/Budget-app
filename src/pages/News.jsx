@@ -14,7 +14,7 @@ import {
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
-import { fetchNewsCategory, fetchMarkets, clearNewsCache } from '../lib/newsApi'
+import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '../lib/newsApi'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -103,11 +103,19 @@ async function fetchWeather() {
       async ({ coords: { latitude: lat, longitude: lon } }) => {
         try {
           const [wRes, gRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto&wind_speed_unit=kmh`),
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&wind_speed_unit=kmh&forecast_days=4`),
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
           ])
           const [w, g] = await Promise.all([wRes.json(), gRes.json()])
-          const fmtTime = (iso) => iso?.slice(11, 16) ?? null // "2026-05-19T05:43" → "05:43"
+          const fmtTime = (iso) => iso?.slice(11, 16) ?? null
+          const fmtDay  = (iso) => iso ? new Date(iso).toLocaleDateString('fr-BE', { weekday: 'short' }) : null
+          const daily = w.daily ?? {}
+          const forecast = [1, 2, 3].map(i => ({
+            day:     fmtDay(daily.sunrise?.[i] ?? daily.time?.[i]),
+            maxTemp: daily.temperature_2m_max?.[i] != null ? Math.round(daily.temperature_2m_max[i]) : null,
+            minTemp: daily.temperature_2m_min?.[i] != null ? Math.round(daily.temperature_2m_min[i]) : null,
+            code:    daily.weather_code?.[i] ?? 0,
+          })).filter(d => d.day)
           resolve({
             temp:    Math.round(w.current.temperature_2m),
             code:    w.current.weather_code,
@@ -115,6 +123,7 @@ async function fetchWeather() {
             city:    g.address?.city || g.address?.town || g.address?.village || 'Position',
             sunrise: fmtTime(w.daily?.sunrise?.[0]),
             sunset:  fmtTime(w.daily?.sunset?.[0]),
+            forecast,
           })
         } catch { resolve(null) }
       },
@@ -174,12 +183,13 @@ function GrapheModal({ item, onClose }) {
       .then(data => {
         if (cancelled) return
         if (item.coinId) {
-          setChartData(
-            (data.prices || []).map(([ts, price]) => ({
-              date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
-              price,
-            }))
-          )
+          // Déduplique par date (CoinGecko renvoie parfois 2 points pour aujourd'hui)
+          const byDate = new Map()
+          ;(data.prices || []).forEach(([ts, price]) => {
+            const d = new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+            byDate.set(d, price)
+          })
+          setChartData([...byDate.entries()].map(([date, price]) => ({ date, price })))
         } else {
           setChartData(data.points || [])
         }
@@ -263,7 +273,7 @@ function GrapheModal({ item, onClose }) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={176}>
-            <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+            <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
                 dataKey="date"
@@ -337,41 +347,62 @@ function WidgetMeteo({ weather }) {
   const { Icon: WeatherIcon, label: weatherLabel, color } = getWmo(weather.code)
 
   return (
-    <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
-      <WeatherIcon size={40} strokeWidth={1.25} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" className="shrink-0" />
-      <div className="min-w-0">
-        {/* Ligne 1 : température + ville */}
-        <div className="flex items-baseline gap-2.5 flex-wrap">
-          <span className="font-serif font-medium text-[33px] text-encre leading-none tabular-nums">
-            {weather.temp}°C
-          </span>
-          <span className="font-sans text-[13px] text-encre-secondaire truncate">{weather.city}</span>
-        </div>
-        {/* Ligne 2 : condition + vent */}
-        <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="font-sans italic text-[13px] text-encre-tertiaire">{weatherLabel}</span>
-          <span className="text-encre-tertiaire/30 text-[11px]">·</span>
-          <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
-          <span className="font-sans text-[13px] text-encre-tertiaire">{weather.wind} km/h</span>
-        </div>
-        {/* Ligne 3 : lever / coucher */}
-        {(weather.sunrise || weather.sunset) && (
-          <div className="flex items-center gap-4 mt-1.5">
-            {weather.sunrise && (
-              <span className="flex items-center gap-1.5">
-                <Sunrise size={14} strokeWidth={1.5} className="text-or shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
-              </span>
-            )}
-            {weather.sunset && (
-              <span className="flex items-center gap-1.5">
-                <Sunset size={14} strokeWidth={1.5} className="text-or/60 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
-              </span>
-            )}
+    <div className="surface-velin liserer-signature p-5 h-full flex flex-col items-center justify-center gap-4">
+      {/* Météo actuelle */}
+      <div className="flex items-center justify-center gap-4 w-full">
+        <WeatherIcon size={40} strokeWidth={1.25} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" className="shrink-0" />
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <span className="font-serif font-medium text-[33px] text-encre leading-none tabular-nums">
+              {weather.temp}°C
+            </span>
+            <span className="font-sans text-[13px] text-encre-secondaire truncate">{weather.city}</span>
           </div>
-        )}
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="font-sans italic text-[13px] text-encre-tertiaire">{weatherLabel}</span>
+            <span className="text-encre-tertiaire/30 text-[11px]">·</span>
+            <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
+            <span className="font-sans text-[13px] text-encre-tertiaire">{weather.wind} km/h</span>
+          </div>
+          {(weather.sunrise || weather.sunset) && (
+            <div className="flex items-center gap-4 mt-1.5">
+              {weather.sunrise && (
+                <span className="flex items-center gap-1.5">
+                  <Sunrise size={14} strokeWidth={1.5} className="text-or shrink-0" aria-hidden="true" />
+                  <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
+                </span>
+              )}
+              {weather.sunset && (
+                <span className="flex items-center gap-1.5">
+                  <Sunset size={14} strokeWidth={1.5} className="text-or/60 shrink-0" aria-hidden="true" />
+                  <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
+
+      {/* Prévisions 3 jours */}
+      {weather.forecast?.length > 0 && (
+        <div className="w-full border-t border-encre/6 pt-3 flex items-center justify-center gap-1">
+          {weather.forecast.map((day, i) => {
+            const { Icon: FIcon } = getWmo(day.code)
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 px-1">
+                <span className="font-sans text-[11px] text-encre-tertiaire/60 uppercase tracking-wide capitalize">
+                  {day.day}
+                </span>
+                <FIcon size={16} strokeWidth={1.5} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" />
+                <div className="flex items-baseline gap-1 tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
+                  <span className="font-sans text-[13px] font-medium text-encre">{day.maxTemp}°</span>
+                  <span className="font-sans text-[11px] text-encre-tertiaire/50">{day.minTemp}°</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
@@ -531,9 +562,16 @@ function WidgetFx({ fx }) {
             <div
               key={key}
               onClick={() => !isActive && handleFocus(key)}
-              className={`flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
+              className={`relative overflow-hidden flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
+              {isActive && (
+                <span
+                  className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none"
+                  style={{ background: 'var(--bordeaux)' }}
+                  aria-hidden="true"
+                />
+              )}
               <div className="flex items-center gap-1.5">
                 <span style={{ fontSize: '19px', lineHeight: 1 }} aria-hidden="true">{flag}</span>
                 <span className={`font-sans text-[13px] font-bold uppercase tracking-wider
@@ -743,7 +781,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
             <div
               key={key}
               onClick={() => !isActive && handleFocus(key)}
-              className={`relative flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
+              className={`relative overflow-hidden flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
                 rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
@@ -988,12 +1026,19 @@ export default function News() {
   const [weather,        setWeather]        = useState(undefined)
   const [fg,             setFg]             = useState(undefined)
   const [fx,             setFx]             = useState(undefined)
+  const [stocks,         setStocks]         = useState(null)
 
   const chargerMarches = useCallback(async () => {
     setMarketsLoading(true)
-    try { setMarkets(await fetchMarkets()) }
-    catch { setMarkets(null) }
-    finally { setMarketsLoading(false) }
+    try {
+      const [m, s] = await Promise.all([fetchMarkets(), fetchStocks()])
+      setMarkets(m)
+      setStocks(s)
+    } catch {
+      setMarkets(null)
+    } finally {
+      setMarketsLoading(false)
+    }
   }, [])
 
   const chargerNews = useCallback(async () => {
@@ -1036,42 +1081,61 @@ export default function News() {
     setRefreshing(false)
   }, [refreshing, chargerMarches, chargerNews, chargerWidgets])
 
-  const widgetGroups = useMemo(() => {
-    const btc = markets?.bitcoin
-    const eth = markets?.ethereum
-    const sol = markets?.solana
-    const xrp = markets?.ripple
-    const bnb = markets?.binancecoin
+  const widgetRows = useMemo(() => {
+    const btc  = markets?.bitcoin
+    const eth  = markets?.ethereum
+    const sol  = markets?.solana
+    const xrp  = markets?.ripple
+    const bnb  = markets?.binancecoin
+    const avax = markets?.avalanche
+    const doge = markets?.dogecoin
+    const fmtS = (v, d = 2) => v != null ? fmt(v, d) : null
     return [
-      {
-        key: 'crypto',
-        label: 'Crypto',
-        items: [
-          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd, 2) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'      },
-          { label: 'Ethereum', prix: eth ? fmt(eth.usd, 2) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'     },
-          { label: 'Solana',   prix: sol ? fmt(sol.usd, 2) : null,  unite: '$', change: sol?.usd_24h_change ?? null, coinId: 'solana'       },
-          { label: 'XRP',      prix: xrp ? fmt(xrp.usd, 2) : null,  unite: '$', change: xrp?.usd_24h_change ?? null, coinId: 'ripple'      },
-          { label: 'BNB',      prix: bnb ? fmt(bnb.usd, 2) : null,  unite: '$', change: bnb?.usd_24h_change ?? null, coinId: 'binancecoin' },
-        ],
-      },
-      {
-        key: 'or',
-        label: 'Or',
-        items: [
-          { label: 'Or (XAU)', prix: markets?.gold?.usd != null ? fmt(markets.gold.usd, 2) : null, unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold' },
-        ],
-      },
-      {
-        key: 'indices',
-        label: 'Indices',
-        items: [
-          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price, 2) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null, indexSymbol: '^FCHI' },
-          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price, 2) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null, indexSymbol: '^GSPC' },
-          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price, 2) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null, indexSymbol: '^BFX'  },
-        ],
-      },
+      // ── Ligne 1 : Crypto + Or + Indices ──────────────────────────────────
+      [
+        {
+          key: 'crypto', label: 'Crypto',
+          items: [
+            { label: 'Bitcoin',   prix: fmtS(btc?.usd),  unite: '$', change: btc?.usd_24h_change  ?? null, coinId: 'bitcoin',      indexSymbol: null },
+            { label: 'Ethereum',  prix: fmtS(eth?.usd),  unite: '$', change: eth?.usd_24h_change  ?? null, coinId: 'ethereum',     indexSymbol: null },
+            { label: 'Solana',    prix: fmtS(sol?.usd),  unite: '$', change: sol?.usd_24h_change  ?? null, coinId: 'solana',       indexSymbol: null },
+            { label: 'XRP',       prix: fmtS(xrp?.usd),  unite: '$', change: xrp?.usd_24h_change  ?? null, coinId: 'ripple',       indexSymbol: null },
+            { label: 'BNB',       prix: fmtS(bnb?.usd),  unite: '$', change: bnb?.usd_24h_change  ?? null, coinId: 'binancecoin',  indexSymbol: null },
+            { label: 'AVAX',      prix: fmtS(avax?.usd), unite: '$', change: avax?.usd_24h_change ?? null, coinId: 'avalanche-2',  indexSymbol: null },
+            { label: 'Dogecoin',  prix: fmtS(doge?.usd, 4), unite: '$', change: doge?.usd_24h_change ?? null, coinId: 'dogecoin', indexSymbol: null },
+          ],
+        },
+        {
+          key: 'or', label: 'Or',
+          items: [
+            { label: 'Or (XAU)', prix: fmtS(markets?.gold?.usd), unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null },
+          ],
+        },
+        {
+          key: 'indices', label: 'Indices',
+          items: [
+            { label: 'CAC 40',  prix: fmtS(markets?.cac40?.price), unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null, indexSymbol: '^FCHI' },
+            { label: 'S&P 500', prix: fmtS(markets?.sp500?.price), unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null, indexSymbol: '^GSPC' },
+            { label: 'BEL 20',  prix: fmtS(markets?.bel20?.price), unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null, indexSymbol: '^BFX'  },
+          ],
+        },
+      ],
+      // ── Ligne 2 : Actions ─────────────────────────────────────────────────
+      [
+        {
+          key: 'actions', label: 'Actions',
+          items: [
+            { label: 'NVIDIA',    prix: fmtS(stocks?.nvda?.price), unite: '$', change: stocks?.nvda?.change ?? null, coinId: null, indexSymbol: 'NVDA' },
+            { label: 'Tesla',     prix: fmtS(stocks?.tsla?.price), unite: '$', change: stocks?.tsla?.change ?? null, coinId: null, indexSymbol: 'TSLA' },
+            { label: 'Apple',     prix: fmtS(stocks?.aapl?.price), unite: '$', change: stocks?.aapl?.change ?? null, coinId: null, indexSymbol: 'AAPL' },
+            { label: 'Oracle',    prix: fmtS(stocks?.orcl?.price), unite: '$', change: stocks?.orcl?.change ?? null, coinId: null, indexSymbol: 'ORCL' },
+            { label: 'Microsoft', prix: fmtS(stocks?.msft?.price), unite: '$', change: stocks?.msft?.change ?? null, coinId: null, indexSymbol: 'MSFT' },
+            { label: 'Meta',      prix: fmtS(stocks?.meta?.price), unite: '$', change: stocks?.meta?.change ?? null, coinId: null, indexSymbol: 'META' },
+          ],
+        },
+      ],
     ]
-  }, [markets])
+  }, [markets, stocks])
 
   const heureRefresh = useMemo(() =>
     lastRefresh ? lastRefresh.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }) : null,
@@ -1124,36 +1188,38 @@ export default function News() {
           </span>
         </div>
 
-        {/* Widgets — scrollable avec fades latéraux */}
-        <div className="relative">
-          <div
-            className="absolute left-0 top-0 bottom-0 w-6 pointer-events-none z-10"
-            style={{ background: 'linear-gradient(to right, var(--nuit), transparent)' }}
-            aria-hidden="true"
-          />
-          <div
-            className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none z-10"
-            style={{ background: 'linear-gradient(to left, var(--nuit), transparent)' }}
-            aria-hidden="true"
-          />
-          <div className="overflow-x-auto scrollbar-none flex">
-            <div className="flex min-w-max px-4 mx-auto">
-              {widgetGroups.map((group, gi) => (
-                <div key={group.key} className="flex shrink-0">
-                  {gi > 0 && <SepGroupe label={group.label} />}
-                  {group.items.map(w => (
-                    <WidgetMarche
-                      key={w.label}
-                      loading={marketsLoading}
-                      {...w}
-                      onChartClick={setChartItem}
-                    />
-                  ))}
-                </div>
-              ))}
+        {/* Widgets — 2 lignes scrollables avec fades latéraux */}
+        {widgetRows.map((groups, rowIdx) => (
+          <div key={rowIdx} className={`relative ${rowIdx > 0 ? 'border-t' : ''}`} style={rowIdx > 0 ? { borderColor: 'rgba(241,236,224,0.08)' } : {}}>
+            <div
+              className="absolute left-0 top-0 bottom-0 w-6 pointer-events-none z-10"
+              style={{ background: 'linear-gradient(to right, var(--nuit), transparent)' }}
+              aria-hidden="true"
+            />
+            <div
+              className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none z-10"
+              style={{ background: 'linear-gradient(to left, var(--nuit), transparent)' }}
+              aria-hidden="true"
+            />
+            <div className="overflow-x-auto scrollbar-none flex">
+              <div className="flex min-w-max px-4 mx-auto">
+                {groups.map((group, gi) => (
+                  <div key={group.key} className="flex shrink-0">
+                    {gi > 0 && <SepGroupe label={group.label} />}
+                    {group.items.map(w => (
+                      <WidgetMarche
+                        key={w.label}
+                        loading={marketsLoading}
+                        {...w}
+                        onChartClick={setChartItem}
+                      />
+                    ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        ))}
       </div>
 
       {/* ── Widgets — ligne 1 : 3 petits (même hauteur) ── */}
