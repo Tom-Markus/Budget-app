@@ -1,18 +1,22 @@
 /**
- * src/pages/News.jsx — Briefing du matin
- * ----------------------------------------------------------------------------
- * Terminal de veille : marchés en temps réel + actualités par catégorie.
- * Desktop : 4 colonnes. Mobile : tabs + colonne unique.
- * Cache sessionStorage 15 min pour préserver les quotas API.
- * ----------------------------------------------------------------------------
+ * src/pages/News.jsx — Dashboard
+ * Terminal de veille & marchés : prix temps réel, météo, sentiment, actualités.
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   RefreshCw, TrendingUp, TrendingDown, Minus,
   BarChart2, Cpu, FlaskConical, Globe2,
+  X, Sun, Cloud, CloudRain, CloudSnow, CloudLightning,
+  Wind, MapPin, Activity,
 } from 'lucide-react'
+import {
+  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+} from 'recharts'
 import { fetchNewsCategory, fetchMarkets, clearNewsCache } from '../lib/newsApi'
+
+// ── Constantes ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
   { id: 'business',   label: 'Finance',   labelCourt: 'Finance',  Icon: BarChart2    },
@@ -20,6 +24,42 @@ const CATEGORIES = [
   { id: 'science',    label: 'Sciences',  labelCourt: 'Sciences', Icon: FlaskConical },
   { id: 'world',      label: 'Monde',     labelCourt: 'Monde',    Icon: Globe2       },
 ]
+
+// Codes WMO → icône + label
+const WMO = {
+  0:  { Icon: Sun,            label: 'Ensoleillé',  color: '#FBBF24' },
+  1:  { Icon: Sun,            label: 'Dégagé',      color: '#FBBF24' },
+  2:  { Icon: Cloud,          label: 'Nuageux',     color: '#9CA3AF' },
+  3:  { Icon: Cloud,          label: 'Couvert',     color: '#6B7280' },
+  45: { Icon: Cloud,          label: 'Brumeux',     color: '#9CA3AF' },
+  48: { Icon: Cloud,          label: 'Brouillard',  color: '#9CA3AF' },
+  51: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  53: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  55: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  61: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
+  63: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
+  65: { Icon: CloudRain,      label: 'Pluie forte', color: '#2563EB' },
+  71: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
+  73: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
+  75: { Icon: CloudSnow,      label: 'Neige forte', color: '#BAE6FD' },
+  80: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
+  81: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
+  82: { Icon: CloudRain,      label: 'Averses',     color: '#2563EB' },
+  95: { Icon: CloudLightning, label: 'Orage',       color: '#8B5CF6' },
+  96: { Icon: CloudLightning, label: 'Orage',       color: '#7C3AED' },
+  99: { Icon: CloudLightning, label: 'Orage fort',  color: '#7C3AED' },
+}
+function getWmo(code) {
+  return WMO[code] ?? WMO[Math.floor(code / 10) * 10] ?? { Icon: Cloud, label: '?', color: '#9CA3AF' }
+}
+
+function getFgStyle(v) {
+  if (v <= 24) return { label: 'Peur extrême', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' }
+  if (v <= 44) return { label: 'Peur',         color: '#F97316', bg: 'rgba(249,115,22,0.12)' }
+  if (v <= 55) return { label: 'Neutre',        color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
+  if (v <= 75) return { label: 'Avidité',       color: '#22C55E', bg: 'rgba(34,197,94,0.12)' }
+  return              { label: 'Avidité extr.', color: '#16A34A', bg: 'rgba(22,163,74,0.12)' }
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -38,9 +78,317 @@ function fmt(val, dec = 0) {
   return val.toLocaleString('fr-BE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 }
 
-// ── Widget marché ─────────────────────────────────────────────────────────────
+// ── Fetchers externes (météo + sentiment) ─────────────────────────────────────
 
-function WidgetMarche({ label, prix, unite, change, loading }) {
+async function fetchWeather() {
+  return new Promise((resolve) => {
+    if (!('geolocation' in navigator)) { resolve(null); return }
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords: { latitude: lat, longitude: lon } }) => {
+        try {
+          const [wRes, gRes] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto&wind_speed_unit=kmh`),
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
+          ])
+          const [w, g] = await Promise.all([wRes.json(), gRes.json()])
+          resolve({
+            temp: Math.round(w.current.temperature_2m),
+            code: w.current.weather_code,
+            wind: Math.round(w.current.wind_speed_10m),
+            city: g.address?.city || g.address?.town || g.address?.village || 'Position',
+          })
+        } catch { resolve(null) }
+      },
+      () => resolve(null),
+      { timeout: 6000, maximumAge: 600000 }
+    )
+  })
+}
+
+async function fetchFearGreed() {
+  try {
+    const res = await fetch('https://api.alternative.me/fng/?limit=1')
+    if (!res.ok) return null
+    const { data } = await res.json()
+    if (!data?.[0]) return null
+    return { value: parseInt(data[0].value, 10) }
+  } catch { return null }
+}
+
+// ── Modal graphe 7 jours ──────────────────────────────────────────────────────
+
+function GrapheModal({ item, onClose }) {
+  const [chartData, setChartData] = useState(null)
+  const [loading,   setLoading]   = useState(true)
+  const [error,     setError]     = useState(false)
+
+  useEffect(() => {
+    const fn = (e) => { if (e.key === 'Escape') onClose() }
+    document.addEventListener('keydown', fn)
+    return () => document.removeEventListener('keydown', fn)
+  }, [onClose])
+
+  useEffect(() => {
+    if (!item.coinId) { setLoading(false); return }
+    fetch(
+      `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart` +
+      `?vs_currency=usd&days=7&interval=daily`
+    )
+      .then(r => r.json())
+      .then(({ prices }) => {
+        setChartData(
+          (prices || []).map(([ts, price]) => ({
+            date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
+            price,
+          }))
+        )
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false))
+  }, [item.coinId])
+
+  const change7d = chartData?.length >= 2
+    ? ((chartData.at(-1).price - chartData[0].price) / chartData[0].price) * 100
+    : null
+  const pos = change7d != null && change7d > 0
+  const neg = change7d != null && change7d < 0
+  const lineColor = pos ? 'var(--vert)' : neg ? 'var(--rouge)' : 'var(--or)'
+
+  return createPortal(
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    >
+      {/* Backdrop */}
+      <motion.div
+        className="absolute inset-0"
+        style={{ background: 'rgba(14,31,58,0.7)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+        onClick={onClose}
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      />
+
+      {/* Panneau */}
+      <motion.div
+        className="relative surface-velin w-full max-w-md rounded-xl p-6 z-10"
+        initial={{ opacity: 0, scale: 0.94, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.94, y: 16 }}
+        transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+      >
+        {/* En-tête */}
+        <div className="flex items-start justify-between mb-5">
+          <div>
+            <p className="text-[9px] font-sans uppercase tracking-[0.2em] text-encre-tertiaire mb-1">
+              Historique 7 jours
+            </p>
+            <h3 className="font-serif font-medium text-[1.3rem] text-encre leading-none">
+              {item.label}
+            </h3>
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="font-sans text-[0.875rem] text-encre-secondaire tabular-nums">
+                {item.prix} {item.unite}
+              </span>
+              {change7d != null && (
+                <span className={`text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded-full ${
+                  pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-encre/5 text-encre-tertiaire'
+                }`}>
+                  {pos ? '+' : ''}{change7d.toFixed(2)} % (7j)
+                </span>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="text-encre-tertiaire hover:text-encre transition-colors p-1 -mr-1 -mt-1 rounded"
+            aria-label="Fermer"
+          >
+            <X size={18} />
+          </button>
+        </div>
+
+        {/* Corps */}
+        {loading ? (
+          <div className="h-44 flex items-center justify-center">
+            <div className="h-6 w-6 border-2 border-or/30 border-t-or rounded-full animate-spin" />
+          </div>
+        ) : !item.coinId || error ? (
+          <div className="h-44 flex items-center justify-center">
+            <p className="font-sans text-sm text-encre-tertiaire text-center px-4">
+              {!item.coinId
+                ? 'Historique indisponible pour cet actif.'
+                : 'Impossible de charger le graphique.'}
+            </p>
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={176}>
+            <LineChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -8 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
+              <XAxis
+                dataKey="date"
+                tick={{ fontSize: 10, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
+                axisLine={false} tickLine={false}
+              />
+              <YAxis
+                domain={['auto', 'auto']}
+                tick={{ fontSize: 10, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
+                axisLine={false} tickLine={false} width={56}
+                tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(2)}
+              />
+              <Tooltip
+                contentStyle={{
+                  background: 'var(--velin-clair)',
+                  border: '1px solid rgba(184,149,74,0.2)',
+                  borderRadius: '8px',
+                  fontSize: '11px',
+                  fontFamily: 'var(--font-sans)',
+                  color: 'var(--encre)',
+                  padding: '6px 10px',
+                }}
+                formatter={v => [`${v.toLocaleString('fr-BE', { maximumFractionDigits: 2 })} $`, item.label]}
+                labelStyle={{ color: 'var(--encre-tertiaire)', marginBottom: 2 }}
+              />
+              <Line
+                type="monotone" dataKey="price"
+                stroke={lineColor} strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        )}
+
+        <p className="text-[9px] font-sans text-encre-tertiaire/40 text-right mt-2">
+          Source : CoinGecko
+        </p>
+      </motion.div>
+    </motion.div>,
+    document.body
+  )
+}
+
+// ── Widget Météo ──────────────────────────────────────────────────────────────
+
+function WidgetMeteo() {
+  const [weather, setWeather] = useState(undefined)
+
+  useEffect(() => { fetchWeather().then(setWeather) }, [])
+
+  if (weather === undefined) {
+    return (
+      <div className="surface-velin liserer-signature p-4 flex gap-4 items-center animate-pulse">
+        <div className="h-9 w-9 bg-encre/6 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 w-20 bg-encre/6 rounded" />
+          <div className="h-5 w-16 bg-encre/8 rounded" />
+          <div className="h-2.5 w-28 bg-encre/5 rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!weather) {
+    return (
+      <div className="surface-velin liserer-signature p-4 flex items-center gap-3">
+        <MapPin size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
+        <p className="font-sans text-xs text-encre-tertiaire">Météo — localisation désactivée</p>
+      </div>
+    )
+  }
+
+  const { Icon: WeatherIcon, label: weatherLabel, color } = getWmo(weather.code)
+
+  return (
+    <div className="surface-velin liserer-signature p-4 flex items-center gap-4">
+      <WeatherIcon size={36} strokeWidth={1.4} style={{ color }} aria-hidden="true" className="shrink-0" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <span className="font-serif font-medium text-[1.6rem] text-encre leading-none tabular-nums">
+            {weather.temp}°C
+          </span>
+          <span className="font-sans text-xs text-encre-tertiaire truncate">{weather.city}</span>
+        </div>
+        <div className="flex items-center gap-1.5 mt-1">
+          <span className="font-sans text-[11px] text-encre-secondaire">{weatherLabel}</span>
+          <span className="text-encre-tertiaire/30 text-[10px]">·</span>
+          <Wind size={10} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
+          <span className="font-sans text-[11px] text-encre-tertiaire">{weather.wind} km/h</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── Widget Fear & Greed ───────────────────────────────────────────────────────
+
+function WidgetFearGreed() {
+  const [fg, setFg] = useState(undefined)
+
+  useEffect(() => { fetchFearGreed().then(setFg) }, [])
+
+  if (fg === undefined) {
+    return (
+      <div className="surface-velin liserer-signature p-4 flex gap-4 items-center animate-pulse">
+        <div className="h-12 w-12 bg-encre/6 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-2.5 w-28 bg-encre/5 rounded" />
+          <div className="h-5 w-20 bg-encre/8 rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!fg) {
+    return (
+      <div className="surface-velin liserer-signature p-4 flex items-center gap-3">
+        <Activity size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
+        <p className="font-sans text-xs text-encre-tertiaire">Sentiment indisponible</p>
+      </div>
+    )
+  }
+
+  const { label, color, bg } = getFgStyle(fg.value)
+
+  return (
+    <div className="surface-velin liserer-signature p-4 flex items-center gap-4">
+      <div
+        className="h-12 w-12 rounded-full flex items-center justify-center shrink-0"
+        style={{ background: bg }}
+        aria-hidden="true"
+      >
+        <span className="font-sans font-bold text-[1.15rem] tabular-nums leading-none" style={{ color }}>
+          {fg.value}
+        </span>
+      </div>
+      <div>
+        <p className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/60">
+          Fear &amp; Greed — Crypto
+        </p>
+        <p className="font-serif font-medium text-[1.1rem] text-encre leading-snug mt-0.5">
+          {label}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Séparateur de groupe (barre marchés) ──────────────────────────────────────
+
+function SepGroupe({ label }) {
+  return (
+    <div className="flex flex-col items-center justify-center px-2 py-4 shrink-0 select-none">
+      <div className="h-8 w-px bg-velin-clair/10" />
+      {label && (
+        <span className="text-[8px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
+          {label}
+        </span>
+      )}
+    </div>
+  )
+}
+
+// ── Widget marché (cliquable → graphe) ────────────────────────────────────────
+
+function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClick }) {
   const pos  = change != null && change > 0
   const neg  = change != null && change < 0
   const Icon = pos ? TrendingUp : neg ? TrendingDown : Minus
@@ -56,14 +404,19 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
   }
 
   return (
-    <div className="flex flex-col gap-1 px-5 py-4 min-w-[130px] shrink-0">
+    <button
+      type="button"
+      className="flex flex-col gap-1 px-5 py-4 min-w-[130px] shrink-0 group/w text-left
+        hover:bg-velin-clair/6 rounded-lg transition-colors duration-200"
+      onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null })}
+    >
       <span className="text-[9px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
         {label}
       </span>
-
       <div className="flex items-baseline gap-1.5">
         <span
-          className="font-serif text-[1.2rem] font-medium text-velin-clair leading-none"
+          className="font-serif text-[1.2rem] font-medium leading-none
+            text-velin-clair group-hover/w:text-or transition-colors duration-200"
           style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
         >
           {prix ?? '--'}
@@ -72,7 +425,6 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
           <span className="text-[10px] text-velin-clair/40 font-sans leading-none">{unite}</span>
         )}
       </div>
-
       {change != null ? (
         <span
           className={`inline-flex items-center gap-1 text-[10px] font-sans font-semibold
@@ -87,22 +439,7 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
       ) : (
         <span className="text-[10px] text-velin-clair/20 font-sans">--</span>
       )}
-    </div>
-  )
-}
-
-// ── Séparateur de groupe ──────────────────────────────────────────────────────
-
-function SepGroupe({ label }) {
-  return (
-    <div className="flex flex-col items-center justify-center px-2 py-4 shrink-0 select-none">
-      <div className="h-8 w-px bg-velin-clair/10" />
-      {label && (
-        <span className="text-[8px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
-          {label}
-        </span>
-      )}
-    </div>
+    </button>
   )
 }
 
@@ -120,8 +457,6 @@ function SqueletteArticle() {
     </div>
   )
 }
-
-// ── Squelette erreur (sobre, velin-fonce) ─────────────────────────────────────
 
 function SqueletteErreur() {
   return (
@@ -145,11 +480,20 @@ function CarteArticle({ article, index }) {
       href={article.url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex gap-3.5 py-4 border-b border-encre/6 last:border-b-0 cursor-pointer"
+      className="group relative flex gap-3.5 py-3.5 border-b border-encre/6 last:border-b-0
+        pl-3 -ml-3 pr-1 rounded-sm transition-colors duration-200 hover:bg-velin-fonce/30"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.08, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.3, delay: index * 0.07, ease: [0.32, 0.72, 0, 1] }}
     >
+      {/* Liseré gauche doré — grandit au hover */}
+      <span
+        className="absolute left-0 top-1/2 -translate-y-1/2 w-[2px] rounded-full
+          h-0 group-hover:h-8 transition-all duration-300 ease-out"
+        style={{ background: 'var(--or)' }}
+        aria-hidden="true"
+      />
+
       {/* Numéro éditorial */}
       <span className="text-[10px] font-sans font-medium tabular-nums text-encre-tertiaire/40
         group-hover:text-or/70 transition-colors duration-200 mt-0.5 w-4 shrink-0 leading-snug">
@@ -164,11 +508,11 @@ function CarteArticle({ article, index }) {
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[10px] text-encre-tertiaire font-sans font-medium truncate">
+            <span className="text-[11px] text-encre-tertiaire font-sans font-medium truncate">
               {article.source}
             </span>
             <span className="text-encre-tertiaire/30 text-[10px]">·</span>
-            <span className="text-[10px] text-encre-tertiaire/60 font-sans shrink-0">
+            <span className="text-[11px] text-encre-tertiaire/60 font-sans shrink-0">
               {tempsRelatif(article.publishedAt)}
             </span>
           </div>
@@ -196,14 +540,9 @@ function ColonneNews({ category, articles, loading, error }) {
       style={{ borderTop: '2px solid var(--bordeaux)' }}
     >
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-or/15">
-        <div className="flex items-center gap-2">
-          <Icon
-            size={12}
-            strokeWidth={1.75}
-            className="text-or/60 shrink-0"
-            aria-hidden="true"
-          />
-          <h2 className="font-serif italic text-[0.875rem] text-encre-secondaire leading-none">
+        <div className="flex items-center gap-2.5">
+          <Icon size={14} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
+          <h2 className="font-serif font-medium text-[1.05rem] text-encre leading-none">
             {category.label}
           </h2>
         </div>
@@ -239,6 +578,7 @@ export default function News() {
   const [newsError,      setNewsError]      = useState({})
   const [lastRefresh,    setLastRefresh]    = useState(null)
   const [refreshing,     setRefreshing]     = useState(false)
+  const [chartItem,      setChartItem]      = useState(null)
 
   const chargerMarches = useCallback(async () => {
     setMarketsLoading(true)
@@ -277,8 +617,6 @@ export default function News() {
     setRefreshing(false)
   }, [refreshing, chargerMarches, chargerNews])
 
-  // ── Groupes de widgets marchés ──
-
   const widgetGroups = useMemo(() => {
     const btc = markets?.bitcoin
     const eth = markets?.ethereum
@@ -287,35 +625,25 @@ export default function News() {
         key: 'crypto',
         label: 'Crypto',
         items: [
-          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,       unite: '$', change: btc?.usd_24h_change ?? null },
-          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,       unite: '$', change: eth?.usd_24h_change ?? null },
+          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'   },
+          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'  },
         ],
       },
       {
         key: 'forex',
         label: 'Forex & Or',
         items: [
-          {
-            label: 'EUR / USD',
-            prix:  markets?.eurusd?.rate != null ? fmt(markets.eurusd.rate, 4) : null,
-            unite: '$',
-            change: markets?.eurusd?.change ?? null,
-          },
-          {
-            label:  'Or (XAU)',
-            prix:   markets?.gold?.usd != null ? fmt(markets.gold.usd) : null,
-            unite:  '$',
-            change: markets?.gold?.usd_24h_change ?? null,
-          },
+          { label: 'EUR / USD', prix: markets?.eurusd?.rate != null ? fmt(markets.eurusd.rate, 4) : null, unite: '$',   change: markets?.eurusd?.change ?? null,            coinId: null       },
+          { label: 'Or (XAU)',  prix: markets?.gold?.usd  != null ? fmt(markets.gold.usd)         : null, unite: '$',   change: markets?.gold?.usd_24h_change ?? null,       coinId: 'pax-gold' },
         ],
       },
       {
         key: 'indices',
         label: 'Indices',
         items: [
-          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price) : null, unite: 'pts', change: markets?.cac40?.change ?? null },
-          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price) : null, unite: 'pts', change: markets?.sp500?.change ?? null },
-          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price) : null, unite: 'pts', change: markets?.bel20?.change ?? null },
+          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null },
+          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null },
+          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null },
         ],
       },
     ]
@@ -328,15 +656,17 @@ export default function News() {
 
   return (
     <div className="space-y-5">
-      {/* En-tête */}
+
+      {/* ── En-tête ── */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-serif italic text-2xl text-encre leading-tight">Briefing du matin</h1>
-          <p className="font-sans mt-0.5" style={{ fontSize: '0.75rem', color: 'var(--encre-tertiaire)' }}>
+          <h1 className="font-serif font-medium text-[1.875rem] text-encre leading-none tracking-tight">
+            Dashboard
+          </h1>
+          <p className="font-sans mt-1 text-[0.75rem]" style={{ color: 'var(--encre-tertiaire)' }}>
             {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
           </p>
         </div>
-
         <button
           type="button"
           onClick={handleRefresh}
@@ -351,40 +681,52 @@ export default function News() {
         </button>
       </div>
 
-      {/* Barre marchés */}
-      <div className="rounded-lg overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
+      {/* ── Barre marchés ── */}
+      <div className="rounded-xl overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
         <span
           className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
           style={{ background: 'var(--gradient-signature)' }}
           aria-hidden="true"
         />
 
+        {/* Header barre */}
         <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
           <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ background: 'var(--vert)' }} />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5"
-              style={{ background: 'var(--vert)' }} />
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: 'var(--vert)' }} />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--vert)' }} />
           </span>
-          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
-            style={{ color: 'rgba(241,236,224,0.35)' }}>
+          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
             Marchés — temps réel
           </span>
         </div>
 
-        <div className="flex overflow-x-auto scrollbar-none">
-          {widgetGroups.map((group, gi) => (
-            <div key={group.key} className="flex shrink-0">
-              {gi > 0 && <SepGroupe label={group.label} />}
-              {group.items.map(w => (
-                <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
-              ))}
-            </div>
-          ))}
+        {/* Widgets — scrollable sur mobile, centré sur desktop */}
+        <div className="overflow-x-auto scrollbar-none">
+          <div className="flex md:justify-center min-w-max md:min-w-0 px-2">
+            {widgetGroups.map((group, gi) => (
+              <div key={group.key} className="flex shrink-0">
+                {gi > 0 && <SepGroupe label={group.label} />}
+                {group.items.map(w => (
+                  <WidgetMarche
+                    key={w.label}
+                    loading={marketsLoading}
+                    {...w}
+                    onChartClick={setChartItem}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* Tabs mobile */}
+      {/* ── Widgets météo + sentiment ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <WidgetMeteo />
+        <WidgetFearGreed />
+      </div>
+
+      {/* ── Tabs mobile ── */}
       <div
         className="md:hidden flex border-b"
         style={{ borderColor: 'rgba(31,24,16,0.08)' }}
@@ -420,7 +762,7 @@ export default function News() {
         })}
       </div>
 
-      {/* Grille desktop */}
+      {/* ── Grille desktop ── */}
       <div className="hidden md:grid grid-cols-2 gap-4 items-start">
         {CATEGORIES.map(cat => (
           <ColonneNews
@@ -433,7 +775,7 @@ export default function News() {
         ))}
       </div>
 
-      {/* Colonne active mobile */}
+      {/* ── Colonne active mobile ── */}
       <div className="md:hidden">
         <AnimatePresence mode="wait">
           <motion.div
@@ -452,6 +794,17 @@ export default function News() {
           </motion.div>
         </AnimatePresence>
       </div>
+
+      {/* ── Modal graphe prix ── */}
+      <AnimatePresence>
+        {chartItem && (
+          <GrapheModal
+            key="chart-modal"
+            item={chartItem}
+            onClose={() => setChartItem(null)}
+          />
+        )}
+      </AnimatePresence>
 
     </div>
   )

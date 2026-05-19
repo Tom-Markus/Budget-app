@@ -24,7 +24,7 @@ import { useMemo } from 'react';
 const PAGES = [
   { id: 'accueil', label: 'Accueil', icon: Home },
   { id: 'graphes', label: 'Graphes & Dettes', icon: PieChart },
-  { id: 'news', label: 'Actualités', icon: Newspaper },
+  { id: 'news', label: 'News & Invests', icon: Newspaper },
   { id: 'reglages', label: 'Réglages', icon: Settings },
 ];
 
