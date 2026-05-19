@@ -62,16 +62,19 @@ const FG_FR = {
   'Extreme Greed':'Avidité extrême',
 }
 
-// Couleurs calquées sur les seuils officiels d'alternative.me
-function getFgStyle(classification) {
-  switch (classification) {
-    case 'Extreme Fear': return { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' }
-    case 'Fear':         return { color: '#F97316', bg: 'rgba(249,115,22,0.12)' }
-    case 'Neutral':      return { color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
-    case 'Greed':        return { color: '#22C55E', bg: 'rgba(34,197,94,0.12)'  }
-    case 'Extreme Greed':return { color: '#16A34A', bg: 'rgba(22,163,74,0.12)'  }
-    default:             return { color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
-  }
+// Score 0-100 → couleurs design system
+function getFgStyle(value) {
+  if (value <= 25) return { color: 'var(--rouge)',          bg: 'rgba(229,57,53,0.10)'    }
+  if (value <= 45) return { color: 'var(--or)',             bg: 'rgba(184,149,74,0.12)'   }
+  if (value <= 55) return { color: 'var(--encre-tertiaire)',bg: 'rgba(138,128,115,0.10)'  }
+  if (value <= 75) return { color: 'var(--vert)',           bg: 'rgba(14,163,113,0.10)'   }
+  return               { color: 'var(--vert)',           bg: 'rgba(14,163,113,0.14)'   }
+}
+
+function getFgLabelColor(value) {
+  if (value < 30) return 'var(--rouge)'
+  if (value > 70) return 'var(--vert)'
+  return 'var(--encre-secondaire)'
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -327,35 +330,35 @@ function WidgetMeteo({ weather }) {
 
   return (
     <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
-      <WeatherIcon size={38} strokeWidth={1.3} style={{ color }} aria-hidden="true" className="shrink-0" />
+      <WeatherIcon size={40} strokeWidth={1.25} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" className="shrink-0" />
       <div className="min-w-0">
-        {/* Température + ville */}
+        {/* Ligne 1 : température + ville */}
         <div className="flex items-baseline gap-2.5 flex-wrap">
-          <span className="font-serif font-medium text-[1.7rem] text-encre leading-none tabular-nums">
+          <span className="font-serif font-medium text-[2rem] text-encre leading-none tabular-nums">
             {weather.temp}°C
           </span>
           <span className="font-sans text-[12px] text-encre-secondaire truncate">{weather.city}</span>
         </div>
-        {/* Condition + vent */}
+        {/* Ligne 2 : condition + vent */}
         <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="font-sans text-[12px] text-encre font-medium">{weatherLabel}</span>
+          <span className="font-sans italic text-[12px] text-encre-tertiaire">{weatherLabel}</span>
           <span className="text-encre-tertiaire/30 text-[10px]">·</span>
-          <Wind size={11} className="text-encre-tertiaire/60 shrink-0" aria-hidden="true" />
-          <span className="font-sans text-[12px] text-encre-secondaire">{weather.wind} km/h</span>
+          <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
+          <span className="font-sans text-[12px] text-encre-tertiaire">{weather.wind} km/h</span>
         </div>
-        {/* Lever / coucher */}
+        {/* Ligne 3 : lever / coucher */}
         {(weather.sunrise || weather.sunset) && (
           <div className="flex items-center gap-4 mt-1.5">
             {weather.sunrise && (
               <span className="flex items-center gap-1.5">
-                <Sunrise size={11} className="text-or/70 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums">{weather.sunrise}</span>
+                <Sunrise size={14} strokeWidth={1.5} className="text-or shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
               </span>
             )}
             {weather.sunset && (
               <span className="flex items-center gap-1.5">
-                <Sunset size={11} className="text-encre-tertiaire/60 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums">{weather.sunset}</span>
+                <Sunset size={14} strokeWidth={1.5} className="text-or/60 shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
               </span>
             )}
           </div>
@@ -390,8 +393,9 @@ function WidgetFearGreed({ fg }) {
     )
   }
 
-  const { color, bg } = getFgStyle(fg.classification)
+  const { color, bg } = getFgStyle(fg.value)
   const labelFr = FG_FR[fg.classification] ?? fg.classification
+  const labelColor = getFgLabelColor(fg.value)
 
   return (
     <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
@@ -408,7 +412,7 @@ function WidgetFearGreed({ fg }) {
         <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
           Fear &amp; Greed
         </p>
-        <p className="font-serif font-semibold text-[1.2rem] text-encre leading-snug mt-0.5">
+        <p className="font-serif italic font-medium text-[1.2rem] leading-snug mt-0.5" style={{ color: labelColor }}>
           {labelFr}
         </p>
       </div>
@@ -450,12 +454,15 @@ function WidgetFx({ fx }) {
   function getDerived(field) {
     if (!eurEq) return ''
     const r = rates[field]
-    if (!r) return ''
-    return (eurEq * r).toFixed(4)
+    if (!r || isNaN(r)) return ''
+    const result = eurEq * r
+    if (!isFinite(result)) return ''
+    return result.toFixed(4)
   }
 
   function getValue(field) {
-    return field === activeField ? activeValue : getDerived(field)
+    const v = field === activeField ? activeValue : getDerived(field)
+    return (v === null || v === undefined) ? '' : v
   }
 
   function handleFocus(field) {
@@ -510,7 +517,8 @@ function WidgetFx({ fx }) {
         {FX_PAIRS.map(({ key, flag, label }) => {
           const isActive = key === activeField
           const val = getValue(key)
-          const rate = key === 'EUR' ? 'base' : rates[key]?.toFixed(4) ?? '—'
+          const rateNum = key === 'EUR' ? null : rates[key]
+          const rateStr = rateNum != null && isFinite(rateNum) ? rateNum.toFixed(4) : (key === 'EUR' ? null : '—')
           return (
             <div
               key={key}
@@ -519,7 +527,7 @@ function WidgetFx({ fx }) {
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[15px] leading-none" aria-hidden="true">{flag}</span>
+                <span style={{ fontSize: '1.1rem', lineHeight: 1 }} aria-hidden="true">{flag}</span>
                 <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
                   ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
                   {label}
@@ -535,12 +543,21 @@ function WidgetFx({ fx }) {
                 onFocus={() => handleFocus(key)}
                 className="w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
                   bg-transparent outline-none text-center tabular-nums
-                  disabled:opacity-30 placeholder:text-encre-tertiaire/30"
+                  disabled:opacity-30 placeholder:text-encre-tertiaire/30
+                  focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-sm transition-shadow"
+                style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
               />
-              <span className={`font-sans text-[11px] font-medium tabular-nums text-center
-                ${key === 'EUR' ? 'text-encre-tertiaire/35 italic' : 'text-encre-secondaire/60'}`}>
-                {rate}
-              </span>
+              {key === 'EUR' ? (
+                <span className="font-sans text-[0.65rem] uppercase tracking-wider text-encre-tertiaire
+                  px-1.5 py-0.5 rounded bg-velin-fonce">
+                  base
+                </span>
+              ) : (
+                <span className="font-sans text-[11px] font-medium text-encre-secondaire/60 text-center tabular-nums"
+                  style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
+                  {rateStr ?? '—'}
+                </span>
+              )}
             </div>
           )
         })}
@@ -570,8 +587,8 @@ function joursAvant(dateStr) {
   return Math.ceil((new Date(dateStr) - Date.now()) / 86400000)
 }
 
-const BCE_INFO = { nom: 'Banque Centrale Européenne', ville: 'Francfort', color: '#3B82F6' }
-const FED_INFO = { nom: 'Réserve Fédérale', ville: 'Washington D.C.', color: '#22C55E' }
+const BCE_INFO = { nom: 'Banque Centrale Européenne', type: 'bce' }
+const FED_INFO = { nom: 'Réserve Fédérale',           type: 'fed' }
 
 function WidgetBceFed() {
   const nextBce = prochaine(REUNIONS.bce)
@@ -593,8 +610,16 @@ function WidgetBceFed() {
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <span
-              className="text-[9px] font-sans font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
-              style={{ background: info.color + '18', color: info.color }}
+              className="font-sans font-semibold uppercase"
+              style={{
+                background:   info.type === 'bce' ? 'rgba(14,31,58,0.12)'  : 'rgba(92,26,36,0.10)',
+                color:        info.type === 'bce' ? 'var(--nuit)'           : 'var(--bordeaux)',
+                border:       info.type === 'bce' ? '1px solid rgba(14,31,58,0.2)' : '1px solid rgba(92,26,36,0.2)',
+                borderRadius: 'var(--radius-sm, 6px)',
+                fontSize:     '0.65rem',
+                letterSpacing:'0.06em',
+                padding:      '2px 6px',
+              }}
             >
               {sigle}
             </span>
@@ -664,13 +689,16 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
   function getDerived(field) {
     if (!usdEq) return ''
     const p = prices[field]
-    if (!p) return ''
+    if (!p || isNaN(p)) return ''
     const dec = CONV_FIELDS.find(f => f.key === field)?.dec ?? 4
-    return (usdEq / p).toFixed(dec)
+    const result = usdEq / p
+    if (!isFinite(result)) return ''
+    return result.toFixed(dec)
   }
 
   function getValue(field) {
-    return field === activeField ? activeValue : getDerived(field)
+    const v = field === activeField ? activeValue : getDerived(field)
+    return (v === null || v === undefined) ? '' : v
   }
 
   function handleFocus(field) {
@@ -710,6 +738,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
               className={`flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
                 rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
+              style={isActive ? { borderTop: '2px solid var(--bordeaux)' } : {}}
             >
               <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
                 w-10 shrink-0 sm:w-auto sm:shrink sm:text-center
@@ -726,9 +755,10 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                 onFocus={() => handleFocus(key)}
                 className="flex-1 sm:w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
                   bg-transparent outline-none text-right sm:text-center tabular-nums
-                  disabled:opacity-30 placeholder:text-encre-tertiaire/30"
+                  disabled:opacity-30 placeholder:text-encre-tertiaire/30
+                  focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-sm transition-shadow"
               />
-              <span className="hidden sm:block font-sans text-[10px] font-medium text-encre-tertiaire/55 text-center leading-tight">
+              <span className="hidden sm:block font-sans text-[0.7rem] text-encre-tertiaire text-center leading-tight">
                 {label}
               </span>
             </div>
@@ -1113,7 +1143,7 @@ export default function News() {
       </div>
 
       {/* ── Widgets — ligne 1 : 3 petits (même hauteur) ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-stretch">
         <WidgetMeteo weather={weather} />
         <WidgetBceFed />
         <WidgetFearGreed fg={fg} />
