@@ -157,8 +157,8 @@ function CarteArticle({ article, index }) {
       </span>
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-serif italic text-[1.05rem] leading-snug text-encre
-          group-hover:text-or-fonce transition-colors duration-200 line-clamp-4 mb-2">
+        <h3 className="font-serif font-medium text-[1.2rem] leading-[1.35] text-encre
+          group-hover:text-or-fonce transition-colors duration-200 line-clamp-3 mb-2">
           {article.title}
         </h3>
 
