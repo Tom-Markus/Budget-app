@@ -163,27 +163,31 @@ function GrapheModal({ item, onClose }) {
     setChartData(null)
     setError(false)
     setLoading(true)
-    if (!item.coinId) { setLoading(false); return }
+    if (!item.coinId && !item.indexSymbol) { setLoading(false); return }
     let cancelled = false
     const controller = new AbortController()
-    fetch(
-      `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart` +
-      `?vs_currency=usd&days=7&interval=daily`,
-      { signal: controller.signal }
-    )
+    const url = item.coinId
+      ? `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart?vs_currency=usd&days=7&interval=daily`
+      : `/api/history?symbol=${encodeURIComponent(item.indexSymbol)}`
+    fetch(url, { signal: controller.signal })
       .then(r => r.json())
-      .then(({ prices }) => {
-        if (!cancelled) setChartData(
-          (prices || []).map(([ts, price]) => ({
-            date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
-            price,
-          }))
-        )
+      .then(data => {
+        if (cancelled) return
+        if (item.coinId) {
+          setChartData(
+            (data.prices || []).map(([ts, price]) => ({
+              date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
+              price,
+            }))
+          )
+        } else {
+          setChartData(data.points || [])
+        }
       })
       .catch(() => { if (!cancelled) setError(true) })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true; controller.abort() }
-  }, [item.coinId])
+  }, [item.coinId, item.indexSymbol])
 
   const change7d = chartData?.length >= 2
     ? ((chartData.at(-1).price - chartData[0].price) / chartData[0].price) * 100
@@ -249,10 +253,10 @@ function GrapheModal({ item, onClose }) {
           <div className="h-44 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-or/30 border-t-or rounded-full animate-spin" />
           </div>
-        ) : !item.coinId || error ? (
+        ) : (!item.coinId && !item.indexSymbol) || error ? (
           <div className="h-44 flex items-center justify-center">
             <p className="font-sans text-[15px] text-encre-tertiaire text-center px-4">
-              {!item.coinId
+              {(!item.coinId && !item.indexSymbol)
                 ? 'Historique indisponible pour cet actif.'
                 : 'Impossible de charger le graphique.'}
             </p>
@@ -282,7 +286,7 @@ function GrapheModal({ item, onClose }) {
                   color: 'var(--encre)',
                   padding: '6px 10px',
                 }}
-                formatter={v => [`${v.toLocaleString('fr-BE', { maximumFractionDigits: 2 })} $`, item.label]}
+                formatter={v => [`${v.toLocaleString('fr-BE', { maximumFractionDigits: 2 })} ${item.unite}`, item.label]}
                 labelStyle={{ color: 'var(--encre-tertiaire)', marginBottom: 2 }}
               />
               <Line
@@ -296,7 +300,7 @@ function GrapheModal({ item, onClose }) {
         )}
 
         <p className="text-[10px] font-sans text-encre-tertiaire/40 text-right mt-2">
-          Source : CoinGecko
+          Source : {item.coinId ? 'CoinGecko' : 'Yahoo Finance'}
         </p>
       </motion.div>
     </motion.div>,
@@ -796,7 +800,7 @@ function SepGroupe({ label }) {
 
 // ── Widget marché (cliquable → graphe) ────────────────────────────────────────
 
-function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClick }) {
+function WidgetMarche({ label, prix, unite, change, loading, coinId, indexSymbol, onChartClick }) {
   const pos  = change != null && change > 0
   const neg  = change != null && change < 0
   const Icon = pos ? TrendingUp : neg ? TrendingDown : Minus
@@ -816,7 +820,7 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
       type="button"
       className="flex flex-col gap-0.5 px-3 py-3 min-w-[100px] shrink-0 group/w text-left
         hover:bg-velin-clair/6 rounded-lg transition-colors duration-200"
-      onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null })}
+      onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null, indexSymbol: indexSymbol ?? null })}
     >
       <span className="text-[10px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
         {label}
@@ -1061,9 +1065,9 @@ export default function News() {
         key: 'indices',
         label: 'Indices',
         items: [
-          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price, 2) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null },
-          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price, 2) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null },
-          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price, 2) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null },
+          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price, 2) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null, indexSymbol: '^FCHI' },
+          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price, 2) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null, indexSymbol: '^GSPC' },
+          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price, 2) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null, indexSymbol: '^BFX'  },
         ],
       },
     ]
