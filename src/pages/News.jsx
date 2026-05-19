@@ -195,16 +195,18 @@ function GrapheModal({ item, onClose }) {
             seen.add(key)
             const dayLabel = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
             pts.push({
-              date:         h === 0 ? dayLabel : '',
-              fullDate:     `${dayLabel} · ${h === 0 ? '00h' : '12h'}`,
+              idx:      pts.length,
+              date:     h === 0 ? dayLabel : '',
+              fullDate: `${dayLabel} · ${h === 0 ? '00h' : '12h'}`,
               price,
             })
           })
           setChartData(pts)
         } else {
-          // Points history.js : ajoute fullDate côté client
-          setChartData((data.points || []).map(p => ({
+          // Points history.js : ajoute fullDate + idx côté client
+          setChartData((data.points || []).map((p, i) => ({
             ...p,
+            idx: i,
             fullDate: p.ts
               ? new Date(p.ts).toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }) +
                 (p.isOpen ? ' · ouverture' : ' · clôture')
@@ -294,9 +296,15 @@ function GrapheModal({ item, onClose }) {
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
-                dataKey="date"
+                dataKey="idx"
+                type="number"
+                scale="point"
+                domain={[0, (chartData?.length ?? 1) - 1]}
+                ticks={chartData?.map((_, i) => i) ?? []}
+                tickFormatter={i => chartData?.[i]?.date ?? ''}
                 tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
                 axisLine={false} tickLine={false}
+                interval={0}
               />
               <YAxis
                 domain={['auto', 'auto']}
