@@ -2,16 +2,15 @@
  * src/lib/newsApi.js
  * ----------------------------------------------------------------------------
  * Sources :
- *   News    : GNews /search (plan gratuit ne supporte pas category= en top-headlines)
+ *   News    : GNews /search (plan gratuit, activation email requise)
  *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (pas de cle)
- *   Indices : Yahoo Finance via proxy allorigins.win — CAC40, S&P500, BEL20
+ *   Indices : Stooq via /api/market-indices (Vercel proxy, pas de CORS)
  *   Forex   : Alpha Vantage FX_DAILY — EUR/USD avec variation 24h
  * ----------------------------------------------------------------------------
  */
 
 const GNEWS_KEY = import.meta.env.VITE_GNEWS_KEY
 const AV_KEY    = import.meta.env.VITE_ALPHA_VANTAGE_KEY
-const TD_KEY    = import.meta.env.VITE_TWELVE_DATA_KEY
 const CACHE_TTL = 15 * 60 * 1000
 
 // ── Cache ──────────────────────────────────────────────────────────────────
@@ -34,7 +33,7 @@ export function clearNewsCache() {
   ;['business', 'technology', 'science', 'world'].forEach(c =>
     sessionStorage.removeItem(`gnews_${c}`)
   )
-  ;['coingecko_markets', 'av_eurusd_daily', 'indices_twelvedata', 'indices_yahoo'].forEach(k =>
+  ;['coingecko_markets', 'av_eurusd_daily', 'indices_stooq', 'indices_twelvedata', 'indices_yahoo'].forEach(k =>
     sessionStorage.removeItem(k)
   )
 }
@@ -129,22 +128,19 @@ async function fetchEURUSD() {
   return data
 }
 
-// ── Indices boursiers — Twelve Data (CORS natif, plan gratuit 800 req/jour) ──
-// Symbols : SPX (S&P 500), CAC40 (CAC 40), BEL20 (BEL 20)
-// Cle gratuite : twelvedata.com/pricing → ajouter VITE_TWELVE_DATA_KEY dans .env.local
+// ── Indices boursiers — Stooq via Vercel serverless proxy ─────────────────
+// Le proxy /api/market-indices fetch Stooq cote serveur (pas de CORS).
+// Symbols Stooq : ^spx (S&P 500), ^cac (CAC 40), ^bel20 (BEL 20)
+// Valeurs : open + close → variation intraday calculée localement.
 
 async function fetchIndices() {
-  if (!TD_KEY) return null
-
-  const cacheKey = 'indices_twelvedata'
+  const cacheKey = 'indices_stooq'
   const cached = getCached(cacheKey)
   if (cached) return cached
 
   let res
   try {
-    res = await fetch(
-      `https://api.twelvedata.com/quote?symbol=SPX,CAC40,BEL20&apikey=${TD_KEY}`
-    )
+    res = await fetch('/api/market-indices')
   } catch {
     return null
   }
@@ -152,20 +148,20 @@ async function fetchIndices() {
 
   try {
     const json = await res.json()
-    if (json.code === 401 || json.status === 'error') return null
+    if (json.error) return null
 
-    const parse = (sym) => {
-      const d = json[sym]
-      if (!d || d.status === 'error') return null
-      const price  = parseFloat(d.close)
-      const change = parseFloat(d.percent_change)
-      return isNaN(price) ? null : { price, change: isNaN(change) ? null : change }
+    const parse = (symbol) => {
+      const s = (json.symbols || []).find(x => x.symbol === symbol)
+      if (!s || s.close == null) return null
+      const price  = s.close
+      const change = s.open > 0 ? ((s.close - s.open) / s.open) * 100 : null
+      return { price, change }
     }
 
     const bySymbol = {
-      sp500: parse('SPX'),
-      cac40: parse('CAC40'),
-      bel20: parse('BEL20'),
+      sp500: parse('^SPX'),
+      cac40: parse('^CAC'),
+      bel20: parse('^BEL20'),
     }
     setCache(cacheKey, bySymbol)
     return bySymbol
