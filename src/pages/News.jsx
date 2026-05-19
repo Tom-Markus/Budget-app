@@ -287,8 +287,8 @@ export default function News() {
         key: 'crypto',
         label: 'Crypto',
         items: [
-          { label: 'Bitcoin',  prix: btc ? fmt(btc.eur) : null,       unite: '€', change: btc?.eur_24h_change ?? null },
-          { label: 'Ethereum', prix: eth ? fmt(eth.eur) : null,       unite: '€', change: eth?.eur_24h_change ?? null },
+          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,       unite: '$', change: btc?.usd_24h_change ?? null },
+          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,       unite: '$', change: eth?.usd_24h_change ?? null },
         ],
       },
       {
