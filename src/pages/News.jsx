@@ -164,21 +164,25 @@ function GrapheModal({ item, onClose }) {
     setError(false)
     setLoading(true)
     if (!item.coinId) { setLoading(false); return }
+    let cancelled = false
+    const controller = new AbortController()
     fetch(
       `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart` +
-      `?vs_currency=usd&days=7&interval=daily`
+      `?vs_currency=usd&days=7&interval=daily`,
+      { signal: controller.signal }
     )
       .then(r => r.json())
       .then(({ prices }) => {
-        setChartData(
+        if (!cancelled) setChartData(
           (prices || []).map(([ts, price]) => ({
             date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
             price,
           }))
         )
       })
-      .catch(() => setError(true))
-      .finally(() => setLoading(false))
+      .catch(() => { if (!cancelled) setError(true) })
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true; controller.abort() }
   }, [item.coinId])
 
   const change7d = chartData?.length >= 2
@@ -398,21 +402,21 @@ function WidgetFearGreed({ fg }) {
   const labelColor = getFgLabelColor(fg.value)
 
   return (
-    <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
+    <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-5">
       <div
-        className="h-12 w-12 rounded-full flex items-center justify-center shrink-0"
+        className="h-16 w-16 rounded-full flex items-center justify-center shrink-0"
         style={{ background: bg }}
         aria-hidden="true"
       >
-        <span className="font-sans font-bold text-[1.15rem] tabular-nums leading-none" style={{ color }}>
+        <span className="font-sans font-bold text-[1.5rem] tabular-nums leading-none" style={{ color }}>
           {fg.value}
         </span>
       </div>
       <div>
-        <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
+        <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
           Fear &amp; Greed
         </p>
-        <p className="font-serif italic font-medium text-[1.2rem] leading-snug mt-0.5" style={{ color: labelColor }}>
+        <p className="font-serif italic font-medium text-[1.5rem] leading-snug mt-0.5" style={{ color: labelColor }}>
           {labelFr}
         </p>
       </div>
@@ -509,7 +513,7 @@ function WidgetFx({ fx }) {
             Taux de change
           </span>
         </div>
-        <span className="text-[10px] font-sans font-medium text-encre-tertiaire/60 tabular-nums">{fx.date} · ECB</span>
+        <span className="text-[12px] font-sans font-medium text-encre-tertiaire/80 tabular-nums">{fx.date} · ECB</span>
       </div>
 
       {/* Mobile : 2 colonnes — Desktop : 4 colonnes */}
@@ -627,13 +631,13 @@ function WidgetBceFed() {
               {info.nom}
             </span>
           </div>
-          <span className="font-serif font-semibold text-[1.15rem] text-encre tabular-nums leading-none">
+          <span className="font-serif font-semibold text-[1.4rem] text-encre tabular-nums leading-none">
             J-{jours}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="font-sans text-[11px] text-encre-secondaire tabular-nums capitalize">{date}</span>
-          <span className="font-sans text-[9px] text-encre-tertiaire/40">
+          <span className="font-sans text-[13px] text-encre-secondaire tabular-nums capitalize">{date}</span>
+          <span className="font-sans text-[10px] text-encre-tertiaire/40">
             {restant} réunion{restant > 1 ? 's' : ''} restante{restant > 1 ? 's' : ''}
           </span>
         </div>
@@ -1128,8 +1132,8 @@ export default function News() {
             style={{ background: 'linear-gradient(to left, var(--nuit), transparent)' }}
             aria-hidden="true"
           />
-          <div className="overflow-x-auto scrollbar-none">
-            <div className="flex min-w-max px-4">
+          <div className="overflow-x-auto scrollbar-none flex">
+            <div className="flex min-w-max px-4 mx-auto">
               {widgetGroups.map((group, gi) => (
                 <div key={group.key} className="flex shrink-0">
                   {gi > 0 && <SepGroupe label={group.label} />}
