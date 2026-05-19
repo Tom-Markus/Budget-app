@@ -9,7 +9,7 @@ import {
   RefreshCw, TrendingUp, TrendingDown, Minus,
   BarChart2, Cpu, FlaskConical, Globe2,
   X, Sun, Cloud, CloudRain, CloudSnow, CloudLightning,
-  Wind, MapPin, Activity,
+  Wind, MapPin, Activity, Sunrise, Sunset, ArrowRightLeft,
 } from 'lucide-react'
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
@@ -100,15 +100,18 @@ async function fetchWeather() {
       async ({ coords: { latitude: lat, longitude: lon } }) => {
         try {
           const [wRes, gRes] = await Promise.all([
-            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&timezone=auto&wind_speed_unit=kmh`),
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=sunrise,sunset&timezone=auto&wind_speed_unit=kmh`),
             fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
           ])
           const [w, g] = await Promise.all([wRes.json(), gRes.json()])
+          const fmtTime = (iso) => iso?.slice(11, 16) ?? null // "2026-05-19T05:43" → "05:43"
           resolve({
-            temp: Math.round(w.current.temperature_2m),
-            code: w.current.weather_code,
-            wind: Math.round(w.current.wind_speed_10m),
-            city: g.address?.city || g.address?.town || g.address?.village || 'Position',
+            temp:    Math.round(w.current.temperature_2m),
+            code:    w.current.weather_code,
+            wind:    Math.round(w.current.wind_speed_10m),
+            city:    g.address?.city || g.address?.town || g.address?.village || 'Position',
+            sunrise: fmtTime(w.daily?.sunrise?.[0]),
+            sunset:  fmtTime(w.daily?.sunset?.[0]),
           })
         } catch { resolve(null) }
       },
@@ -128,6 +131,15 @@ async function fetchFearGreed() {
       value:          parseInt(data[0].value, 10),
       classification: data[0].value_classification, // label officiel de la source
     }
+  } catch { return null }
+}
+
+async function fetchFx() {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?base=EUR&symbols=USD,GBP,CHF')
+    if (!res.ok) return null
+    const { rates, date } = await res.json()
+    return { rates, date }
   } catch { return null }
 }
 
@@ -326,6 +338,22 @@ function WidgetMeteo({ weather }) {
           <Wind size={10} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
           <span className="font-sans text-[11px] text-encre-tertiaire">{weather.wind} km/h</span>
         </div>
+        {(weather.sunrise || weather.sunset) && (
+          <div className="flex items-center gap-3 mt-1.5">
+            {weather.sunrise && (
+              <span className="flex items-center gap-1">
+                <Sunrise size={10} className="text-or/60 shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[11px] text-encre-tertiaire tabular-nums">{weather.sunrise}</span>
+              </span>
+            )}
+            {weather.sunset && (
+              <span className="flex items-center gap-1">
+                <Sunset size={10} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[11px] text-encre-tertiaire tabular-nums">{weather.sunset}</span>
+              </span>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -377,6 +405,69 @@ function WidgetFearGreed({ fg }) {
         <p className="font-serif font-medium text-[1.1rem] text-encre leading-snug mt-0.5">
           {labelFr}
         </p>
+      </div>
+    </div>
+  )
+}
+
+// ── Widget Taux de change ─────────────────────────────────────────────────────
+
+const FX_PAIRS = [
+  { key: 'USD', label: 'USD', flag: '🇺🇸' },
+  { key: 'GBP', label: 'GBP', flag: '🇬🇧' },
+  { key: 'CHF', label: 'CHF', flag: '🇨🇭' },
+]
+
+function WidgetFx({ fx }) {
+  if (fx === undefined) {
+    return (
+      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
+        <div className="h-8 w-8 bg-encre/6 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2.5">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex justify-between">
+              <div className="h-3 w-14 bg-encre/6 rounded" />
+              <div className="h-3 w-10 bg-encre/8 rounded" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (!fx) {
+    return (
+      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
+        <ArrowRightLeft size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
+        <p className="font-sans text-xs text-encre-tertiaire">Taux indisponibles</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="surface-velin liserer-signature p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <ArrowRightLeft size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
+          <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
+            EUR — Taux du jour
+          </span>
+        </div>
+        <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date}</span>
+      </div>
+      <div className="space-y-2">
+        {FX_PAIRS.map(({ key, label, flag }) => (
+          fx.rates[key] != null && (
+            <div key={key} className="flex items-center justify-between">
+              <span className="font-sans text-[12px] text-encre-secondaire flex items-center gap-1.5">
+                <span aria-hidden="true">{flag}</span> {label}
+              </span>
+              <span className="font-serif font-medium text-[1.05rem] text-encre tabular-nums">
+                {fx.rates[key].toFixed(4)}
+              </span>
+            </div>
+          )
+        ))}
       </div>
     </div>
   )
@@ -592,6 +683,7 @@ export default function News() {
   const [chartItem,      setChartItem]      = useState(null)
   const [weather,        setWeather]        = useState(undefined)
   const [fg,             setFg]             = useState(undefined)
+  const [fx,             setFx]             = useState(undefined)
 
   const chargerMarches = useCallback(async () => {
     setMarketsLoading(true)
@@ -615,9 +707,11 @@ export default function News() {
   const chargerWidgets = useCallback(async () => {
     setWeather(undefined)
     setFg(undefined)
-    const [w, f] = await Promise.all([fetchWeather(), fetchFearGreed()])
+    setFx(undefined)
+    const [w, f, x] = await Promise.all([fetchWeather(), fetchFearGreed(), fetchFx()])
     setWeather(w)
     setFg(f)
+    setFx(x)
   }, [])
 
   useEffect(() => {
@@ -651,11 +745,10 @@ export default function News() {
         ],
       },
       {
-        key: 'forex',
-        label: 'Forex & Or',
+        key: 'or',
+        label: 'Or',
         items: [
-          { label: 'EUR / USD', prix: markets?.eurusd?.rate != null ? fmt(markets.eurusd.rate, 4) : null, unite: '$',   change: markets?.eurusd?.change ?? null,            coinId: null       },
-          { label: 'Or (XAU)',  prix: markets?.gold?.usd  != null ? fmt(markets.gold.usd)         : null, unite: '$',   change: markets?.gold?.usd_24h_change ?? null,       coinId: 'pax-gold' },
+          { label: 'Or (XAU)', prix: markets?.gold?.usd != null ? fmt(markets.gold.usd) : null, unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold' },
         ],
       },
       {
@@ -742,9 +835,10 @@ export default function News() {
       </div>
 
       {/* ── Widgets météo + sentiment ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <WidgetMeteo weather={weather} />
         <WidgetFearGreed fg={fg} />
+        <WidgetFx fx={fx} />
       </div>
 
       {/* ── Tabs mobile ── */}
