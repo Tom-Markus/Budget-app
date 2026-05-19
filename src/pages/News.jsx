@@ -53,12 +53,25 @@ function getWmo(code) {
   return WMO[code] ?? WMO[Math.floor(code / 10) * 10] ?? { Icon: Cloud, label: '?', color: '#9CA3AF' }
 }
 
-function getFgStyle(v) {
-  if (v <= 24) return { label: 'Peur extrême', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' }
-  if (v <= 44) return { label: 'Peur',         color: '#F97316', bg: 'rgba(249,115,22,0.12)' }
-  if (v <= 55) return { label: 'Neutre',        color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
-  if (v <= 75) return { label: 'Avidité',       color: '#22C55E', bg: 'rgba(34,197,94,0.12)' }
-  return              { label: 'Avidité extr.', color: '#16A34A', bg: 'rgba(22,163,74,0.12)' }
+// Traduction exacte des classifications de l'API alternative.me
+const FG_FR = {
+  'Extreme Fear': 'Peur extrême',
+  'Fear':         'Peur',
+  'Neutral':      'Neutre',
+  'Greed':        'Avidité',
+  'Extreme Greed':'Avidité extrême',
+}
+
+// Couleurs calquées sur les seuils officiels d'alternative.me
+function getFgStyle(classification) {
+  switch (classification) {
+    case 'Extreme Fear': return { color: '#EF4444', bg: 'rgba(239,68,68,0.12)' }
+    case 'Fear':         return { color: '#F97316', bg: 'rgba(249,115,22,0.12)' }
+    case 'Neutral':      return { color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
+    case 'Greed':        return { color: '#22C55E', bg: 'rgba(34,197,94,0.12)'  }
+    case 'Extreme Greed':return { color: '#16A34A', bg: 'rgba(22,163,74,0.12)'  }
+    default:             return { color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' }
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -111,7 +124,10 @@ async function fetchFearGreed() {
     if (!res.ok) return null
     const { data } = await res.json()
     if (!data?.[0]) return null
-    return { value: parseInt(data[0].value, 10) }
+    return {
+      value:          parseInt(data[0].value, 10),
+      classification: data[0].value_classification, // label officiel de la source
+    }
   } catch { return null }
 }
 
@@ -346,7 +362,8 @@ function WidgetFearGreed() {
     )
   }
 
-  const { label, color, bg } = getFgStyle(fg.value)
+  const { color, bg } = getFgStyle(fg.classification)
+  const labelFr = FG_FR[fg.classification] ?? fg.classification
 
   return (
     <div className="surface-velin liserer-signature p-4 flex items-center gap-4">
@@ -364,7 +381,7 @@ function WidgetFearGreed() {
           Fear &amp; Greed — Crypto
         </p>
         <p className="font-serif font-medium text-[1.1rem] text-encre leading-snug mt-0.5">
-          {label}
+          {labelFr}
         </p>
       </div>
     </div>
