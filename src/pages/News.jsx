@@ -328,24 +328,6 @@ export default function News() {
 
   return (
     <div className="space-y-5">
-      {/* Filtre metaball — identique à MetaballFond : blur + seuil alpha */}
-      <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
-        <defs>
-          <filter id="mkt-metaball" x="-25%" y="-200%" width="150%" height="500%" colorInterpolationFilters="sRGB">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur"/>
-            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -7"/>
-          </filter>
-        </defs>
-      </svg>
-
-      <style>{`
-        @keyframes mkt-b1 { 0%{transform:translate(0,0)} 38%{transform:translate(-11px,17px)} 72%{transform:translate(13px,7px)} 100%{transform:translate(0,0)} }
-        @keyframes mkt-b2 { 0%{transform:translate(0,0)} 42%{transform:translate(14px,-15px)} 68%{transform:translate(-9px,-5px)} 100%{transform:translate(0,0)} }
-        @keyframes mkt-b3 { 0%{transform:translate(0,0)} 55%{transform:translate(-13px,19px)} 82%{transform:translate(7px,9px)} 100%{transform:translate(0,0)} }
-        @keyframes mkt-b4 { 0%{transform:translate(0,0)} 33%{transform:translate(15px,-13px)} 66%{transform:translate(-7px,-9px)} 100%{transform:translate(0,0)} }
-        @keyframes mkt-b5 { 0%{transform:translate(0,0)} 47%{transform:translate(-16px,11px)} 78%{transform:translate(9px,15px)} 100%{transform:translate(0,0)} }
-      `}</style>
-
       {/* En-tête */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
@@ -369,57 +351,36 @@ export default function News() {
         </button>
       </div>
 
-      {/* Barre marchés — bulle liquide metaball */}
-      <div className="relative" style={{ filter: 'drop-shadow(0 12px 36px rgba(14,31,58,0.52))' }}>
-
-        {/* Blobs metaball — corps principal + bosses organiques animées */}
-        <div
-          className="absolute pointer-events-none"
-          style={{ inset: '-14px -10px', filter: 'url(#mkt-metaball)', zIndex: 0 }}
+      {/* Barre marchés */}
+      <div className="rounded-lg overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
+        <span
+          className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+          style={{ background: 'var(--gradient-signature)' }}
           aria-hidden="true"
-        >
-          {/* Corps central */}
-          <div style={{ position: 'absolute', inset: '10px 8px', background: 'var(--nuit)', borderRadius: '8px' }} />
-          {/* Bosses — chacune à un cycle premier, jamais en phase */}
-          <div style={{ position:'absolute', width:'56px', height:'56px', borderRadius:'50%', background:'var(--nuit)', bottom:'4px', left:'15%',  animation:'mkt-b1 11s ease-in-out infinite' }} />
-          <div style={{ position:'absolute', width:'44px', height:'44px', borderRadius:'50%', background:'var(--nuit)', top:'4px',    left:'40%',  animation:'mkt-b2 13s ease-in-out infinite' }} />
-          <div style={{ position:'absolute', width:'60px', height:'60px', borderRadius:'50%', background:'var(--nuit)', bottom:'2px', right:'18%', animation:'mkt-b3 17s ease-in-out infinite' }} />
-          <div style={{ position:'absolute', width:'40px', height:'40px', borderRadius:'50%', background:'var(--nuit)', top:'3px',    left:'7%',   animation:'mkt-b4 19s ease-in-out infinite' }} />
-          <div style={{ position:'absolute', width:'50px', height:'50px', borderRadius:'50%', background:'var(--nuit)', top:'5px',    right:'10%', animation:'mkt-b5 23s ease-in-out infinite' }} />
+        />
+
+        <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
+          <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+              style={{ background: 'var(--vert)' }} />
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5"
+              style={{ background: 'var(--vert)' }} />
+          </span>
+          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
+            style={{ color: 'rgba(241,236,224,0.35)' }}>
+            Marchés — temps réel
+          </span>
         </div>
 
-        {/* Contenu — z-index au-dessus, transparent pour laisser voir le blob */}
-        <div className="relative overflow-hidden rounded-lg" style={{ zIndex: 1 }}>
-          {/* Reflet de surface */}
-          <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
-            style={{ background: 'radial-gradient(ellipse at 26% 12%, rgba(241,236,224,0.07) 0%, transparent 50%)', zIndex: 2 }} />
-
-          {/* Trait signature bas */}
-          <span className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'var(--gradient-signature)', zIndex: 3 }} aria-hidden="true" />
-
-          {/* En-tête barre */}
-          <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
-            <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: 'var(--vert)' }} />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--vert)' }} />
-            </span>
-            <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
-              Marchés — temps réel
-            </span>
-          </div>
-
-          {/* Widgets avec groupes */}
-          <div className="flex overflow-x-auto scrollbar-none">
-            {widgetGroups.map((group, gi) => (
-              <div key={group.key} className="flex shrink-0">
-                {gi > 0 && <SepGroupe label={group.label} />}
-                {group.items.map(w => (
-                  <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
-                ))}
-              </div>
-            ))}
-          </div>
+        <div className="flex overflow-x-auto scrollbar-none">
+          {widgetGroups.map((group, gi) => (
+            <div key={group.key} className="flex shrink-0">
+              {gi > 0 && <SepGroupe label={group.label} />}
+              {group.items.map(w => (
+                <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
+              ))}
+            </div>
+          ))}
         </div>
       </div>
 
