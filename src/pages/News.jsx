@@ -328,39 +328,23 @@ export default function News() {
 
   return (
     <div className="space-y-5">
-      {/* Définition du filtre SVG — nœud caché, référencé par url(#mkt-liquid) */}
+      {/* Filtre metaball — identique à MetaballFond : blur + seuil alpha */}
       <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
         <defs>
-          <filter id="mkt-liquid" x="-15%" y="-150%" width="130%" height="400%">
-            {/* Couche 1 — grandes ondes lentes, cycle 17s */}
-            <feTurbulence type="fractalNoise" baseFrequency="0.005 0.018"
-              numOctaves="3" seed="5" result="bigWaves">
-              <animate attributeName="baseFrequency" dur="17s"
-                calcMode="spline"
-                keyTimes="0;0.2;0.4;0.6;0.8;1"
-                values="0.005 0.018; 0.009 0.013; 0.006 0.023; 0.011 0.016; 0.007 0.021; 0.005 0.018"
-                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
-                repeatCount="indefinite"/>
-            </feTurbulence>
-            {/* Couche 2 — détail fin, cycle 23s (premier avec 17 → répétition à 391s) */}
-            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.055"
-              numOctaves="2" seed="13" result="smallWaves">
-              <animate attributeName="baseFrequency" dur="23s"
-                calcMode="spline"
-                keyTimes="0;0.2;0.4;0.6;0.8;1"
-                values="0.018 0.055; 0.025 0.042; 0.016 0.066; 0.022 0.048; 0.019 0.060; 0.018 0.055"
-                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
-                repeatCount="indefinite"/>
-            </feTurbulence>
-            {/* Blend pondéré : 65 % grandes ondes + 35 % détail */}
-            <feComposite in="bigWaves" in2="smallWaves"
-              operator="arithmetic" k1="0" k2="0.65" k3="0.35" k4="0"
-              result="combinedNoise"/>
-            <feDisplacementMap in="SourceGraphic" in2="combinedNoise"
-              scale="13" xChannelSelector="R" yChannelSelector="G"/>
+          <filter id="mkt-metaball" x="-25%" y="-200%" width="150%" height="500%" colorInterpolationFilters="sRGB">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="13" result="blur"/>
+            <feColorMatrix in="blur" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -7"/>
           </filter>
         </defs>
       </svg>
+
+      <style>{`
+        @keyframes mkt-b1 { 0%{transform:translate(0,0)} 38%{transform:translate(-11px,17px)} 72%{transform:translate(13px,7px)} 100%{transform:translate(0,0)} }
+        @keyframes mkt-b2 { 0%{transform:translate(0,0)} 42%{transform:translate(14px,-15px)} 68%{transform:translate(-9px,-5px)} 100%{transform:translate(0,0)} }
+        @keyframes mkt-b3 { 0%{transform:translate(0,0)} 55%{transform:translate(-13px,19px)} 82%{transform:translate(7px,9px)} 100%{transform:translate(0,0)} }
+        @keyframes mkt-b4 { 0%{transform:translate(0,0)} 33%{transform:translate(15px,-13px)} 66%{transform:translate(-7px,-9px)} 100%{transform:translate(0,0)} }
+        @keyframes mkt-b5 { 0%{transform:translate(0,0)} 47%{transform:translate(-16px,11px)} 78%{transform:translate(9px,15px)} 100%{transform:translate(0,0)} }
+      `}</style>
 
       {/* En-tête */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
@@ -385,42 +369,42 @@ export default function News() {
         </button>
       </div>
 
-      {/* Barre marchés — bulle liquide */}
-      <div className="relative">
-        {/* Fond liquide : feDisplacementMap déforme les bords selon du bruit de Perlin animé.
-            Séparé du contenu pour que texte et chiffres restent nets. */}
+      {/* Barre marchés — bulle liquide metaball */}
+      <div className="relative" style={{ filter: 'drop-shadow(0 12px 36px rgba(14,31,58,0.52))' }}>
+
+        {/* Blobs metaball — corps principal + bosses organiques animées */}
         <div
           className="absolute pointer-events-none"
-          style={{
-            inset: '-8px -6px',
-            background: `radial-gradient(ellipse at 26% 12%, rgba(241,236,224,0.07) 0%, transparent 48%), var(--nuit)`,
-            borderRadius: '16px',
-            filter: 'url(#mkt-liquid)',
-            willChange: 'filter',
-            boxShadow: '0 14px 48px rgba(14,31,58,0.6), 0 4px 16px rgba(14,31,58,0.28)',
-          }}
+          style={{ inset: '-14px -10px', filter: 'url(#mkt-metaball)', zIndex: 0 }}
           aria-hidden="true"
-        />
+        >
+          {/* Corps central */}
+          <div style={{ position: 'absolute', inset: '10px 8px', background: 'var(--nuit)', borderRadius: '8px' }} />
+          {/* Bosses — chacune à un cycle premier, jamais en phase */}
+          <div style={{ position:'absolute', width:'56px', height:'56px', borderRadius:'50%', background:'var(--nuit)', bottom:'4px', left:'15%',  animation:'mkt-b1 11s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', width:'44px', height:'44px', borderRadius:'50%', background:'var(--nuit)', top:'4px',    left:'40%',  animation:'mkt-b2 13s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', width:'60px', height:'60px', borderRadius:'50%', background:'var(--nuit)', bottom:'2px', right:'18%', animation:'mkt-b3 17s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', width:'40px', height:'40px', borderRadius:'50%', background:'var(--nuit)', top:'3px',    left:'7%',   animation:'mkt-b4 19s ease-in-out infinite' }} />
+          <div style={{ position:'absolute', width:'50px', height:'50px', borderRadius:'50%', background:'var(--nuit)', top:'5px',    right:'10%', animation:'mkt-b5 23s ease-in-out infinite' }} />
+        </div>
 
-        {/* Contenu — au-dessus du blob, aucun filtre appliqué */}
+        {/* Contenu — z-index au-dessus, transparent pour laisser voir le blob */}
         <div className="relative overflow-hidden rounded-lg" style={{ zIndex: 1 }}>
+          {/* Reflet de surface */}
+          <div className="absolute inset-0 pointer-events-none" aria-hidden="true"
+            style={{ background: 'radial-gradient(ellipse at 26% 12%, rgba(241,236,224,0.07) 0%, transparent 50%)', zIndex: 2 }} />
+
           {/* Trait signature bas */}
-          <span
-            className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-            style={{ background: 'var(--gradient-signature)' }}
-            aria-hidden="true"
-          />
+          <span className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+            style={{ background: 'var(--gradient-signature)', zIndex: 3 }} aria-hidden="true" />
 
           {/* En-tête barre */}
           <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
             <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-                style={{ background: 'var(--vert)' }} />
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5"
-                style={{ background: 'var(--vert)' }} />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: 'var(--vert)' }} />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--vert)' }} />
             </span>
-            <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
-              style={{ color: 'rgba(241,236,224,0.35)' }}>
+            <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
               Marchés — temps réel
             </span>
           </div>
