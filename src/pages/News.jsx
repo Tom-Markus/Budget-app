@@ -314,29 +314,38 @@ function GrapheModal({ item, onClose }) {
     try {
       let data
       if (item.coinId) {
-        // days=7 → bougies 4h depuis CoinGecko ; on agrège en bougies journalières côté client
+        // days=7 → bougies 4h depuis CoinGecko ; on agrège en 2 demi-journées (00h + 12h)
         const r = await fetch(
           `https://api.coingecko.com/api/v3/coins/${item.coinId}/ohlc?vs_currency=usd&days=7`
         )
         if (!r.ok) throw new Error()
         const raw = await r.json()
-        // Agréger les bougies 4h → OHLC journalier
-        const dayMap = new Map()
+        const halfMap = new Map()
         ;(Array.isArray(raw) ? raw : []).forEach(([ts, open, high, low, close]) => {
-          const key = new Date(ts).toISOString().slice(0, 10)
-          if (!dayMap.has(key)) {
-            dayMap.set(key, { ts, open, high, low, close })
+          const d   = new Date(ts)
+          const day = d.toISOString().slice(0, 10)
+          const half = d.getUTCHours() < 12 ? '00h' : '12h'
+          const key = `${day}-${half}`
+          if (!halfMap.has(key)) {
+            halfMap.set(key, { ts, open, high, low, close, half })
           } else {
-            const d = dayMap.get(key)
-            d.high  = Math.max(d.high, high)
-            d.low   = Math.min(d.low, low)
-            d.close = close
+            const e = halfMap.get(key)
+            e.high  = Math.max(e.high, high)
+            e.low   = Math.min(e.low, low)
+            e.close = close
           }
         })
-        data = Array.from(dayMap.values()).slice(-7).map(({ ts, open, high, low, close }) => ({
-          date: new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
-          ts, open, high, low, close,
-        }))
+        data = Array.from(halfMap.values())
+          .sort((a, b) => a.ts - b.ts)
+          .slice(-14)
+          .map(({ ts, open, high, low, close, half }) => {
+            const dayLabel = new Date(ts).toLocaleDateString('fr-BE', {
+              weekday: 'short',
+              day: 'numeric',
+              timeZone: 'UTC',
+            })
+            return { date: `${dayLabel} · ${half}`, ts, open, high, low, close }
+          })
       } else {
         const r = await fetch(`/api/history?symbol=${encodeURIComponent(item.indexSymbol)}`)
         if (!r.ok) throw new Error()
