@@ -328,6 +328,20 @@ export default function News() {
 
   return (
     <div className="space-y-5">
+      <style>{`
+        @keyframes liquid-morph {
+          0%   { border-radius: 56% 44% 52% 48% / 48% 56% 44% 52%; }
+          20%  { border-radius: 44% 56% 46% 54% / 54% 44% 58% 46%; }
+          40%  { border-radius: 52% 48% 58% 42% / 42% 54% 46% 58%; }
+          60%  { border-radius: 46% 54% 42% 58% / 58% 46% 52% 44%; }
+          80%  { border-radius: 54% 46% 50% 50% / 44% 56% 48% 52%; }
+          100% { border-radius: 56% 44% 52% 48% / 48% 56% 44% 52%; }
+        }
+        @keyframes liquid-breathe {
+          0%, 100% { box-shadow: 0 10px 40px rgba(14,31,58,0.55), 0 3px 10px rgba(14,31,58,0.3); }
+          50%       { box-shadow: 0 16px 52px rgba(14,31,58,0.65), 0 6px 18px rgba(14,31,58,0.35); }
+        }
+      `}</style>
 
       {/* En-tête */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
@@ -352,12 +366,29 @@ export default function News() {
         </button>
       </div>
 
-      {/* Barre marchés */}
-      <div className="rounded-lg overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
+      {/* Barre marchés — bulle liquide */}
+      <div
+        className="overflow-hidden relative"
+        style={{
+          background: 'var(--nuit)',
+          animation: 'liquid-morph 16s ease-in-out infinite, liquid-breathe 8s ease-in-out infinite',
+          willChange: 'border-radius, box-shadow',
+        }}
+      >
+        {/* Reflet de surface — simule la courbure d'une membrane liquide */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse at 28% 12%, rgba(241,236,224,0.06) 0%, transparent 50%)',
+            zIndex: 1,
+          }}
+          aria-hidden="true"
+        />
+
         {/* Trait signature bas */}
         <span
           className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-          style={{ background: 'var(--gradient-signature)' }}
+          style={{ background: 'var(--gradient-signature)', zIndex: 2 }}
           aria-hidden="true"
         />
 
