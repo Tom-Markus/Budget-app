@@ -331,29 +331,33 @@ export default function News() {
       {/* Définition du filtre SVG — nœud caché, référencé par url(#mkt-liquid) */}
       <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
         <defs>
-          <filter id="mkt-liquid" x="-10%" y="-120%" width="120%" height="340%">
-            <feTurbulence
-              type="fractalNoise"
-              baseFrequency="0.016 0.04"
-              numOctaves="2"
-              seed="7"
-              result="noise"
-            >
-              <animate
-                attributeName="baseFrequency"
-                dur="14s"
-                keyTimes="0;0.5;1"
-                values="0.016 0.04; 0.024 0.030; 0.016 0.04"
-                repeatCount="indefinite"
-              />
+          <filter id="mkt-liquid" x="-15%" y="-150%" width="130%" height="400%">
+            {/* Couche 1 — grandes ondes lentes, cycle 17s */}
+            <feTurbulence type="fractalNoise" baseFrequency="0.005 0.018"
+              numOctaves="3" seed="5" result="bigWaves">
+              <animate attributeName="baseFrequency" dur="17s"
+                calcMode="spline"
+                keyTimes="0;0.2;0.4;0.6;0.8;1"
+                values="0.005 0.018; 0.009 0.013; 0.006 0.023; 0.011 0.016; 0.007 0.021; 0.005 0.018"
+                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+                repeatCount="indefinite"/>
             </feTurbulence>
-            <feDisplacementMap
-              in="SourceGraphic"
-              in2="noise"
-              scale="16"
-              xChannelSelector="R"
-              yChannelSelector="G"
-            />
+            {/* Couche 2 — détail fin, cycle 23s (premier avec 17 → répétition à 391s) */}
+            <feTurbulence type="fractalNoise" baseFrequency="0.018 0.055"
+              numOctaves="2" seed="13" result="smallWaves">
+              <animate attributeName="baseFrequency" dur="23s"
+                calcMode="spline"
+                keyTimes="0;0.2;0.4;0.6;0.8;1"
+                values="0.018 0.055; 0.025 0.042; 0.016 0.066; 0.022 0.048; 0.019 0.060; 0.018 0.055"
+                keySplines="0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1;0.45 0 0.55 1"
+                repeatCount="indefinite"/>
+            </feTurbulence>
+            {/* Blend pondéré : 65 % grandes ondes + 35 % détail */}
+            <feComposite in="bigWaves" in2="smallWaves"
+              operator="arithmetic" k1="0" k2="0.65" k3="0.35" k4="0"
+              result="combinedNoise"/>
+            <feDisplacementMap in="SourceGraphic" in2="combinedNoise"
+              scale="13" xChannelSelector="R" yChannelSelector="G"/>
           </filter>
         </defs>
       </svg>
