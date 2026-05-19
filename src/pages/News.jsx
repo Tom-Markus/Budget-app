@@ -12,7 +12,7 @@ import {
   Wind, MapPin, Activity, Sunrise, Sunset, ArrowRightLeft, Landmark, Wallet,
 } from 'lucide-react'
 import {
-  LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid,
 } from 'recharts'
 import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '../lib/newsApi'
 
@@ -293,7 +293,13 @@ function GrapheModal({ item, onClose }) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
+            <AreaChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
+              <defs>
+                <linearGradient id="news-graphe-fill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={lineColor} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
                 dataKey="fullDate"
@@ -326,13 +332,14 @@ function GrapheModal({ item, onClose }) {
                 labelFormatter={(_, payload) => payload?.[0]?.payload?.fullDate ?? ''}
                 labelStyle={{ color: 'var(--encre-tertiaire)', marginBottom: 2 }}
               />
-              <Line
+              <Area
                 type="monotone" dataKey="price"
                 stroke={lineColor} strokeWidth={2}
+                fill="url(#news-graphe-fill)"
                 dot={false}
-                activeDot={{ r: 4, fill: lineColor, strokeWidth: 0 }}
+                activeDot={{ r: 4, fill: lineColor, stroke: 'var(--velin-clair)', strokeWidth: 2 }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         )}
 
