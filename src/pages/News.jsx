@@ -9,8 +9,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  RefreshCw, ExternalLink, TrendingUp, TrendingDown, Minus,
-  AlertCircle, BarChart2, Cpu, FlaskConical, Globe2,
+  RefreshCw, TrendingUp, TrendingDown, Minus,
+  BarChart2, Cpu, FlaskConical, Globe2,
 } from 'lucide-react'
 import { fetchNewsCategory, fetchMarkets, clearNewsCache } from '../lib/newsApi'
 
@@ -38,7 +38,7 @@ function fmt(val, dec = 0) {
   return val.toLocaleString('fr-BE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
 }
 
-// ── Widget marche ─────────────────────────────────────────────────────────────
+// ── Widget marché ─────────────────────────────────────────────────────────────
 
 function WidgetMarche({ label, prix, unite, change, loading }) {
   const pos  = change != null && change > 0
@@ -62,7 +62,10 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
       </span>
 
       <div className="flex items-baseline gap-1.5">
-        <span className="font-serif text-[1.2rem] font-medium text-velin-clair tabular-nums leading-none">
+        <span
+          className="font-serif text-[1.2rem] font-medium text-velin-clair leading-none"
+          style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
+        >
           {prix ?? '--'}
         </span>
         {prix != null && (
@@ -71,10 +74,13 @@ function WidgetMarche({ label, prix, unite, change, loading }) {
       </div>
 
       {change != null ? (
-        <span className={`inline-flex items-center gap-1 text-[10px] font-sans font-semibold tabular-nums
-          px-1.5 py-0.5 rounded-full w-fit leading-none ${
-          pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-velin-clair/8 text-velin-clair/35'
-        }`}>
+        <span
+          className={`inline-flex items-center gap-1 text-[10px] font-sans font-semibold
+            px-1.5 py-0.5 rounded-full w-fit leading-none ${
+            pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-velin-clair/8 text-velin-clair/35'
+          }`}
+          style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
+        >
           <Icon size={8} strokeWidth={2.5} aria-hidden="true" />
           {change >= 0 ? '+' : ''}{change.toFixed(2)} %
         </span>
@@ -115,6 +121,22 @@ function SqueletteArticle() {
   )
 }
 
+// ── Squelette erreur (sobre, velin-fonce) ─────────────────────────────────────
+
+function SqueletteErreur() {
+  return (
+    <div className="py-2 space-y-4">
+      {[90, 75, 60].map((w, i) => (
+        <div key={i} className="animate-pulse space-y-1.5">
+          <div className="h-3 bg-velin-fonce rounded" style={{ width: `${w}%` }} />
+          <div className="h-3 bg-velin-fonce rounded" style={{ width: `${w - 15}%` }} />
+          <div className="h-2.5 bg-velin-fonce/70 rounded w-1/3" />
+        </div>
+      ))}
+    </div>
+  )
+}
+
 // ── Carte article ─────────────────────────────────────────────────────────────
 
 function CarteArticle({ article, index }) {
@@ -124,9 +146,9 @@ function CarteArticle({ article, index }) {
       target="_blank"
       rel="noopener noreferrer"
       className="group flex gap-3.5 py-4 border-b border-encre/6 last:border-b-0 cursor-pointer"
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.28, delay: index * 0.035, ease: [0.32, 0.72, 0, 1] }}
+      transition={{ duration: 0.3, delay: index * 0.08, ease: [0.32, 0.72, 0, 1] }}
     >
       {/* Numéro éditorial */}
       <span className="text-[10px] font-sans font-medium tabular-nums text-encre-tertiaire/40
@@ -150,12 +172,13 @@ function CarteArticle({ article, index }) {
               {tempsRelatif(article.publishedAt)}
             </span>
           </div>
-          <ExternalLink
-            size={10}
-            strokeWidth={1.75}
-            className="shrink-0 opacity-0 group-hover:opacity-60 text-or transition-opacity duration-200"
-            aria-hidden="true"
-          />
+          <span
+            className="shrink-0 text-[11px] font-sans font-medium opacity-0
+              group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap"
+            style={{ color: 'var(--bordeaux)' }}
+          >
+            Lire →
+          </span>
         </div>
       </div>
     </motion.a>
@@ -168,7 +191,10 @@ function ColonneNews({ category, articles, loading, error }) {
   const { Icon } = category
 
   return (
-    <div className="surface-velin liserer-signature p-5 flex flex-col">
+    <div
+      className="surface-velin liserer-signature p-5 flex flex-col"
+      style={{ borderTop: '2px solid var(--bordeaux)' }}
+    >
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-or/15">
         <div className="flex items-center gap-2">
           <Icon
@@ -177,8 +203,7 @@ function ColonneNews({ category, articles, loading, error }) {
             className="text-or/60 shrink-0"
             aria-hidden="true"
           />
-          <h2 className="text-[10px] uppercase font-sans font-semibold text-encre-secondaire"
-            style={{ letterSpacing: '0.18em' }}>
+          <h2 className="font-serif italic text-[0.875rem] text-encre-secondaire leading-none">
             {category.label}
           </h2>
         </div>
@@ -193,13 +218,7 @@ function ColonneNews({ category, articles, loading, error }) {
       {loading ? (
         Array.from({ length: 5 }).map((_, i) => <SqueletteArticle key={i} />)
       ) : error ? (
-        <div className="py-6 flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-rouge/50">
-            <AlertCircle size={13} strokeWidth={1.75} aria-hidden="true" />
-            <span className="text-[13px] font-serif italic">Source indisponible</span>
-          </div>
-          <p className="text-[10px] font-sans text-encre-tertiaire/70 pl-5 leading-relaxed">{error}</p>
-        </div>
+        <SqueletteErreur />
       ) : articles.length === 0 ? (
         <p className="text-sm font-serif italic text-encre-tertiaire py-5">Aucun article disponible.</p>
       ) : (
@@ -314,7 +333,7 @@ export default function News() {
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-serif italic text-2xl text-encre leading-tight">Briefing du matin</h1>
-          <p className="text-[11px] text-encre-tertiaire font-sans mt-0.5">
+          <p className="font-sans mt-0.5" style={{ fontSize: '0.75rem', color: 'var(--encre-tertiaire)' }}>
             {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
           </p>
         </div>

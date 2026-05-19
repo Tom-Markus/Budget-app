@@ -2,14 +2,13 @@
  * src/lib/newsApi.js
  * ----------------------------------------------------------------------------
  * Sources :
- *   News    : GNews /search (plan gratuit, activation email requise)
- *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (pas de cle)
- *   Indices : Stooq via /api/market-indices (Vercel proxy, pas de CORS)
+ *   News    : RSS via rss2json.com (sans clé, 10k req/jour)
+ *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (sans clé)
+ *   Indices : Yahoo Finance via /api/markets (Vercel proxy, pas de CORS)
  *   Forex   : Alpha Vantage FX_DAILY — EUR/USD avec variation 24h
  * ----------------------------------------------------------------------------
  */
 
-const GNEWS_KEY = import.meta.env.VITE_GNEWS_KEY
 const AV_KEY    = import.meta.env.VITE_ALPHA_VANTAGE_KEY
 const CACHE_TTL = 15 * 60 * 1000
 
@@ -30,52 +29,56 @@ function setCache(key, data) {
 }
 
 export function clearNewsCache() {
-  ;['business', 'technology', 'science', 'world'].forEach(c =>
+  ;['business', 'technology', 'science', 'world'].forEach(c => {
     sessionStorage.removeItem(`gnews_${c}`)
-  )
+    sessionStorage.removeItem(`rss_${c}`)
+  })
   ;['coingecko_markets', 'av_eurusd_daily', 'indices_stooq', 'indices_twelvedata', 'indices_yahoo'].forEach(k =>
     sessionStorage.removeItem(k)
   )
 }
 
-// ── News — GNews /search ───────────────────────────────────────────────────
-// Le plan gratuit ne supporte pas category= sur /top-headlines → on utilise
-// /search avec des mots-cles thematiques.
+// ── News — RSS via rss2json.com ────────────────────────────────────────────
+// GNews plan gratuit exige une confirmation d'e-mail et une clé non disponible
+// en local. On utilise des flux RSS publics proxiés par rss2json (sans clé,
+// 10 000 req/jour gratuit, CORS OK depuis le navigateur).
 
-const CATEGORY_QUERIES = {
-  business:   'finance economie bourse marchés',
-  technology: 'technologie intelligence artificielle innovation',
-  science:    'science decouverte recherche',
-  world:      'monde international geopolitique actualites',
+const RSS_FEEDS = {
+  business:   'https://feeds.feedburner.com/PlanetMoney',
+  technology: 'https://feeds.feedburner.com/TechCrunch',
+  science:    'https://www.sciencedaily.com/rss/top/science.xml',
+  world:      'https://feeds.reuters.com/Reuters/worldNews',
 }
 
-export async function fetchNewsCategory(category, max = 8) {
-  const cacheKey = `gnews_${category}`
+export async function fetchNewsCategory(category, max = 6) {
+  const cacheKey = `rss_${category}`
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const q = encodeURIComponent(CATEGORY_QUERIES[category] || category)
-  const url = `https://gnews.io/api/v4/search?q=${q}&max=${max}&apikey=${GNEWS_KEY}`
+  const feedUrl = RSS_FEEDS[category]
+  if (!feedUrl) throw new Error(`Catégorie inconnue : ${category}`)
+
+  const url =
+    `https://api.rss2json.com/v1/api.json` +
+    `?rss_url=${encodeURIComponent(feedUrl)}&count=${max}`
 
   let res
   try {
     res = await fetch(url)
   } catch {
-    throw new Error('Reseau inaccessible (CORS ou hors ligne)')
+    throw new Error('Réseau inaccessible')
   }
-
-  if (res.status === 401) throw new Error('Cle GNews invalide — verifie VITE_GNEWS_KEY')
-  if (res.status === 403) throw new Error('Compte GNews non verifie — confirme ton email sur gnews.io/dashboard')
-  if (!res.ok) throw new Error(`Erreur GNews ${res.status}`)
+  if (!res.ok) throw new Error(`rss2json ${res.status}`)
 
   const json = await res.json()
-  if (json.errors?.length) throw new Error(json.errors[0])
+  if (json.status !== 'ok') throw new Error(`Flux indisponible`)
 
-  const articles = (json.articles || []).map(a => ({
+  const feedTitle = json.feed?.title || 'Source'
+  const articles = (json.items || []).map(a => ({
     title:       a.title,
-    url:         a.url,
-    source:      a.source?.name || 'Source',
-    publishedAt: a.publishedAt,
+    url:         a.link,
+    source:      feedTitle,
+    publishedAt: a.pubDate,
   }))
 
   setCache(cacheKey, articles)
@@ -128,49 +131,33 @@ async function fetchEURUSD() {
   return data
 }
 
-// ── Indices boursiers — Stooq via Vercel serverless proxy ─────────────────
-// Le proxy /api/market-indices fetch Stooq cote serveur (pas de CORS).
-// Symbols Stooq : ^spx (S&P 500), ^cac (CAC 40), ^bel20 (BEL 20)
-// Valeurs : open + close → variation intraday calculée localement.
+// ── Indices boursiers — Yahoo Finance via Vercel proxy ────────────────────
+// /api/markets renvoie { cac40, sp500, bel20 } chacun avec { price, change }
 
 async function fetchIndices() {
-  const cacheKey = 'indices_stooq'
+  const cacheKey = 'indices_yahoo'
   const cached = getCached(cacheKey)
   if (cached) return cached
 
   let res
   try {
-    res = await fetch('/api/market-indices')
+    res = await fetch('/api/markets')
   } catch {
     return null
   }
   if (!res.ok) return null
 
   try {
-    const json = await res.json()
-    if (json.error) return null
-
-    const parse = (symbol) => {
-      const s = (json.symbols || []).find(x => x.symbol === symbol)
-      if (!s || s.close == null) return null
-      const price  = s.close
-      const change = s.open > 0 ? ((s.close - s.open) / s.open) * 100 : null
-      return { price, change }
-    }
-
-    const bySymbol = {
-      sp500: parse('^SPX'),
-      cac40: parse('^CAC'),
-      bel20: parse('^BEL20'),
-    }
-    setCache(cacheKey, bySymbol)
-    return bySymbol
+    const data = await res.json()
+    if (!data || data.error) return null
+    setCache(cacheKey, data)
+    return data
   } catch {
     return null
   }
 }
 
-// ── Agregat marches ────────────────────────────────────────────────────────
+// ── Agrégat marchés ────────────────────────────────────────────────────────
 
 export async function fetchMarkets() {
   const [cgRes, eurusdRes, indicesRes] = await Promise.allSettled([
