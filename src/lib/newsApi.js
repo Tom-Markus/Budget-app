@@ -38,47 +38,31 @@ export function clearNewsCache() {
   )
 }
 
-// ── News — RSS via rss2json.com ────────────────────────────────────────────
-// GNews plan gratuit exige une confirmation d'e-mail et une clé non disponible
-// en local. On utilise des flux RSS publics proxiés par rss2json (sans clé,
-// 10 000 req/jour gratuit, CORS OK depuis le navigateur).
+// ── News — RSS via proxy Vercel /api/news ──────────────────────────────────
+// Le proxy fetch les flux BBC/TechCrunch côté serveur (pas de CORS),
+// parse le XML et renvoie du JSON. Même domaine → zéro restriction navigateur.
 
-const RSS_FEEDS = {
-  business:   'https://feeds.bbci.co.uk/news/business/rss.xml',
-  technology: 'https://techcrunch.com/feed/',
-  science:    'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',
-  world:      'https://feeds.bbci.co.uk/news/world/rss.xml',
-}
-
-export async function fetchNewsCategory(category, max = 6) {
+export async function fetchNewsCategory(category) {
   const cacheKey = `rss_${category}`
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const feedUrl = RSS_FEEDS[category]
-  if (!feedUrl) throw new Error(`Catégorie inconnue : ${category}`)
-
-  const url =
-    `https://api.rss2json.com/v1/api.json` +
-    `?rss_url=${encodeURIComponent(feedUrl)}&count=${max}`
-
   let res
   try {
-    res = await fetch(url)
+    res = await fetch(`/api/news?category=${encodeURIComponent(category)}`)
   } catch {
     throw new Error('Réseau inaccessible')
   }
-  if (!res.ok) throw new Error(`rss2json ${res.status}`)
+  if (!res.ok) throw new Error(`Erreur flux ${res.status}`)
 
   const json = await res.json()
-  if (json.status !== 'ok') throw new Error(`Flux indisponible`)
+  if (json.error) throw new Error(json.error)
 
-  const feedTitle = json.feed?.title || 'Source'
   const articles = (json.items || []).map(a => ({
     title:       a.title,
-    url:         a.link,
-    source:      feedTitle,
-    publishedAt: a.pubDate,
+    url:         a.url,
+    source:      json.feedTitle || 'Source',
+    publishedAt: a.publishedAt,
   }))
 
   setCache(cacheKey, articles)
