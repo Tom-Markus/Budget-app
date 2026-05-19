@@ -1043,27 +1043,27 @@ export default function News() {
         key: 'crypto',
         label: 'Crypto',
         items: [
-          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'      },
-          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'     },
-          { label: 'Solana',   prix: sol ? fmt(sol.usd) : null,  unite: '$', change: sol?.usd_24h_change ?? null, coinId: 'solana'       },
-          { label: 'XRP',      prix: xrp ? fmt(xrp.usd) : null,  unite: '$', change: xrp?.usd_24h_change ?? null, coinId: 'ripple'      },
-          { label: 'BNB',      prix: bnb ? fmt(bnb.usd) : null,  unite: '$', change: bnb?.usd_24h_change ?? null, coinId: 'binancecoin' },
+          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd, 2) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'      },
+          { label: 'Ethereum', prix: eth ? fmt(eth.usd, 2) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'     },
+          { label: 'Solana',   prix: sol ? fmt(sol.usd, 2) : null,  unite: '$', change: sol?.usd_24h_change ?? null, coinId: 'solana'       },
+          { label: 'XRP',      prix: xrp ? fmt(xrp.usd, 2) : null,  unite: '$', change: xrp?.usd_24h_change ?? null, coinId: 'ripple'      },
+          { label: 'BNB',      prix: bnb ? fmt(bnb.usd, 2) : null,  unite: '$', change: bnb?.usd_24h_change ?? null, coinId: 'binancecoin' },
         ],
       },
       {
         key: 'or',
         label: 'Or',
         items: [
-          { label: 'Or (XAU)', prix: markets?.gold?.usd != null ? fmt(markets.gold.usd) : null, unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold' },
+          { label: 'Or (XAU)', prix: markets?.gold?.usd != null ? fmt(markets.gold.usd, 2) : null, unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold' },
         ],
       },
       {
         key: 'indices',
         label: 'Indices',
         items: [
-          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null },
-          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null },
-          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null },
+          { label: 'CAC 40',  prix: markets?.cac40?.price != null ? fmt(markets.cac40.price, 2) : null, unite: 'pts', change: markets?.cac40?.change ?? null, coinId: null },
+          { label: 'S&P 500', prix: markets?.sp500?.price != null ? fmt(markets.sp500.price, 2) : null, unite: 'pts', change: markets?.sp500?.change ?? null, coinId: null },
+          { label: 'BEL 20',  prix: markets?.bel20?.price != null ? fmt(markets.bel20.price, 2) : null, unite: 'pts', change: markets?.bel20?.change ?? null, coinId: null },
         ],
       },
     ]
