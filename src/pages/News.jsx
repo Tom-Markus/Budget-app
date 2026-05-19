@@ -735,11 +735,17 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
             <div
               key={key}
               onClick={() => !isActive && handleFocus(key)}
-              className={`flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
+              className={`relative flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
                 rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
-              style={isActive ? { borderTop: '2px solid var(--bordeaux)' } : {}}
             >
+              {isActive && (
+                <span
+                  className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl hidden sm:block pointer-events-none"
+                  style={{ background: 'var(--bordeaux)' }}
+                  aria-hidden="true"
+                />
+              )}
               <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
                 w-10 shrink-0 sm:w-auto sm:shrink sm:text-center
                 ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
