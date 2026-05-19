@@ -296,15 +296,15 @@ function GrapheModal({ item, onClose }) {
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
-                dataKey="idx"
-                type="number"
-                scale="point"
-                domain={[0, (chartData?.length ?? 1) - 1]}
-                ticks={chartData?.map((_, i) => i) ?? []}
-                tickFormatter={i => chartData?.[i]?.date ?? ''}
+                dataKey="fullDate"
                 tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
                 axisLine={false} tickLine={false}
                 interval={0}
+                tickFormatter={val =>
+                  val?.includes('00h') || val?.includes('ouverture')
+                    ? (val?.split(' · ')[0] ?? '')
+                    : ''
+                }
               />
               <YAxis
                 domain={['auto', 'auto']}
