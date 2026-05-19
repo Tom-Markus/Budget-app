@@ -807,7 +807,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
               {isActive && (
                 <span
                   className="absolute top-0 left-0 right-0 h-[2px] rounded-t-xl hidden sm:block pointer-events-none"
-                  style={{ background: 'var(--bordeaux)' }}
+                  style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux) 50%, transparent 100%)' }}
                   aria-hidden="true"
                 />
               )}
