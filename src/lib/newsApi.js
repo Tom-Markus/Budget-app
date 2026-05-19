@@ -61,7 +61,7 @@ export async function fetchNewsCategory(category) {
   const articles = (json.items || []).map(a => ({
     title:       a.title,
     url:         a.url,
-    source:      json.feedTitle || 'Source',
+    source:      a.source || 'Source',
     publishedAt: a.publishedAt,
   }))
 

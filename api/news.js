@@ -1,12 +1,24 @@
-// Vercel serverless — proxy RSS pour les actualités
-// Fetche le flux côté serveur (pas de CORS), parse le XML, renvoie du JSON propre.
-// Cache Vercel 15 min pour ne pas marteler les sources.
+// Vercel serverless — proxy RSS multi-sources par catégorie
+// Fetche tous les flux en parallèle, trie par date, renvoie les 3 plus récents.
 
 const FEEDS = {
-  business:   'https://feeds.bbci.co.uk/news/business/rss.xml',
-  technology: 'https://techcrunch.com/feed/',
-  science:    'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',
-  world:      'https://feeds.bbci.co.uk/news/world/rss.xml',
+  business: [
+    { url: 'https://feeds.bbci.co.uk/news/business/rss.xml',  source: 'BBC Business' },
+    { url: 'https://www.theguardian.com/business/rss',        source: 'The Guardian' },
+  ],
+  technology: [
+    { url: 'https://techcrunch.com/feed/',                    source: 'TechCrunch' },
+    { url: 'https://www.wired.com/feed/rss',                  source: 'Wired' },
+    { url: 'https://www.technologyreview.com/feed/',          source: 'MIT Tech Review' },
+  ],
+  science: [
+    { url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', source: 'BBC Science' },
+    { url: 'https://www.sciencedaily.com/rss/top/science.xml',              source: 'Science Daily' },
+  ],
+  world: [
+    { url: 'https://feeds.bbci.co.uk/news/world/rss.xml',    source: 'BBC World' },
+    { url: 'https://www.theguardian.com/world/rss',          source: 'The Guardian' },
+  ],
 }
 
 function extractTag(xml, tag) {
@@ -26,39 +38,22 @@ function decodeEntities(str) {
     .replace(/&#x27;/g, "'")
 }
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800')
+async function parseFeed({ url, source }) {
+  const r = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)',
+      Accept: 'application/rss+xml, application/xml, text/xml, */*',
+    },
+  })
+  if (!r.ok) throw new Error(`${source}: HTTP ${r.status}`)
+  const xml = await r.text()
 
-  const { category } = req.query
-  const feedUrl = FEEDS[category]
-  if (!feedUrl) return res.status(400).json({ error: 'Catégorie inconnue' })
-
-  let xml
-  try {
-    const r = await fetch(feedUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)',
-        Accept: 'application/rss+xml, application/xml, text/xml, */*',
-      },
-    })
-    if (!r.ok) return res.status(502).json({ error: `Feed ${r.status}` })
-    xml = await r.text()
-  } catch (e) {
-    return res.status(502).json({ error: e.message })
-  }
-
-  // Titre du flux (premier <title> du document)
-  const feedTitle = decodeEntities(extractTag(xml, 'title') || 'Source')
-
-  // Extraction des items
   const items = []
   const itemRe = /<item[^>]*>([\s\S]*?)<\/item>/gi
   let match
-  while ((match = itemRe.exec(xml)) !== null && items.length < 3) {
+  while ((match = itemRe.exec(xml)) !== null && items.length < 10) {
     const chunk = match[1]
     const title = extractTag(chunk, 'title')
-    // <link> en RSS 2.0 : contenu texte brut entre balises
     const link =
       (/<link>([^<]+)<\/link>/i.exec(chunk) || [])[1]?.trim() ||
       (/<link[^>]+href="([^"]+)"/i.exec(chunk) || [])[1]?.trim()
@@ -67,10 +62,32 @@ export default async function handler(req, res) {
       items.push({
         title:       decodeEntities(title),
         url:         link,
+        source,
         publishedAt: pubDate || new Date().toISOString(),
       })
     }
   }
+  return items
+}
 
-  res.json({ feedTitle, items })
+export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800')
+
+  const { category } = req.query
+  const feeds = FEEDS[category]
+  if (!feeds) return res.status(400).json({ error: 'Catégorie inconnue' })
+
+  const results = await Promise.allSettled(feeds.map(parseFeed))
+
+  const allItems = []
+  results.forEach(r => { if (r.status === 'fulfilled') allItems.push(...r.value) })
+
+  if (allItems.length === 0) return res.status(502).json({ error: 'Aucun flux disponible' })
+
+  const items = allItems
+    .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
+    .slice(0, 3)
+
+  res.json({ items })
 }
