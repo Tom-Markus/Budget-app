@@ -136,7 +136,7 @@ async function fetchFearGreed() {
 
 async function fetchFx() {
   try {
-    const res = await fetch('https://api.frankfurter.app/latest?base=EUR&symbols=USD,GBP,CHF')
+    const res = await fetch('/api/fx')
     if (!res.ok) return null
     const { rates, date } = await res.json()
     return { rates, date }
@@ -324,32 +324,35 @@ function WidgetMeteo({ weather }) {
 
   return (
     <div className="surface-velin liserer-signature p-5 flex items-center gap-4">
-      <WeatherIcon size={36} strokeWidth={1.4} style={{ color }} aria-hidden="true" className="shrink-0" />
+      <WeatherIcon size={38} strokeWidth={1.3} style={{ color }} aria-hidden="true" className="shrink-0" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="font-serif font-medium text-[1.6rem] text-encre leading-none tabular-nums">
+        {/* Température + ville */}
+        <div className="flex items-baseline gap-2.5 flex-wrap">
+          <span className="font-serif font-medium text-[1.7rem] text-encre leading-none tabular-nums">
             {weather.temp}°C
           </span>
-          <span className="font-sans text-xs text-encre-tertiaire truncate">{weather.city}</span>
+          <span className="font-sans text-[12px] text-encre-secondaire truncate">{weather.city}</span>
         </div>
-        <div className="flex items-center gap-1.5 mt-1">
-          <span className="font-sans text-[11px] text-encre-secondaire">{weatherLabel}</span>
+        {/* Condition + vent */}
+        <div className="flex items-center gap-1.5 mt-1.5">
+          <span className="font-sans text-[12px] text-encre font-medium">{weatherLabel}</span>
           <span className="text-encre-tertiaire/30 text-[10px]">·</span>
-          <Wind size={10} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
-          <span className="font-sans text-[11px] text-encre-tertiaire">{weather.wind} km/h</span>
+          <Wind size={11} className="text-encre-tertiaire/60 shrink-0" aria-hidden="true" />
+          <span className="font-sans text-[12px] text-encre-secondaire">{weather.wind} km/h</span>
         </div>
+        {/* Lever / coucher */}
         {(weather.sunrise || weather.sunset) && (
-          <div className="flex items-center gap-3 mt-1.5">
+          <div className="flex items-center gap-4 mt-1.5">
             {weather.sunrise && (
-              <span className="flex items-center gap-1">
-                <Sunrise size={10} className="text-or/60 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[11px] text-encre-tertiaire tabular-nums">{weather.sunrise}</span>
+              <span className="flex items-center gap-1.5">
+                <Sunrise size={11} className="text-or/70 shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums">{weather.sunrise}</span>
               </span>
             )}
             {weather.sunset && (
-              <span className="flex items-center gap-1">
-                <Sunset size={10} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[11px] text-encre-tertiaire tabular-nums">{weather.sunset}</span>
+              <span className="flex items-center gap-1.5">
+                <Sunset size={11} className="text-encre-tertiaire/60 shrink-0" aria-hidden="true" />
+                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums">{weather.sunset}</span>
               </span>
             )}
           </div>
