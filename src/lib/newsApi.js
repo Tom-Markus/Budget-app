@@ -44,10 +44,10 @@ export function clearNewsCache() {
 // 10 000 req/jour gratuit, CORS OK depuis le navigateur).
 
 const RSS_FEEDS = {
-  business:   'https://feeds.feedburner.com/PlanetMoney',
-  technology: 'https://feeds.feedburner.com/TechCrunch',
-  science:    'https://www.sciencedaily.com/rss/top/science.xml',
-  world:      'https://feeds.reuters.com/Reuters/worldNews',
+  business:   'https://feeds.bbci.co.uk/news/business/rss.xml',
+  technology: 'https://techcrunch.com/feed/',
+  science:    'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',
+  world:      'https://feeds.bbci.co.uk/news/world/rss.xml',
 }
 
 export async function fetchNewsCategory(category, max = 6) {
