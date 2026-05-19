@@ -284,10 +284,7 @@ function GrapheModal({ item, onClose }) {
 
 // ── Widget Météo ──────────────────────────────────────────────────────────────
 
-function WidgetMeteo() {
-  const [weather, setWeather] = useState(undefined)
-
-  useEffect(() => { fetchWeather().then(setWeather) }, [])
+function WidgetMeteo({ weather }) {
 
   if (weather === undefined) {
     return (
@@ -336,10 +333,7 @@ function WidgetMeteo() {
 
 // ── Widget Fear & Greed ───────────────────────────────────────────────────────
 
-function WidgetFearGreed() {
-  const [fg, setFg] = useState(undefined)
-
-  useEffect(() => { fetchFearGreed().then(setFg) }, [])
+function WidgetFearGreed({ fg }) {
 
   if (fg === undefined) {
     return (
@@ -596,6 +590,8 @@ export default function News() {
   const [lastRefresh,    setLastRefresh]    = useState(null)
   const [refreshing,     setRefreshing]     = useState(false)
   const [chartItem,      setChartItem]      = useState(null)
+  const [weather,        setWeather]        = useState(undefined)
+  const [fg,             setFg]             = useState(undefined)
 
   const chargerMarches = useCallback(async () => {
     setMarketsLoading(true)
@@ -616,23 +612,31 @@ export default function News() {
     setLastRefresh(new Date())
   }, [])
 
+  const chargerWidgets = useCallback(async () => {
+    setWeather(undefined)
+    setFg(undefined)
+    const [w, f] = await Promise.all([fetchWeather(), fetchFearGreed()])
+    setWeather(w)
+    setFg(f)
+  }, [])
+
   useEffect(() => {
     const init = async () => {
-      await Promise.all([chargerMarches(), chargerNews()])
+      await Promise.all([chargerMarches(), chargerNews(), chargerWidgets()])
       setNewsLoading({})
     }
     init()
-  }, [chargerMarches, chargerNews])
+  }, [chargerMarches, chargerNews, chargerWidgets])
 
   const handleRefresh = useCallback(async () => {
     if (refreshing) return
     clearNewsCache()
     setRefreshing(true)
     setNewsLoading(Object.fromEntries(CATEGORIES.map(c => [c.id, true])))
-    await Promise.all([chargerMarches(), chargerNews()])
+    await Promise.all([chargerMarches(), chargerNews(), chargerWidgets()])
     setNewsLoading({})
     setRefreshing(false)
-  }, [refreshing, chargerMarches, chargerNews])
+  }, [refreshing, chargerMarches, chargerNews, chargerWidgets])
 
   const widgetGroups = useMemo(() => {
     const btc = markets?.bitcoin
@@ -739,8 +743,8 @@ export default function News() {
 
       {/* ── Widgets météo + sentiment ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <WidgetMeteo />
-        <WidgetFearGreed />
+        <WidgetMeteo weather={weather} />
+        <WidgetFearGreed fg={fg} />
       </div>
 
       {/* ── Tabs mobile ── */}
