@@ -188,7 +188,7 @@ function CandlestickShape(props) {
       <rect
         x={cx - candleW / 2} y={bodyTop}
         width={candleW} height={bodyH}
-        fill={bullish ? 'rgba(14,163,113,0.2)' : 'rgba(229,57,53,0.85)'}
+        fill={bullish ? 'rgba(14,163,113,0.85)' : 'rgba(229,57,53,0.85)'}
         stroke={color} strokeWidth={1.5} rx={1}
       />
     </g>
