@@ -243,3 +243,9 @@ a {
 .animate-pulse-or {
   animation: pulse-or 1400ms ease-in-out infinite;
 }
+
+@supports not (backdrop-filter: blur(1px)) {
+  .navbar-glass {
+    background: rgba(14, 31, 58, 0.97) !important;
+  }
+}
