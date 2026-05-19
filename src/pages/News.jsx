@@ -416,21 +416,61 @@ function WidgetFearGreed({ fg }) {
 // ── Widget Taux de change ─────────────────────────────────────────────────────
 
 const FX_PAIRS = [
+  { key: 'EUR', label: 'EUR', flag: '🇪🇺' },
   { key: 'USD', label: 'USD', flag: '🇺🇸' },
   { key: 'GBP', label: 'GBP', flag: '🇬🇧' },
   { key: 'CHF', label: 'CHF', flag: '🇨🇭' },
 ]
 
 function WidgetFx({ fx }) {
+  const [activeField, setActiveField] = useState('EUR')
+  const [activeValue, setActiveValue] = useState('')
+
+  const rates = useMemo(() => ({
+    EUR: 1,
+    USD: fx?.rates?.USD ?? null,
+    GBP: fx?.rates?.GBP ?? null,
+    CHF: fx?.rates?.CHF ?? null,
+  }), [fx])
+
+  const ready = !!(fx && rates.USD && rates.GBP && rates.CHF)
+
+  // Valeur en EUR de ce que l'utilisateur a tapé
+  const eurEq = useMemo(() => {
+    const num = parseFloat(activeValue)
+    if (!num || isNaN(num) || num <= 0) return 0
+    const r = rates[activeField]
+    if (!r) return 0
+    return num / r
+  }, [activeField, activeValue, rates])
+
+  function getDerived(field) {
+    if (!eurEq) return ''
+    const r = rates[field]
+    if (!r) return ''
+    return (eurEq * r).toFixed(4)
+  }
+
+  function getValue(field) {
+    return field === activeField ? activeValue : getDerived(field)
+  }
+
+  function handleFocus(field) {
+    if (field === activeField) return
+    setActiveField(field)
+    setActiveValue(getDerived(field))
+  }
+
   if (fx === undefined) {
     return (
       <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
         <div className="h-8 w-8 bg-encre/6 rounded-full shrink-0" />
         <div className="flex-1 space-y-2.5">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex justify-between">
-              <div className="h-3 w-14 bg-encre/6 rounded" />
-              <div className="h-3 w-10 bg-encre/8 rounded" />
+          {[1, 2, 3, 4].map(i => (
+            <div key={i} className="flex justify-between gap-3">
+              <div className="h-3 w-10 bg-encre/6 rounded" />
+              <div className="h-3 flex-1 bg-encre/4 rounded" />
+              <div className="h-3 w-14 bg-encre/8 rounded" />
             </div>
           ))}
         </div>
@@ -449,29 +489,55 @@ function WidgetFx({ fx }) {
 
   return (
     <div className="surface-velin liserer-signature p-5">
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <ArrowRightLeft size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
           <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
-            EUR — Taux du jour
+            Taux de change
           </span>
         </div>
         <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date}</span>
       </div>
-      <div className="space-y-2">
-        {FX_PAIRS.map(({ key, label, flag }) => (
-          fx.rates[key] != null && (
-            <div key={key} className="flex items-center justify-between">
-              <span className="font-sans text-[12px] text-encre-secondaire flex items-center gap-1.5">
-                <span aria-hidden="true">{flag}</span> {label}
+
+      <div className="space-y-1">
+        {FX_PAIRS.map(({ key, flag, label }) => {
+          const isActive = key === activeField
+          const val = getValue(key)
+          const rate = key === 'EUR' ? '1.0000' : rates[key]?.toFixed(4)
+          return (
+            <div
+              key={key}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-150
+                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
+            >
+              <span className="text-[13px] shrink-0" aria-hidden="true">{flag}</span>
+              <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider w-7 shrink-0
+                ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
+                {label}
               </span>
-              <span className="font-serif font-medium text-[1.05rem] text-encre tabular-nums">
-                {fx.rates[key].toFixed(4)}
+              <input
+                type="number"
+                min="0"
+                value={val}
+                placeholder={ready ? '0' : '…'}
+                disabled={!ready}
+                onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
+                onFocus={() => handleFocus(key)}
+                className="flex-1 font-serif font-medium text-[1.05rem] text-encre bg-transparent
+                  outline-none text-right tabular-nums disabled:opacity-30
+                  placeholder:text-encre-tertiaire/30"
+              />
+              <span className="font-sans text-[10px] text-encre-tertiaire/40 tabular-nums w-14 text-right shrink-0">
+                {rate}
               </span>
             </div>
           )
-        ))}
+        })}
       </div>
+
+      <p className="text-[9px] font-sans text-encre-tertiaire/35 text-right mt-3">
+        {ready ? '1 EUR = taux · ECB' : 'Chargement des taux…'}
+      </p>
     </div>
   )
 }
@@ -545,10 +611,11 @@ function WidgetBceFed() {
 // ── Widget Portfolio perso ────────────────────────────────────────────────────
 
 const CONV_FIELDS = [
-  { key: 'btc', symbol: 'BTC', label: 'Bitcoin',  dec: 8 },
-  { key: 'eth', symbol: 'ETH', label: 'Ethereum', dec: 6 },
-  { key: 'xau', symbol: 'XAU', label: 'Or',       dec: 4 },
-  { key: 'usd', symbol: 'USD', label: 'Dollar',   dec: 2 },
+  { key: 'btc', symbol: 'BTC', label: 'Bitcoin', dec: 8 },
+  { key: 'sol', symbol: 'SOL', label: 'Solana',  dec: 4 },
+  { key: 'xrp', symbol: 'XRP', label: 'XRP',     dec: 2 },
+  { key: 'bnb', symbol: 'BNB', label: 'BNB',     dec: 4 },
+  { key: 'usd', symbol: 'USD', label: 'Dollar',  dec: 2 },
 ]
 
 function WidgetPortfolio({ markets }) {
@@ -556,9 +623,10 @@ function WidgetPortfolio({ markets }) {
   const [activeValue, setActiveValue] = useState('')
 
   const prices = useMemo(() => ({
-    btc: markets?.bitcoin?.usd  ?? null,
-    eth: markets?.ethereum?.usd ?? null,
-    xau: markets?.gold?.usd     ?? null,
+    btc: markets?.bitcoin?.usd     ?? null,
+    sol: markets?.solana?.usd      ?? null,
+    xrp: markets?.ripple?.usd      ?? null,
+    bnb: markets?.binancecoin?.usd ?? null,
     usd: 1,
   }), [markets])
 
@@ -587,7 +655,7 @@ function WidgetPortfolio({ markets }) {
     setActiveValue(getDerived(field))
   }
 
-  const ready = prices.btc && prices.eth && prices.xau
+  const ready = prices.btc && prices.sol && prices.xrp && prices.bnb
 
   return (
     <div className="surface-velin liserer-signature p-5">
@@ -900,13 +968,19 @@ export default function News() {
   const widgetGroups = useMemo(() => {
     const btc = markets?.bitcoin
     const eth = markets?.ethereum
+    const sol = markets?.solana
+    const xrp = markets?.ripple
+    const bnb = markets?.binancecoin
     return [
       {
         key: 'crypto',
         label: 'Crypto',
         items: [
-          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'   },
-          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'  },
+          { label: 'Bitcoin',  prix: btc ? fmt(btc.usd) : null,  unite: '$', change: btc?.usd_24h_change ?? null, coinId: 'bitcoin'      },
+          { label: 'Ethereum', prix: eth ? fmt(eth.usd) : null,  unite: '$', change: eth?.usd_24h_change ?? null, coinId: 'ethereum'     },
+          { label: 'Solana',   prix: sol ? fmt(sol.usd) : null,  unite: '$', change: sol?.usd_24h_change ?? null, coinId: 'solana'       },
+          { label: 'XRP',      prix: xrp ? fmt(xrp.usd) : null,  unite: '$', change: xrp?.usd_24h_change ?? null, coinId: 'ripple'      },
+          { label: 'BNB',      prix: bnb ? fmt(bnb.usd) : null,  unite: '$', change: bnb?.usd_24h_change ?? null, coinId: 'binancecoin' },
         ],
       },
       {

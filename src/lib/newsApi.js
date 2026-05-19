@@ -78,7 +78,7 @@ async function fetchCoinGecko() {
 
   const res = await fetch(
     'https://api.coingecko.com/api/v3/simple/price' +
-    '?ids=bitcoin,ethereum,pax-gold' +
+    '?ids=bitcoin,ethereum,solana,ripple,binancecoin' +
     '&vs_currencies=eur,usd' +
     '&include_24hr_change=true'
   )
@@ -155,9 +155,11 @@ export async function fetchMarkets() {
   const indices = indicesRes.status === 'fulfilled' ? indicesRes.value : null
 
   return {
-    bitcoin:  cg?.bitcoin       ?? null,
-    ethereum: cg?.ethereum      ?? null,
-    gold:     cg?.['pax-gold']  ?? null,
+    bitcoin:     cg?.bitcoin      ?? null,
+    ethereum:    cg?.ethereum     ?? null,
+    solana:      cg?.solana       ?? null,
+    ripple:      cg?.ripple       ?? null,
+    binancecoin: cg?.binancecoin  ?? null,
     eurusd,
     sp500: indices?.sp500 ?? null,
     cac40: indices?.cac40 ?? null,
