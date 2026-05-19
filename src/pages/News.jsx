@@ -241,7 +241,7 @@ function GrapheModal({ item, onClose }) {
 
       {/* Panneau */}
       <motion.div
-        className="relative surface-velin w-full max-w-md rounded-xl p-6 z-10"
+        className="relative surface-velin w-full max-w-2xl rounded-xl p-6 z-10"
         initial={{ opacity: 0, scale: 0.94, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.94, y: 16 }}
@@ -280,11 +280,11 @@ function GrapheModal({ item, onClose }) {
 
         {/* Corps */}
         {loading ? (
-          <div className="h-44 flex items-center justify-center">
+          <div className="h-64 flex items-center justify-center">
             <div className="h-6 w-6 border-2 border-or/30 border-t-or rounded-full animate-spin" />
           </div>
         ) : (!item.coinId && !item.indexSymbol) || error ? (
-          <div className="h-44 flex items-center justify-center">
+          <div className="h-64 flex items-center justify-center">
             <p className="font-sans text-[15px] text-encre-tertiaire text-center px-4">
               {(!item.coinId && !item.indexSymbol)
                 ? 'Historique indisponible pour cet actif.'
@@ -292,7 +292,7 @@ function GrapheModal({ item, onClose }) {
             </p>
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={176}>
+          <ResponsiveContainer width="100%" height={260}>
             <LineChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
