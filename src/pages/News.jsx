@@ -544,124 +544,96 @@ function WidgetBceFed() {
 
 // ── Widget Portfolio perso ────────────────────────────────────────────────────
 
-const ACTIFS = [
-  { key: 'bitcoin',  label: 'Bitcoin',  symbol: 'BTC', step: '0.00001'  },
-  { key: 'ethereum', label: 'Ethereum', symbol: 'ETH', step: '0.0001'   },
-  { key: 'gold',     label: 'Or (XAU)', symbol: 'XAU', step: '0.001'    },
+const CONV_FIELDS = [
+  { key: 'btc', symbol: 'BTC', label: 'Bitcoin',  dec: 8 },
+  { key: 'eth', symbol: 'ETH', label: 'Ethereum', dec: 6 },
+  { key: 'xau', symbol: 'XAU', label: 'Or',       dec: 4 },
+  { key: 'usd', symbol: 'USD', label: 'Dollar',   dec: 2 },
 ]
 
-function fmtQty(n) {
-  if (n === 0) return '0'
-  if (n < 0.0001) return n.toExponential(3)
-  if (n < 1)      return n.toFixed(6)
-  return n.toLocaleString('fr-BE', { maximumFractionDigits: 4 })
-}
-
 function WidgetPortfolio({ markets }) {
-  const [mode,    setMode]    = useState('portfolio') // 'portfolio' | 'achat'
-  const [amounts, setAmounts] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('portfolio_amounts') || '{}') }
-    catch { return {} }
-  })
-  const [budget, setBudget] = useState('')
+  const [activeField, setActiveField] = useState('usd')
+  const [activeValue, setActiveValue] = useState('')
 
-  useEffect(() => {
-    try { localStorage.setItem('portfolio_amounts', JSON.stringify(amounts)) }
-    catch {}
-  }, [amounts])
+  const prices = useMemo(() => ({
+    btc: markets?.bitcoin?.usd  ?? null,
+    eth: markets?.ethereum?.usd ?? null,
+    xau: markets?.gold?.usd     ?? null,
+    usd: 1,
+  }), [markets])
 
-  const prices = {
-    bitcoin:  markets?.bitcoin?.eur  ?? null,
-    ethereum: markets?.ethereum?.eur ?? null,
-    gold:     markets?.gold?.eur     ?? null,
+  // Valeur en USD de ce que l'utilisateur a tapé
+  const usdEq = useMemo(() => {
+    const num = parseFloat(activeValue)
+    if (!num || isNaN(num) || num <= 0) return 0
+    return num * (prices[activeField] ?? 0)
+  }, [activeField, activeValue, prices])
+
+  function getDerived(field) {
+    if (!usdEq) return ''
+    const p = prices[field]
+    if (!p) return ''
+    const dec = CONV_FIELDS.find(f => f.key === field)?.dec ?? 4
+    return (usdEq / p).toFixed(dec)
   }
 
-  const totalEur = ACTIFS.reduce((sum, a) => {
-    const qty = parseFloat(amounts[a.key]) || 0
-    return sum + qty * (prices[a.key] || 0)
-  }, 0)
+  function getValue(field) {
+    return field === activeField ? activeValue : getDerived(field)
+  }
 
-  const budgetNum = parseFloat(budget) || 0
+  function handleFocus(field) {
+    if (field === activeField) return
+    setActiveField(field)
+    setActiveValue(getDerived(field))
+  }
+
+  const ready = prices.btc && prices.eth && prices.xau
 
   return (
     <div className="surface-velin liserer-signature p-5">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <Wallet size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-          <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
-            {mode === 'portfolio' ? 'Mon portfolio' : 'Simulateur achat'}
-          </span>
-        </div>
-        <button
-          onClick={() => setMode(m => m === 'portfolio' ? 'achat' : 'portfolio')}
-          className="p-1 rounded text-encre-tertiaire/50 hover:text-or transition-colors duration-200"
-          title={mode === 'portfolio' ? 'Passer en simulateur achat' : 'Passer en portfolio'}
-        >
-          <ArrowRightLeft size={13} />
-        </button>
+      <div className="flex items-center gap-2 mb-4">
+        <Wallet size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
+        <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
+          Convertisseur
+        </span>
       </div>
 
-      {mode === 'portfolio' ? (
-        <>
-          {ACTIFS.map(a => (
-            <div key={a.key} className="flex items-center gap-2 mb-2">
-              <span className="font-sans text-[10px] text-encre-tertiaire w-7 shrink-0">{a.symbol}</span>
+      <div className="space-y-1">
+        {CONV_FIELDS.map(({ key, symbol, label }) => {
+          const isActive = key === activeField
+          const val = getValue(key)
+          return (
+            <div
+              key={key}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150
+                ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
+            >
+              <div className="shrink-0 w-9 text-right">
+                <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
+                  ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
+                  {symbol}
+                </span>
+              </div>
               <input
                 type="number"
                 min="0"
-                step={a.step}
-                value={amounts[a.key] ?? ''}
-                onChange={e => setAmounts(prev => ({ ...prev, [a.key]: e.target.value }))}
-                placeholder="0"
-                className="flex-1 font-sans text-[12px] text-encre bg-velin-fonce/50 rounded-md px-2 py-1.5 text-right outline-none focus:ring-1 ring-or/30 tabular-nums"
+                value={val}
+                placeholder={ready ? '0' : '…'}
+                disabled={!ready}
+                onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
+                onFocus={() => handleFocus(key)}
+                className="flex-1 font-serif font-medium text-[1.15rem] text-encre bg-transparent
+                  outline-none text-right tabular-nums disabled:opacity-30
+                  placeholder:text-encre-tertiaire/30"
               />
-              <span className="font-sans text-[11px] text-encre-tertiaire/50 shrink-0 w-20 text-right tabular-nums">
-                {prices[a.key] && amounts[a.key]
-                  ? `${fmt((parseFloat(amounts[a.key]) || 0) * prices[a.key])} €`
-                  : prices[a.key] ? `${fmt(prices[a.key])} €/u` : '--'
-                }
-              </span>
             </div>
-          ))}
-          <div className="border-t border-encre/8 pt-2.5 mt-1 flex items-baseline justify-between">
-            <span className="font-sans text-[10px] text-encre-tertiaire uppercase tracking-wider">Total</span>
-            <span className="font-serif font-medium text-[1.3rem] text-encre tabular-nums">
-              {totalEur > 0 ? `${fmt(totalEur)} €` : '—'}
-            </span>
-          </div>
-        </>
-      ) : (
-        <>
-          <div className="flex items-center gap-2 bg-velin-fonce/50 rounded-md px-3 py-2 mb-3">
-            <input
-              type="number"
-              min="0"
-              value={budget}
-              onChange={e => setBudget(e.target.value)}
-              placeholder="0"
-              className="flex-1 font-serif font-medium text-[1.4rem] text-encre bg-transparent outline-none text-right tabular-nums"
-            />
-            <span className="font-sans text-[12px] text-encre-tertiaire shrink-0">EUR</span>
-          </div>
-          {ACTIFS.map(a => {
-            const qty = prices[a.key] && budgetNum > 0 ? budgetNum / prices[a.key] : null
-            return (
-              <div key={a.key} className="flex items-center justify-between py-1.5 border-b border-encre/5 last:border-b-0">
-                <span className="font-sans text-[12px] text-encre-secondaire">{a.label}</span>
-                <span className="font-sans font-medium text-[12px] text-encre tabular-nums">
-                  {qty != null ? `${fmtQty(qty)} ${a.symbol}` : '—'}
-                </span>
-              </div>
-            )
-          })}
-          {prices.bitcoin && budgetNum > 0 && (
-            <p className="text-[9px] font-sans text-encre-tertiaire/40 text-right mt-2">
-              Prix CoinGecko temps réel
-            </p>
-          )}
-        </>
-      )}
+          )
+        })}
+      </div>
+
+      <p className="text-[9px] font-sans text-encre-tertiaire/35 text-right mt-3">
+        {ready ? 'Prix CoinGecko · USD' : 'Chargement des prix…'}
+      </p>
     </div>
   )
 }
