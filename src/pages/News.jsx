@@ -328,7 +328,7 @@ function WidgetMeteo({ weather }) {
   return (
     <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
       <WeatherIcon size={38} strokeWidth={1.3} style={{ color }} aria-hidden="true" className="shrink-0" />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0">
         {/* Température + ville */}
         <div className="flex items-baseline gap-2.5 flex-wrap">
           <span className="font-serif font-medium text-[1.7rem] text-encre leading-none tabular-nums">
@@ -743,7 +743,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
 
 function SepGroupe({ label }) {
   return (
-    <div className="flex flex-col items-center justify-center px-2 py-4 shrink-0 select-none">
+    <div className="flex flex-col items-center justify-center px-2 py-3 shrink-0 select-none">
       <div className="h-8 w-px bg-velin-clair/10" />
       {label && (
         <span className="text-[8px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
