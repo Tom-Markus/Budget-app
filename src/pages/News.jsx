@@ -157,8 +157,8 @@ function CarteArticle({ article, index }) {
       </span>
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-serif italic text-[0.9rem] leading-snug text-encre
-          group-hover:text-or-fonce transition-colors duration-200 line-clamp-3 mb-2">
+        <h3 className="font-serif italic text-[1.05rem] leading-snug text-encre
+          group-hover:text-or-fonce transition-colors duration-200 line-clamp-4 mb-2">
           {article.title}
         </h3>
 
@@ -426,7 +426,7 @@ export default function News() {
       </div>
 
       {/* Grille desktop */}
-      <div className="hidden md:grid grid-cols-4 gap-4 items-start">
+      <div className="hidden md:grid grid-cols-2 gap-4 items-start">
         {CATEGORIES.map(cat => (
           <ColonneNews
             key={cat.id}

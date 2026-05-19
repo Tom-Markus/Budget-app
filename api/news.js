@@ -55,7 +55,7 @@ export default async function handler(req, res) {
   const items = []
   const itemRe = /<item[^>]*>([\s\S]*?)<\/item>/gi
   let match
-  while ((match = itemRe.exec(xml)) !== null && items.length < 6) {
+  while ((match = itemRe.exec(xml)) !== null && items.length < 3) {
     const chunk = match[1]
     const title = extractTag(chunk, 'title')
     // <link> en RSS 2.0 : contenu texte brut entre balises
