@@ -1,5 +1,5 @@
 /**
- * src/pages/News.jsx — Observatoire
+ * src/pages/News.jsx — Salon & marchés
  * Terminal de veille & marchés : prix temps réel, météo, sentiment, actualités.
  */
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
@@ -1408,7 +1408,7 @@ export default function News() {
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-serif font-medium text-[31px] text-encre leading-none tracking-tight">
-            Observatoire
+            Salon & marchés
           </h1>
           <p className="font-sans mt-1 text-[14px]" style={{ color: 'var(--encre-tertiaire)' }}>
             {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
