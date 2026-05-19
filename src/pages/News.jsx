@@ -291,7 +291,7 @@ function WidgetMeteo() {
 
   if (weather === undefined) {
     return (
-      <div className="surface-velin liserer-signature p-4 flex gap-4 items-center animate-pulse">
+      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
         <div className="h-9 w-9 bg-encre/6 rounded-full shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-3 w-20 bg-encre/6 rounded" />
@@ -304,7 +304,7 @@ function WidgetMeteo() {
 
   if (!weather) {
     return (
-      <div className="surface-velin liserer-signature p-4 flex items-center gap-3">
+      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
         <MapPin size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
         <p className="font-sans text-xs text-encre-tertiaire">Météo — localisation désactivée</p>
       </div>
@@ -314,7 +314,7 @@ function WidgetMeteo() {
   const { Icon: WeatherIcon, label: weatherLabel, color } = getWmo(weather.code)
 
   return (
-    <div className="surface-velin liserer-signature p-4 flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 flex items-center gap-4">
       <WeatherIcon size={36} strokeWidth={1.4} style={{ color }} aria-hidden="true" className="shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline gap-2 flex-wrap">
@@ -343,7 +343,7 @@ function WidgetFearGreed() {
 
   if (fg === undefined) {
     return (
-      <div className="surface-velin liserer-signature p-4 flex gap-4 items-center animate-pulse">
+      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
         <div className="h-12 w-12 bg-encre/6 rounded-full shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-2.5 w-28 bg-encre/5 rounded" />
@@ -355,7 +355,7 @@ function WidgetFearGreed() {
 
   if (!fg) {
     return (
-      <div className="surface-velin liserer-signature p-4 flex items-center gap-3">
+      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
         <Activity size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
         <p className="font-sans text-xs text-encre-tertiaire">Sentiment indisponible</p>
       </div>
@@ -366,7 +366,7 @@ function WidgetFearGreed() {
   const labelFr = FG_FR[fg.classification] ?? fg.classification
 
   return (
-    <div className="surface-velin liserer-signature p-4 flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 flex items-center gap-4">
       <div
         className="h-12 w-12 rounded-full flex items-center justify-center shrink-0"
         style={{ background: bg }}
