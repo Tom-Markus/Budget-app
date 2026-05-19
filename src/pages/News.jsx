@@ -1,5 +1,5 @@
 /**
- * src/pages/News.jsx — Dashboard
+ * src/pages/News.jsx — Observatoire
  * Terminal de veille & marchés : prix temps réel, météo, sentiment, actualités.
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
@@ -157,6 +157,9 @@ function GrapheModal({ item, onClose }) {
   }, [onClose])
 
   useEffect(() => {
+    setChartData(null)
+    setError(false)
+    setLoading(true)
     if (!item.coinId) { setLoading(false); return }
     fetch(
       `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart` +
@@ -300,7 +303,7 @@ function WidgetMeteo({ weather }) {
 
   if (weather === undefined) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
+      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse h-full">
         <div className="h-9 w-9 bg-encre/6 rounded-full shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-3 w-20 bg-encre/6 rounded" />
@@ -313,9 +316,9 @@ function WidgetMeteo({ weather }) {
 
   if (!weather) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
+      <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-3">
         <MapPin size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
-        <p className="font-sans text-xs text-encre-tertiaire">Météo — localisation désactivée</p>
+        <p className="font-sans text-xs text-encre-tertiaire">Météo indisponible — localisation désactivée</p>
       </div>
     )
   }
@@ -323,7 +326,7 @@ function WidgetMeteo({ weather }) {
   const { Icon: WeatherIcon, label: weatherLabel, color } = getWmo(weather.code)
 
   return (
-    <div className="surface-velin liserer-signature p-5 flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-4">
       <WeatherIcon size={38} strokeWidth={1.3} style={{ color }} aria-hidden="true" className="shrink-0" />
       <div className="min-w-0 flex-1">
         {/* Température + ville */}
@@ -368,7 +371,7 @@ function WidgetFearGreed({ fg }) {
 
   if (fg === undefined) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
+      <div className="surface-velin liserer-signature p-5 h-full flex gap-4 items-center animate-pulse">
         <div className="h-12 w-12 bg-encre/6 rounded-full shrink-0" />
         <div className="flex-1 space-y-2">
           <div className="h-2.5 w-28 bg-encre/5 rounded" />
@@ -380,7 +383,7 @@ function WidgetFearGreed({ fg }) {
 
   if (!fg) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
+      <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-3">
         <Activity size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
         <p className="font-sans text-xs text-encre-tertiaire">Sentiment indisponible</p>
       </div>
@@ -391,7 +394,7 @@ function WidgetFearGreed({ fg }) {
   const labelFr = FG_FR[fg.classification] ?? fg.classification
 
   return (
-    <div className="surface-velin liserer-signature p-5 flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-4">
       <div
         className="h-12 w-12 rounded-full flex items-center justify-center shrink-0"
         style={{ background: bg }}
@@ -463,14 +466,14 @@ function WidgetFx({ fx }) {
 
   if (fx === undefined) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse">
-        <div className="h-8 w-8 bg-encre/6 rounded-full shrink-0" />
-        <div className="flex-1 space-y-2.5">
+      <div className="surface-velin liserer-signature p-5 animate-pulse">
+        <div className="h-3 w-28 bg-encre/6 rounded mb-5" />
+        <div className="grid grid-cols-4 gap-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="flex justify-between gap-3">
-              <div className="h-3 w-10 bg-encre/6 rounded" />
-              <div className="h-3 flex-1 bg-encre/4 rounded" />
-              <div className="h-3 w-14 bg-encre/8 rounded" />
+            <div key={i} className="flex flex-col items-center gap-3 rounded-xl p-4">
+              <div className="h-3 w-8 bg-encre/6 rounded" />
+              <div className="h-6 w-16 bg-encre/8 rounded" />
+              <div className="h-2.5 w-12 bg-encre/5 rounded" />
             </div>
           ))}
         </div>
@@ -480,41 +483,47 @@ function WidgetFx({ fx }) {
 
   if (!fx) {
     return (
-      <div className="surface-velin liserer-signature p-5 flex items-center gap-3">
+      <div className="surface-velin liserer-signature p-5 flex items-center gap-3 min-h-[120px]">
         <ArrowRightLeft size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
-        <p className="font-sans text-xs text-encre-tertiaire">Taux indisponibles</p>
+        <div>
+          <p className="font-sans text-sm text-encre-tertiaire">Taux de change indisponibles</p>
+          <p className="font-sans text-[11px] text-encre-tertiaire/50 mt-0.5">Vérifiez la connexion ou actualisez</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="surface-velin liserer-signature p-5">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <ArrowRightLeft size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
           <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
             Taux de change
           </span>
         </div>
-        <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date}</span>
+        <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date} · ECB</span>
       </div>
 
-      <div className="space-y-1">
+      <div className="grid grid-cols-4 gap-2">
         {FX_PAIRS.map(({ key, flag, label }) => {
           const isActive = key === activeField
           const val = getValue(key)
-          const rate = key === 'EUR' ? '1.0000' : rates[key]?.toFixed(4)
+          const rate = key === 'EUR' ? 'base' : rates[key]?.toFixed(4) ?? '—'
           return (
             <div
               key={key}
-              className={`flex items-center gap-2 rounded-lg px-3 py-2 transition-colors duration-150
+              onClick={() => !isActive && handleFocus(key)}
+              className={`flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
-              <span className="text-[13px] shrink-0" aria-hidden="true">{flag}</span>
-              <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider w-7 shrink-0
-                ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
-                {label}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[14px] leading-none" aria-hidden="true">{flag}</span>
+                <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
+                  ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
+                  {label}
+                </span>
+              </div>
               <input
                 type="number"
                 min="0"
@@ -523,21 +532,18 @@ function WidgetFx({ fx }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="flex-1 font-serif font-medium text-[1.05rem] text-encre bg-transparent
-                  outline-none text-right tabular-nums disabled:opacity-30
+                className="w-full font-serif font-medium text-[1.2rem] text-encre bg-transparent
+                  outline-none text-center tabular-nums disabled:opacity-30
                   placeholder:text-encre-tertiaire/30"
               />
-              <span className="font-sans text-[10px] text-encre-tertiaire/40 tabular-nums w-14 text-right shrink-0">
+              <span className={`font-sans text-[10px] tabular-nums text-center
+                ${key === 'EUR' ? 'text-encre-tertiaire/30 italic' : 'text-encre-tertiaire/45'}`}>
                 {rate}
               </span>
             </div>
           )
         })}
       </div>
-
-      <p className="text-[9px] font-sans text-encre-tertiaire/35 text-right mt-3">
-        {ready ? '1 EUR = taux · ECB' : 'Chargement des taux…'}
-      </p>
     </div>
   )
 }
@@ -592,7 +598,7 @@ function WidgetBceFed() {
   }
 
   return (
-    <div className="surface-velin liserer-signature p-5">
+    <div className="surface-velin liserer-signature p-5 h-full flex flex-col justify-center">
       <div className="flex items-center gap-2 mb-3">
         <Landmark size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
         <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
@@ -618,7 +624,7 @@ const CONV_FIELDS = [
   { key: 'usd', symbol: 'USD', label: 'Dollar',  dec: 2 },
 ]
 
-function WidgetPortfolio({ markets }) {
+function WidgetPortfolio({ markets, loading: marketsLoading }) {
   const [activeField, setActiveField] = useState('usd')
   const [activeValue, setActiveValue] = useState('')
 
@@ -630,7 +636,6 @@ function WidgetPortfolio({ markets }) {
     usd: 1,
   }), [markets])
 
-  // Valeur en USD de ce que l'utilisateur a tapé
   const usdEq = useMemo(() => {
     const num = parseFloat(activeValue)
     if (!num || isNaN(num) || num <= 0) return 0
@@ -655,53 +660,59 @@ function WidgetPortfolio({ markets }) {
     setActiveValue(getDerived(field))
   }
 
-  const ready = prices.btc && prices.sol && prices.xrp && prices.bnb
+  const ready = !!(prices.btc && prices.sol && prices.xrp && prices.bnb)
+  const failed = !marketsLoading && !markets
 
   return (
     <div className="surface-velin liserer-signature p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <Wallet size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-        <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
-          Convertisseur
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Wallet size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
+          <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
+            Convertisseur
+          </span>
+        </div>
+        <span className="text-[9px] font-sans text-encre-tertiaire/40">
+          {failed ? (
+            <span className="text-rouge/70">Prix indisponibles</span>
+          ) : ready ? 'Prix CoinGecko · USD' : 'Chargement des prix…'}
         </span>
       </div>
 
-      <div className="space-y-1">
+      <div className="grid grid-cols-5 gap-2">
         {CONV_FIELDS.map(({ key, symbol, label }) => {
           const isActive = key === activeField
           const val = getValue(key)
           return (
             <div
               key={key}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors duration-150
+              onClick={() => !isActive && handleFocus(key)}
+              className={`flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
-              <div className="shrink-0 w-9 text-right">
-                <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
-                  ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
-                  {symbol}
-                </span>
-              </div>
+              <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
+                ${isActive ? 'text-or' : 'text-encre-tertiaire/50'}`}>
+                {symbol}
+              </span>
               <input
                 type="number"
                 min="0"
                 value={val}
-                placeholder={ready ? '0' : '…'}
+                placeholder={ready ? '0' : failed ? '—' : '…'}
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="flex-1 font-serif font-medium text-[1.15rem] text-encre bg-transparent
-                  outline-none text-right tabular-nums disabled:opacity-30
+                className="w-full font-serif font-medium text-[1.2rem] text-encre bg-transparent
+                  outline-none text-center tabular-nums disabled:opacity-30
                   placeholder:text-encre-tertiaire/30"
               />
+              <span className="font-sans text-[9px] text-encre-tertiaire/40 text-center leading-tight">
+                {label}
+              </span>
             </div>
           )
         })}
       </div>
-
-      <p className="text-[9px] font-sans text-encre-tertiaire/35 text-right mt-3">
-        {ready ? 'Prix CoinGecko · USD' : 'Chargement des prix…'}
-      </p>
     </div>
   )
 }
@@ -793,16 +804,16 @@ function SqueletteArticle() {
   )
 }
 
-function SqueletteErreur() {
+function EtatErreur() {
   return (
-    <div className="py-2 space-y-4">
-      {[90, 75, 60].map((w, i) => (
-        <div key={i} className="animate-pulse space-y-1.5">
-          <div className="h-3 bg-velin-fonce rounded" style={{ width: `${w}%` }} />
-          <div className="h-3 bg-velin-fonce rounded" style={{ width: `${w - 15}%` }} />
-          <div className="h-2.5 bg-velin-fonce/70 rounded w-1/3" />
-        </div>
-      ))}
+    <div className="py-8 flex flex-col items-center gap-2 text-center">
+      <span className="text-[1.5rem] leading-none opacity-40" aria-hidden="true">⚠</span>
+      <p className="font-sans text-[12px] text-encre-tertiaire">
+        Impossible de charger les articles
+      </p>
+      <p className="font-sans text-[11px] text-encre-tertiaire/45">
+        Vérifiez la connexion ou actualisez
+      </p>
     </div>
   )
 }
@@ -870,10 +881,12 @@ function ColonneNews({ category, articles, loading, error }) {
   const { Icon } = category
 
   return (
-    <div
-      className="surface-velin liserer-signature p-5 flex flex-col"
-      style={{ borderTop: '2px solid var(--bordeaux)' }}
-    >
+    <div className="surface-velin liserer-signature p-5 flex flex-col relative">
+      <span
+        className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none rounded-t-xl"
+        style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux) 50%, transparent 100%)' }}
+        aria-hidden="true"
+      />
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-or/15">
         <div className="flex items-center gap-2.5">
           <Icon size={14} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
@@ -892,7 +905,7 @@ function ColonneNews({ category, articles, loading, error }) {
       {loading ? (
         Array.from({ length: 5 }).map((_, i) => <SqueletteArticle key={i} />)
       ) : error ? (
-        <SqueletteErreur />
+        <EtatErreur />
       ) : articles.length === 0 ? (
         <p className="text-sm font-serif italic text-encre-tertiaire py-5">Aucun article disponible.</p>
       ) : (
@@ -1014,7 +1027,7 @@ export default function News() {
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
           <h1 className="font-serif font-medium text-[1.875rem] text-encre leading-none tracking-tight">
-            Dashboard
+            Observatoire
           </h1>
           <p className="font-sans mt-1 text-[0.75rem]" style={{ color: 'var(--encre-tertiaire)' }}>
             {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
@@ -1053,34 +1066,50 @@ export default function News() {
           </span>
         </div>
 
-        {/* Widgets — scrollable sur mobile, centré sur desktop */}
-        <div className="overflow-x-auto scrollbar-none">
-          <div className="flex md:justify-center min-w-max md:min-w-0 px-2">
-            {widgetGroups.map((group, gi) => (
-              <div key={group.key} className="flex shrink-0">
-                {gi > 0 && <SepGroupe label={group.label} />}
-                {group.items.map(w => (
-                  <WidgetMarche
-                    key={w.label}
-                    loading={marketsLoading}
-                    {...w}
-                    onChartClick={setChartItem}
-                  />
-                ))}
-              </div>
-            ))}
+        {/* Widgets — scrollable avec fades latéraux */}
+        <div className="relative">
+          <div
+            className="absolute left-0 top-0 bottom-0 w-6 pointer-events-none z-10"
+            style={{ background: 'linear-gradient(to right, var(--nuit), transparent)' }}
+            aria-hidden="true"
+          />
+          <div
+            className="absolute right-0 top-0 bottom-0 w-6 pointer-events-none z-10"
+            style={{ background: 'linear-gradient(to left, var(--nuit), transparent)' }}
+            aria-hidden="true"
+          />
+          <div className="overflow-x-auto scrollbar-none">
+            <div className="flex min-w-max px-4">
+              {widgetGroups.map((group, gi) => (
+                <div key={group.key} className="flex shrink-0">
+                  {gi > 0 && <SepGroupe label={group.label} />}
+                  {group.items.map(w => (
+                    <WidgetMarche
+                      key={w.label}
+                      loading={marketsLoading}
+                      {...w}
+                      onChartClick={setChartItem}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── Widgets ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-start">
+      {/* ── Widgets — ligne 1 : 3 petits (même hauteur) ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <WidgetMeteo weather={weather} />
         <WidgetBceFed />
-        <WidgetPortfolio markets={markets} />
         <WidgetFearGreed fg={fg} />
-        <WidgetFx fx={fx} />
       </div>
+
+      {/* ── Widgets — ligne 2 : convertisseur pleine largeur ── */}
+      <WidgetPortfolio markets={markets} loading={marketsLoading} />
+
+      {/* ── Widgets — ligne 3 : taux de change pleine largeur ── */}
+      <WidgetFx fx={fx} />
 
       {/* ── Tabs mobile ── */}
       <div
