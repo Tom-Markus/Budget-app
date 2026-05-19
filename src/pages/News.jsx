@@ -328,19 +328,35 @@ export default function News() {
 
   return (
     <div className="space-y-5">
-      <style>{`
-        @keyframes liquid-morph {
-          0%   { border-radius: 14px 20px 16px 10px / 10px 14px 20px 16px; }
-          25%  { border-radius: 20px 10px 18px 14px / 16px 10px 14px 20px; }
-          50%  { border-radius: 10px 16px 14px 20px / 20px 16px 10px 14px; }
-          75%  { border-radius: 18px 14px 10px 16px / 12px 20px 16px 10px; }
-          100% { border-radius: 14px 20px 16px 10px / 10px 14px 20px 16px; }
-        }
-        @keyframes liquid-breathe {
-          0%, 100% { box-shadow: 0 10px 40px rgba(14,31,58,0.55), 0 3px 10px rgba(14,31,58,0.3); }
-          50%       { box-shadow: 0 16px 52px rgba(14,31,58,0.65), 0 6px 18px rgba(14,31,58,0.35); }
-        }
-      `}</style>
+      {/* Définition du filtre SVG — nœud caché, référencé par url(#mkt-liquid) */}
+      <svg style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }} aria-hidden="true">
+        <defs>
+          <filter id="mkt-liquid" x="-10%" y="-120%" width="120%" height="340%">
+            <feTurbulence
+              type="fractalNoise"
+              baseFrequency="0.016 0.04"
+              numOctaves="2"
+              seed="7"
+              result="noise"
+            >
+              <animate
+                attributeName="baseFrequency"
+                dur="14s"
+                keyTimes="0;0.5;1"
+                values="0.016 0.04; 0.024 0.030; 0.016 0.04"
+                repeatCount="indefinite"
+              />
+            </feTurbulence>
+            <feDisplacementMap
+              in="SourceGraphic"
+              in2="noise"
+              scale="16"
+              xChannelSelector="R"
+              yChannelSelector="G"
+            />
+          </filter>
+        </defs>
+      </svg>
 
       {/* En-tête */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
@@ -366,56 +382,56 @@ export default function News() {
       </div>
 
       {/* Barre marchés — bulle liquide */}
-      <div
-        className="overflow-hidden relative"
-        style={{
-          background: 'var(--nuit)',
-          animation: 'liquid-morph 16s ease-in-out infinite, liquid-breathe 8s ease-in-out infinite',
-          willChange: 'border-radius, box-shadow',
-        }}
-      >
-        {/* Reflet de surface — simule la courbure d'une membrane liquide */}
+      <div className="relative">
+        {/* Fond liquide : feDisplacementMap déforme les bords selon du bruit de Perlin animé.
+            Séparé du contenu pour que texte et chiffres restent nets. */}
         <div
-          className="absolute inset-0 pointer-events-none"
+          className="absolute pointer-events-none"
           style={{
-            background: 'radial-gradient(ellipse at 28% 12%, rgba(241,236,224,0.06) 0%, transparent 50%)',
-            zIndex: 1,
+            inset: '-8px -6px',
+            background: `radial-gradient(ellipse at 26% 12%, rgba(241,236,224,0.07) 0%, transparent 48%), var(--nuit)`,
+            borderRadius: '16px',
+            filter: 'url(#mkt-liquid)',
+            willChange: 'filter',
+            boxShadow: '0 14px 48px rgba(14,31,58,0.6), 0 4px 16px rgba(14,31,58,0.28)',
           }}
           aria-hidden="true"
         />
 
-        {/* Trait signature bas */}
-        <span
-          className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
-          style={{ background: 'var(--gradient-signature)', zIndex: 2 }}
-          aria-hidden="true"
-        />
+        {/* Contenu — au-dessus du blob, aucun filtre appliqué */}
+        <div className="relative overflow-hidden rounded-lg" style={{ zIndex: 1 }}>
+          {/* Trait signature bas */}
+          <span
+            className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
+            style={{ background: 'var(--gradient-signature)' }}
+            aria-hidden="true"
+          />
 
-        {/* En-tête barre */}
-        <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
-          {/* Dot live */}
-          <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
-              style={{ background: 'var(--vert)' }} />
-            <span className="relative inline-flex rounded-full h-1.5 w-1.5"
-              style={{ background: 'var(--vert)' }} />
-          </span>
-          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
-            style={{ color: 'rgba(241,236,224,0.35)' }}>
-            Marchés — temps réel
-          </span>
-        </div>
+          {/* En-tête barre */}
+          <div className="px-5 pt-3 pb-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(241,236,224,0.08)' }}>
+            <span className="relative flex h-1.5 w-1.5 shrink-0" aria-hidden="true">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+                style={{ background: 'var(--vert)' }} />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5"
+                style={{ background: 'var(--vert)' }} />
+            </span>
+            <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium"
+              style={{ color: 'rgba(241,236,224,0.35)' }}>
+              Marchés — temps réel
+            </span>
+          </div>
 
-        {/* Widgets avec groupes */}
-        <div className="flex overflow-x-auto scrollbar-none">
-          {widgetGroups.map((group, gi) => (
-            <div key={group.key} className="flex shrink-0">
-              {gi > 0 && <SepGroupe label={group.label} />}
-              {group.items.map(w => (
-                <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
-              ))}
-            </div>
-          ))}
+          {/* Widgets avec groupes */}
+          <div className="flex overflow-x-auto scrollbar-none">
+            {widgetGroups.map((group, gi) => (
+              <div key={group.key} className="flex shrink-0">
+                {gi > 0 && <SepGroupe label={group.label} />}
+                {group.items.map(w => (
+                  <WidgetMarche key={w.label} loading={marketsLoading} {...w} />
+                ))}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
 
