@@ -216,18 +216,18 @@ function GrapheModal({ item, onClose }) {
         {/* En-tête */}
         <div className="flex items-start justify-between mb-5">
           <div>
-            <p className="text-[9px] font-sans uppercase tracking-[0.2em] text-encre-tertiaire mb-1">
+            <p className="text-[10px] font-sans uppercase tracking-[0.2em] text-encre-tertiaire mb-1">
               Historique 7 jours
             </p>
-            <h3 className="font-serif font-medium text-[1.3rem] text-encre leading-none">
+            <h3 className="font-serif font-medium text-[22px] text-encre leading-none">
               {item.label}
             </h3>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="font-sans text-[0.875rem] text-encre-secondaire tabular-nums">
+              <span className="font-sans text-[15px] text-encre-secondaire tabular-nums">
                 {item.prix} {item.unite}
               </span>
               {change7d != null && (
-                <span className={`text-[10px] font-sans font-semibold px-1.5 py-0.5 rounded-full ${
+                <span className={`text-[11px] font-sans font-semibold px-1.5 py-0.5 rounded-full ${
                   pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-encre/5 text-encre-tertiaire'
                 }`}>
                   {pos ? '+' : ''}{change7d.toFixed(2)} % (7j)
@@ -251,7 +251,7 @@ function GrapheModal({ item, onClose }) {
           </div>
         ) : !item.coinId || error ? (
           <div className="h-44 flex items-center justify-center">
-            <p className="font-sans text-sm text-encre-tertiaire text-center px-4">
+            <p className="font-sans text-[15px] text-encre-tertiaire text-center px-4">
               {!item.coinId
                 ? 'Historique indisponible pour cet actif.'
                 : 'Impossible de charger le graphique.'}
@@ -263,12 +263,12 @@ function GrapheModal({ item, onClose }) {
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
               <XAxis
                 dataKey="date"
-                tick={{ fontSize: 10, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
+                tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
                 axisLine={false} tickLine={false}
               />
               <YAxis
                 domain={['auto', 'auto']}
-                tick={{ fontSize: 10, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
+                tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
                 axisLine={false} tickLine={false} width={56}
                 tickFormatter={v => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : v.toFixed(2)}
               />
@@ -277,7 +277,7 @@ function GrapheModal({ item, onClose }) {
                   background: 'var(--velin-clair)',
                   border: '1px solid rgba(184,149,74,0.2)',
                   borderRadius: '8px',
-                  fontSize: '11px',
+                  fontSize: '12px',
                   fontFamily: 'var(--font-sans)',
                   color: 'var(--encre)',
                   padding: '6px 10px',
@@ -295,7 +295,7 @@ function GrapheModal({ item, onClose }) {
           </ResponsiveContainer>
         )}
 
-        <p className="text-[9px] font-sans text-encre-tertiaire/40 text-right mt-2">
+        <p className="text-[10px] font-sans text-encre-tertiaire/40 text-right mt-2">
           Source : CoinGecko
         </p>
       </motion.div>
@@ -325,7 +325,7 @@ function WidgetMeteo({ weather }) {
     return (
       <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-3">
         <MapPin size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
-        <p className="font-sans text-xs text-encre-tertiaire">Météo indisponible — localisation désactivée</p>
+        <p className="font-sans text-[13px] text-encre-tertiaire">Météo indisponible — localisation désactivée</p>
       </div>
     )
   }
@@ -338,17 +338,17 @@ function WidgetMeteo({ weather }) {
       <div className="min-w-0">
         {/* Ligne 1 : température + ville */}
         <div className="flex items-baseline gap-2.5 flex-wrap">
-          <span className="font-serif font-medium text-[2rem] text-encre leading-none tabular-nums">
+          <span className="font-serif font-medium text-[33px] text-encre leading-none tabular-nums">
             {weather.temp}°C
           </span>
-          <span className="font-sans text-[12px] text-encre-secondaire truncate">{weather.city}</span>
+          <span className="font-sans text-[13px] text-encre-secondaire truncate">{weather.city}</span>
         </div>
         {/* Ligne 2 : condition + vent */}
         <div className="flex items-center gap-1.5 mt-1.5">
-          <span className="font-sans italic text-[12px] text-encre-tertiaire">{weatherLabel}</span>
-          <span className="text-encre-tertiaire/30 text-[10px]">·</span>
+          <span className="font-sans italic text-[13px] text-encre-tertiaire">{weatherLabel}</span>
+          <span className="text-encre-tertiaire/30 text-[11px]">·</span>
           <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
-          <span className="font-sans text-[12px] text-encre-tertiaire">{weather.wind} km/h</span>
+          <span className="font-sans text-[13px] text-encre-tertiaire">{weather.wind} km/h</span>
         </div>
         {/* Ligne 3 : lever / coucher */}
         {(weather.sunrise || weather.sunset) && (
@@ -356,13 +356,13 @@ function WidgetMeteo({ weather }) {
             {weather.sunrise && (
               <span className="flex items-center gap-1.5">
                 <Sunrise size={14} strokeWidth={1.5} className="text-or shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
+                <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
               </span>
             )}
             {weather.sunset && (
               <span className="flex items-center gap-1.5">
                 <Sunset size={14} strokeWidth={1.5} className="text-or/60 shrink-0" aria-hidden="true" />
-                <span className="font-sans text-[12px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
+                <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
               </span>
             )}
           </div>
@@ -392,7 +392,7 @@ function WidgetFearGreed({ fg }) {
     return (
       <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-3">
         <Activity size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
-        <p className="font-sans text-xs text-encre-tertiaire">Sentiment indisponible</p>
+        <p className="font-sans text-[13px] text-encre-tertiaire">Sentiment indisponible</p>
       </div>
     )
   }
@@ -408,15 +408,15 @@ function WidgetFearGreed({ fg }) {
         style={{ background: bg }}
         aria-hidden="true"
       >
-        <span className="font-sans font-bold text-[1.5rem] tabular-nums leading-none" style={{ color }}>
+        <span className="font-sans font-bold text-[25px] tabular-nums leading-none" style={{ color }}>
           {fg.value}
         </span>
       </div>
       <div>
-        <p className="text-[12px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
+        <p className="text-[13px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
           Fear &amp; Greed
         </p>
-        <p className="font-serif italic font-medium text-[1.5rem] leading-snug mt-0.5" style={{ color: labelColor }}>
+        <p className="font-serif italic font-medium text-[25px] leading-snug mt-0.5" style={{ color: labelColor }}>
           {labelFr}
         </p>
       </div>
@@ -497,8 +497,8 @@ function WidgetFx({ fx }) {
       <div className="surface-velin liserer-signature p-5 flex items-center gap-3 min-h-[120px]">
         <ArrowRightLeft size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
         <div>
-          <p className="font-sans text-sm text-encre-tertiaire">Taux de change indisponibles</p>
-          <p className="font-sans text-[11px] text-encre-tertiaire/50 mt-0.5">Vérifiez la connexion ou actualisez</p>
+          <p className="font-sans text-[15px] text-encre-tertiaire">Taux de change indisponibles</p>
+          <p className="font-sans text-[12px] text-encre-tertiaire/50 mt-0.5">Vérifiez la connexion ou actualisez</p>
         </div>
       </div>
     )
@@ -509,11 +509,11 @@ function WidgetFx({ fx }) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <ArrowRightLeft size={13} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
-          <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
+          <span className="text-[12px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
             Taux de change
           </span>
         </div>
-        <span className="text-[12px] font-sans font-medium text-encre-tertiaire/80 tabular-nums">{fx.date} · ECB</span>
+        <span className="text-[13px] font-sans font-medium text-encre-tertiaire/80 tabular-nums">{fx.date} · ECB</span>
       </div>
 
       {/* Mobile : 2 colonnes — Desktop : 4 colonnes */}
@@ -531,8 +531,8 @@ function WidgetFx({ fx }) {
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
               <div className="flex items-center gap-1.5">
-                <span style={{ fontSize: '1.1rem', lineHeight: 1 }} aria-hidden="true">{flag}</span>
-                <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
+                <span style={{ fontSize: '19px', lineHeight: 1 }} aria-hidden="true">{flag}</span>
+                <span className={`font-sans text-[13px] font-bold uppercase tracking-wider
                   ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
                   {label}
                 </span>
@@ -545,19 +545,19 @@ function WidgetFx({ fx }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
+                className="w-full font-serif font-medium text-[19px] sm:text-[21px] text-encre
                   bg-transparent outline-none text-center tabular-nums
                   disabled:opacity-30 placeholder:text-encre-tertiaire/30
                   focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-sm transition-shadow"
                 style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
               />
               {key === 'EUR' ? (
-                <span className="font-sans text-[0.65rem] uppercase tracking-wider text-encre-tertiaire
+                <span className="font-sans text-[12px] uppercase tracking-wider text-encre-tertiaire
                   px-1.5 py-0.5 rounded bg-velin-fonce">
                   base
                 </span>
               ) : (
-                <span className="font-sans text-[11px] font-medium text-encre-secondaire/60 text-center tabular-nums"
+                <span className="font-sans text-[12px] font-medium text-encre-secondaire/60 text-center tabular-nums"
                   style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
                   {rateStr ?? '—'}
                 </span>
@@ -620,24 +620,24 @@ function WidgetBceFed() {
                 color:        info.type === 'bce' ? 'var(--nuit)'           : 'var(--bordeaux)',
                 border:       info.type === 'bce' ? '1px solid rgba(14,31,58,0.2)' : '1px solid rgba(92,26,36,0.2)',
                 borderRadius: 'var(--radius-sm, 6px)',
-                fontSize:     '0.65rem',
+                fontSize:     '12px',
                 letterSpacing:'0.06em',
                 padding:      '2px 6px',
               }}
             >
               {sigle}
             </span>
-            <span className="font-sans text-[11px] text-encre-tertiaire/60 hidden sm:inline">
+            <span className="font-sans text-[12px] text-encre-tertiaire/60 hidden sm:inline">
               {info.nom}
             </span>
           </div>
-          <span className="font-serif font-semibold text-[1.4rem] text-encre tabular-nums leading-none">
+          <span className="font-serif font-semibold text-[23px] text-encre tabular-nums leading-none">
             J-{jours}
           </span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="font-sans text-[13px] text-encre-secondaire tabular-nums capitalize">{date}</span>
-          <span className="font-sans text-[10px] text-encre-tertiaire/40">
+          <span className="font-sans text-[14px] text-encre-secondaire tabular-nums capitalize">{date}</span>
+          <span className="font-sans text-[11px] text-encre-tertiaire/40">
             {restant} réunion{restant > 1 ? 's' : ''} restante{restant > 1 ? 's' : ''}
           </span>
         </div>
@@ -649,13 +649,13 @@ function WidgetBceFed() {
     <div className="surface-velin liserer-signature p-5 h-full flex flex-col justify-center">
       <div className="flex items-center gap-2 mb-3">
         <Landmark size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-        <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.15em] text-encre-tertiaire/80">
+        <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.15em] text-encre-tertiaire/80">
           Décisions de politique monétaire
         </span>
       </div>
       <Row sigle="BCE" info={BCE_INFO} dateStr={nextBce} />
       <Row sigle="FED" info={FED_INFO} dateStr={nextFed} />
-      <p className="text-[9px] font-sans text-encre-tertiaire/35 mt-2.5">
+      <p className="text-[10px] font-sans text-encre-tertiaire/35 mt-2.5">
         Calendrier indicatif 2026 · dates de décision
       </p>
     </div>
@@ -719,11 +719,11 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
           <Wallet size={13} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
-          <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
+          <span className="text-[12px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
             Convertisseur
           </span>
         </div>
-        <span className="text-[9px] font-sans text-encre-tertiaire/40">
+        <span className="text-[10px] font-sans text-encre-tertiaire/40">
           {failed ? (
             <span className="text-rouge/70">Prix indisponibles</span>
           ) : ready ? 'Prix CoinGecko · USD' : 'Chargement des prix…'}
@@ -750,7 +750,7 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                   aria-hidden="true"
                 />
               )}
-              <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
+              <span className={`font-sans text-[13px] font-bold uppercase tracking-wider
                 w-10 shrink-0 sm:w-auto sm:shrink sm:text-center
                 ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
                 {symbol}
@@ -763,12 +763,12 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="flex-1 sm:w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
+                className="flex-1 sm:w-full font-serif font-medium text-[19px] sm:text-[21px] text-encre
                   bg-transparent outline-none text-right sm:text-center tabular-nums
                   disabled:opacity-30 placeholder:text-encre-tertiaire/30
                   focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-sm transition-shadow"
               />
-              <span className="hidden sm:block font-sans text-[0.7rem] text-encre-tertiaire text-center leading-tight">
+              <span className="hidden sm:block font-sans text-[13px] text-encre-tertiaire text-center leading-tight">
                 {label}
               </span>
             </div>
@@ -786,7 +786,7 @@ function SepGroupe({ label }) {
     <div className="flex flex-col items-center justify-center px-2 py-3 shrink-0 select-none">
       <div className="h-8 w-px bg-velin-clair/10" />
       {label && (
-        <span className="text-[8px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
+        <span className="text-[9px] uppercase tracking-[0.2em] font-sans text-velin-clair/20 mt-1.5 whitespace-nowrap">
           {label}
         </span>
       )}
@@ -818,24 +818,24 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
         hover:bg-velin-clair/6 rounded-lg transition-colors duration-200"
       onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null })}
     >
-      <span className="text-[9px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
+      <span className="text-[10px] uppercase tracking-[0.18em] font-sans font-medium text-velin-clair/40 whitespace-nowrap">
         {label}
       </span>
       <div className="flex items-baseline gap-1.5">
         <span
-          className="font-serif text-[1.2rem] font-medium leading-none
+          className="font-serif text-[20px] font-medium leading-none
             text-velin-clair group-hover/w:text-or transition-colors duration-200"
           style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
         >
           {prix ?? '--'}
         </span>
         {prix != null && (
-          <span className="text-[10px] text-velin-clair/40 font-sans leading-none">{unite}</span>
+          <span className="text-[11px] text-velin-clair/40 font-sans leading-none">{unite}</span>
         )}
       </div>
       {change != null ? (
         <span
-          className={`inline-flex items-center gap-1 text-[10px] font-sans font-semibold
+          className={`inline-flex items-center gap-1 text-[11px] font-sans font-semibold
             px-1.5 py-0.5 rounded-full w-fit leading-none ${
             pos ? 'bg-vert/15 text-vert' : neg ? 'bg-rouge/15 text-rouge' : 'bg-velin-clair/8 text-velin-clair/35'
           }`}
@@ -845,7 +845,7 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
           {change >= 0 ? '+' : ''}{change.toFixed(2)} %
         </span>
       ) : (
-        <span className="text-[10px] text-velin-clair/20 font-sans">--</span>
+        <span className="text-[11px] text-velin-clair/20 font-sans">--</span>
       )}
     </button>
   )
@@ -869,11 +869,11 @@ function SqueletteArticle() {
 function EtatErreur() {
   return (
     <div className="py-8 flex flex-col items-center gap-2 text-center">
-      <span className="text-[1.5rem] leading-none opacity-40" aria-hidden="true">⚠</span>
-      <p className="font-sans text-[12px] text-encre-tertiaire">
+      <span className="text-[25px] leading-none opacity-40" aria-hidden="true">⚠</span>
+      <p className="font-sans text-[13px] text-encre-tertiaire">
         Impossible de charger les articles
       </p>
-      <p className="font-sans text-[11px] text-encre-tertiaire/45">
+      <p className="font-sans text-[12px] text-encre-tertiaire/45">
         Vérifiez la connexion ou actualisez
       </p>
     </div>
@@ -903,29 +903,29 @@ function CarteArticle({ article, index }) {
       />
 
       {/* Numéro éditorial */}
-      <span className="text-[10px] font-sans font-medium tabular-nums text-encre-tertiaire/40
+      <span className="text-[11px] font-sans font-medium tabular-nums text-encre-tertiaire/40
         group-hover:text-or/70 transition-colors duration-200 mt-0.5 w-4 shrink-0 leading-snug">
         {String(index + 1).padStart(2, '0')}
       </span>
 
       <div className="flex-1 min-w-0">
-        <h3 className="font-serif font-medium text-[1.2rem] leading-[1.35] text-encre
+        <h3 className="font-serif font-medium text-[20px] leading-[1.35] text-encre
           group-hover:text-or-fonce transition-colors duration-200 line-clamp-3 mb-2">
           {article.title}
         </h3>
 
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <span className="text-[11px] text-encre-tertiaire font-sans font-medium truncate">
+            <span className="text-[12px] text-encre-tertiaire font-sans font-medium truncate">
               {article.source}
             </span>
-            <span className="text-encre-tertiaire/30 text-[10px]">·</span>
-            <span className="text-[11px] text-encre-tertiaire/60 font-sans shrink-0">
+            <span className="text-encre-tertiaire/30 text-[11px]">·</span>
+            <span className="text-[12px] text-encre-tertiaire/60 font-sans shrink-0">
               {tempsRelatif(article.publishedAt)}
             </span>
           </div>
           <span
-            className="shrink-0 text-[11px] font-sans font-medium opacity-0
+            className="shrink-0 text-[12px] font-sans font-medium opacity-0
               group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap"
             style={{ color: 'var(--bordeaux)' }}
           >
@@ -951,7 +951,7 @@ function ColonneNews({ category, articles, loading, error }) {
       />
       <div className="flex items-center mb-4 pb-3 border-b border-or/15">
         <Icon size={15} strokeWidth={1.75} className="text-or/70 shrink-0 mr-2.5" aria-hidden="true" />
-        <h2 className="font-serif font-semibold text-[1.15rem] text-encre leading-none">
+        <h2 className="font-serif font-semibold text-[19px] text-encre leading-none">
           {category.label}
         </h2>
       </div>
@@ -961,7 +961,7 @@ function ColonneNews({ category, articles, loading, error }) {
       ) : error ? (
         <EtatErreur />
       ) : articles.length === 0 ? (
-        <p className="text-sm font-serif italic text-encre-tertiaire py-5">Aucun article disponible.</p>
+        <p className="text-[15px] font-serif italic text-encre-tertiaire py-5">Aucun article disponible.</p>
       ) : (
         articles.map((a, i) => <CarteArticle key={a.url} article={a} index={i} />)
       )}
@@ -1080,10 +1080,10 @@ export default function News() {
       {/* ── En-tête ── */}
       <div className="flex items-end justify-between gap-3 flex-wrap">
         <div>
-          <h1 className="font-serif font-medium text-[1.875rem] text-encre leading-none tracking-tight">
+          <h1 className="font-serif font-medium text-[31px] text-encre leading-none tracking-tight">
             Observatoire
           </h1>
-          <p className="font-sans mt-1 text-[0.75rem]" style={{ color: 'var(--encre-tertiaire)' }}>
+          <p className="font-sans mt-1 text-[14px]" style={{ color: 'var(--encre-tertiaire)' }}>
             {heureRefresh ? `Actualisé à ${heureRefresh} · Cache 15 min` : 'Chargement…'}
           </p>
         </div>
@@ -1093,7 +1093,7 @@ export default function News() {
           disabled={refreshing}
           aria-label="Actualiser les données"
           className="flex items-center gap-2 px-3.5 py-2 rounded-md border border-or/25
-            text-encre-secondaire text-xs font-sans hover:bg-velin-fonce hover:border-or/45
+            text-encre-secondaire text-[13px] font-sans hover:bg-velin-fonce hover:border-or/45
             transition-all duration-200 disabled:opacity-35 disabled:cursor-not-allowed"
         >
           <RefreshCw size={12} strokeWidth={1.75} className={refreshing ? 'animate-spin' : ''} aria-hidden="true" />
@@ -1115,7 +1115,7 @@ export default function News() {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60" style={{ background: 'var(--vert)' }} />
             <span className="relative inline-flex rounded-full h-1.5 w-1.5" style={{ background: 'var(--vert)' }} />
           </span>
-          <span className="text-[9px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
+          <span className="text-[10px] uppercase tracking-[0.22em] font-sans font-medium" style={{ color: 'rgba(241,236,224,0.35)' }}>
             Marchés — temps réel
           </span>
         </div>
@@ -1181,7 +1181,7 @@ export default function News() {
               role="tab"
               aria-selected={active}
               onClick={() => setActiveTab(i)}
-              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[10px] font-sans font-medium
+              className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
                 uppercase tracking-wider transition-colors duration-200 relative
                 ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre'}`}
             >
