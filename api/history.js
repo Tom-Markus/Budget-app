@@ -42,7 +42,11 @@ export default async function handler(req, res) {
   if (!result) return res.status(502).json({ error: 'format inattendu' })
 
   const timestamps = result.timestamp || []
-  const closes    = result.indicators?.quote?.[0]?.close || []
+  const quote      = result.indicators?.quote?.[0] || {}
+  const opens      = quote.open  || []
+  const highs      = quote.high  || []
+  const lows       = quote.low   || []
+  const closes     = quote.close || []
 
   // Grouper par date calendaire, garder premier (ouverture) + dernier (clôture)
   const dayMap = new Map()
@@ -73,7 +77,6 @@ export default async function handler(req, res) {
   const sliced = points.slice(-10)
 
   // Attribuer les labels de l'axe X : seulement sur le point d'ouverture de chaque jour
-  // On reconstruit en annotant correctement
   let lastDay = ''
   sliced.forEach(p => {
     const dayStr = new Date(p.ts).toDateString()
@@ -83,6 +86,36 @@ export default async function handler(req, res) {
     }
   })
 
+  // Agréger les données horaires en OHLC journalier pour le graphe en bougies
+  const ohlcMap = new Map()
+  timestamps.forEach((ts, i) => {
+    const o = opens[i], h = highs[i], l = lows[i], c = closes[i]
+    if (o == null && h == null && l == null && c == null) return
+    const dateKey = new Date(ts * 1000).toDateString()
+    if (!ohlcMap.has(dateKey)) {
+      const fallback = c ?? o ?? h ?? l
+      ohlcMap.set(dateKey, { ts, open: o ?? fallback, high: h ?? fallback, low: l ?? fallback, close: c ?? fallback })
+    } else {
+      const d = ohlcMap.get(dateKey)
+      if (h != null) d.high  = Math.max(d.high, h)
+      if (l != null) d.low   = Math.min(d.low, l)
+      if (c != null) d.close = c
+    }
+  })
+
+  const round2 = v => Math.round(v * 100) / 100
+  const ohlcDays = []
+  ohlcMap.forEach(({ ts, open, high, low, close }) => {
+    ohlcDays.push({
+      date:  new Date(ts * 1000).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
+      ts:    ts * 1000,
+      open:  round2(open),
+      high:  round2(high),
+      low:   round2(low),
+      close: round2(close),
+    })
+  })
+
   res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate')
-  return res.json({ points: sliced })
+  return res.json({ points: sliced, ohlcDays: ohlcDays.slice(-7) })
 }
