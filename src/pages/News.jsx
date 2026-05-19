@@ -505,7 +505,8 @@ function WidgetFx({ fx }) {
         <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date} · ECB</span>
       </div>
 
-      <div className="grid grid-cols-4 gap-2">
+      {/* Mobile : 2 colonnes — Desktop : 4 colonnes */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {FX_PAIRS.map(({ key, flag, label }) => {
           const isActive = key === activeField
           const val = getValue(key)
@@ -532,9 +533,9 @@ function WidgetFx({ fx }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="w-full font-serif font-medium text-[1.2rem] text-encre bg-transparent
-                  outline-none text-center tabular-nums disabled:opacity-30
-                  placeholder:text-encre-tertiaire/30"
+                className="w-full font-serif font-medium text-[1.1rem] sm:text-[1.2rem] text-encre
+                  bg-transparent outline-none text-center tabular-nums
+                  disabled:opacity-30 placeholder:text-encre-tertiaire/30"
               />
               <span className={`font-sans text-[10px] tabular-nums text-center
                 ${key === 'EUR' ? 'text-encre-tertiaire/30 italic' : 'text-encre-tertiaire/45'}`}>
@@ -679,7 +680,8 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
         </span>
       </div>
 
-      <div className="grid grid-cols-5 gap-2">
+      {/* Mobile : lignes horizontales — Desktop : 5 colonnes verticales */}
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-1 sm:gap-2">
         {CONV_FIELDS.map(({ key, symbol, label }) => {
           const isActive = key === activeField
           const val = getValue(key)
@@ -687,10 +689,12 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
             <div
               key={key}
               onClick={() => !isActive && handleFocus(key)}
-              className={`flex flex-col items-center gap-2 rounded-xl px-2 py-4 transition-colors duration-150 cursor-pointer
+              className={`flex sm:flex-col items-center sm:items-center gap-3 sm:gap-2
+                rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
               <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
+                w-8 shrink-0 sm:w-auto sm:shrink sm:text-center
                 ${isActive ? 'text-or' : 'text-encre-tertiaire/50'}`}>
                 {symbol}
               </span>
@@ -702,11 +706,11 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="w-full font-serif font-medium text-[1.2rem] text-encre bg-transparent
-                  outline-none text-center tabular-nums disabled:opacity-30
-                  placeholder:text-encre-tertiaire/30"
+                className="flex-1 sm:w-full font-serif font-medium text-[1.1rem] sm:text-[1.2rem] text-encre
+                  bg-transparent outline-none text-right sm:text-center tabular-nums
+                  disabled:opacity-30 placeholder:text-encre-tertiaire/30"
               />
-              <span className="font-sans text-[9px] text-encre-tertiaire/40 text-center leading-tight">
+              <span className="hidden sm:block font-sans text-[9px] text-encre-tertiaire/40 text-center leading-tight">
                 {label}
               </span>
             </div>
