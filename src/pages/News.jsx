@@ -326,7 +326,7 @@ function WidgetMeteo({ weather }) {
   const { Icon: WeatherIcon, label: weatherLabel, color } = getWmo(weather.code)
 
   return (
-    <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
       <WeatherIcon size={38} strokeWidth={1.3} style={{ color }} aria-hidden="true" className="shrink-0" />
       <div className="min-w-0 flex-1">
         {/* Température + ville */}
@@ -394,7 +394,7 @@ function WidgetFearGreed({ fg }) {
   const labelFr = FG_FR[fg.classification] ?? fg.classification
 
   return (
-    <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-4">
+    <div className="surface-velin liserer-signature p-5 h-full flex items-center justify-center gap-4">
       <div
         className="h-12 w-12 rounded-full flex items-center justify-center shrink-0"
         style={{ background: bg }}
@@ -405,10 +405,10 @@ function WidgetFearGreed({ fg }) {
         </span>
       </div>
       <div>
-        <p className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/60">
-          Fear &amp; Greed — Crypto
+        <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/70">
+          Fear &amp; Greed
         </p>
-        <p className="font-serif font-medium text-[1.1rem] text-encre leading-snug mt-0.5">
+        <p className="font-serif font-semibold text-[1.2rem] text-encre leading-snug mt-0.5">
           {labelFr}
         </p>
       </div>
@@ -497,12 +497,12 @@ function WidgetFx({ fx }) {
     <div className="surface-velin liserer-signature p-5">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <ArrowRightLeft size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-          <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
+          <ArrowRightLeft size={13} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
+          <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
             Taux de change
           </span>
         </div>
-        <span className="text-[9px] font-sans text-encre-tertiaire/40 tabular-nums">{fx.date} · ECB</span>
+        <span className="text-[10px] font-sans font-medium text-encre-tertiaire/60 tabular-nums">{fx.date} · ECB</span>
       </div>
 
       {/* Mobile : 2 colonnes — Desktop : 4 colonnes */}
@@ -519,9 +519,9 @@ function WidgetFx({ fx }) {
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
               <div className="flex items-center gap-1.5">
-                <span className="text-[14px] leading-none" aria-hidden="true">{flag}</span>
-                <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
-                  ${isActive ? 'text-or' : 'text-encre-tertiaire/60'}`}>
+                <span className="text-[15px] leading-none" aria-hidden="true">{flag}</span>
+                <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
+                  ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
                   {label}
                 </span>
               </div>
@@ -533,12 +533,12 @@ function WidgetFx({ fx }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="w-full font-serif font-medium text-[1.1rem] sm:text-[1.2rem] text-encre
+                className="w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
                   bg-transparent outline-none text-center tabular-nums
                   disabled:opacity-30 placeholder:text-encre-tertiaire/30"
               />
-              <span className={`font-sans text-[10px] tabular-nums text-center
-                ${key === 'EUR' ? 'text-encre-tertiaire/30 italic' : 'text-encre-tertiaire/45'}`}>
+              <span className={`font-sans text-[11px] font-medium tabular-nums text-center
+                ${key === 'EUR' ? 'text-encre-tertiaire/35 italic' : 'text-encre-secondaire/60'}`}>
                 {rate}
               </span>
             </div>
@@ -570,28 +570,46 @@ function joursAvant(dateStr) {
   return Math.ceil((new Date(dateStr) - Date.now()) / 86400000)
 }
 
+const BCE_INFO = { nom: 'Banque Centrale Européenne', ville: 'Francfort', color: '#3B82F6' }
+const FED_INFO = { nom: 'Réserve Fédérale', ville: 'Washington D.C.', color: '#22C55E' }
+
 function WidgetBceFed() {
   const nextBce = prochaine(REUNIONS.bce)
   const nextFed = prochaine(REUNIONS.fed)
 
-  const Row = ({ institution, dateStr, color }) => {
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const restantBce = REUNIONS.bce.filter(d => new Date(d) >= today).length
+  const restantFed = REUNIONS.fed.filter(d => new Date(d) >= today).length
+
+  const Row = ({ sigle, info, dateStr }) => {
     if (!dateStr) return null
     const jours = joursAvant(dateStr)
-    const date = new Date(dateStr).toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' })
+    const date = new Date(dateStr).toLocaleDateString('fr-BE', {
+      weekday: 'short', day: 'numeric', month: 'long',
+    })
+    const restant = sigle === 'BCE' ? restantBce : restantFed
     return (
-      <div className="flex items-center justify-between py-2 border-b border-encre/6 last:border-b-0">
-        <div className="flex items-center gap-2">
-          <span
-            className="text-[9px] font-sans font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded"
-            style={{ background: color + '18', color }}
-          >
-            {institution}
-          </span>
-          <span className="font-sans text-[12px] text-encre-secondaire tabular-nums">{date}</span>
-        </div>
-        <div className="text-right">
-          <span className="font-serif font-medium text-[1.1rem] text-encre tabular-nums leading-none">
+      <div className="py-2.5 border-b border-encre/6 last:border-b-0">
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="text-[9px] font-sans font-bold uppercase tracking-wider px-1.5 py-0.5 rounded"
+              style={{ background: info.color + '18', color: info.color }}
+            >
+              {sigle}
+            </span>
+            <span className="font-sans text-[11px] text-encre-tertiaire/60 hidden sm:inline">
+              {info.nom}
+            </span>
+          </div>
+          <span className="font-serif font-semibold text-[1.15rem] text-encre tabular-nums leading-none">
             J-{jours}
+          </span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="font-sans text-[11px] text-encre-secondaire tabular-nums capitalize">{date}</span>
+          <span className="font-sans text-[9px] text-encre-tertiaire/40">
+            {restant} réunion{restant > 1 ? 's' : ''} restante{restant > 1 ? 's' : ''}
           </span>
         </div>
       </div>
@@ -602,14 +620,14 @@ function WidgetBceFed() {
     <div className="surface-velin liserer-signature p-5 h-full flex flex-col justify-center">
       <div className="flex items-center gap-2 mb-3">
         <Landmark size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-        <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
-          Prochaines décisions de taux
+        <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.15em] text-encre-tertiaire/80">
+          Décisions de politique monétaire
         </span>
       </div>
-      <Row institution="BCE" dateStr={nextBce} color="#3B82F6" />
-      <Row institution="FED" dateStr={nextFed} color="#22C55E" />
-      <p className="text-[9px] font-sans text-encre-tertiaire/35 mt-3">
-        Dates de décision · calendrier indicatif 2026
+      <Row sigle="BCE" info={BCE_INFO} dateStr={nextBce} />
+      <Row sigle="FED" info={FED_INFO} dateStr={nextFed} />
+      <p className="text-[9px] font-sans text-encre-tertiaire/35 mt-2.5">
+        Calendrier indicatif 2026 · dates de décision
       </p>
     </div>
   )
@@ -668,8 +686,8 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
     <div className="surface-velin liserer-signature p-5">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-2">
-          <Wallet size={12} strokeWidth={1.75} className="text-or/60 shrink-0" aria-hidden="true" />
-          <span className="text-[9px] font-sans uppercase tracking-[0.18em] text-encre-tertiaire/70">
+          <Wallet size={13} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
+          <span className="text-[11px] font-sans font-semibold uppercase tracking-[0.15em] text-encre/80">
             Convertisseur
           </span>
         </div>
@@ -693,9 +711,9 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                 rounded-xl px-3 sm:px-2 py-2.5 sm:py-4 transition-colors duration-150 cursor-pointer
                 ${isActive ? 'bg-velin-fonce/60 ring-1 ring-or/25' : 'hover:bg-velin-fonce/30'}`}
             >
-              <span className={`font-sans text-[10px] font-semibold uppercase tracking-wider
-                w-8 shrink-0 sm:w-auto sm:shrink sm:text-center
-                ${isActive ? 'text-or' : 'text-encre-tertiaire/50'}`}>
+              <span className={`font-sans text-[12px] font-bold uppercase tracking-wider
+                w-10 shrink-0 sm:w-auto sm:shrink sm:text-center
+                ${isActive ? 'text-or' : 'text-encre-secondaire/70'}`}>
                 {symbol}
               </span>
               <input
@@ -706,11 +724,11 @@ function WidgetPortfolio({ markets, loading: marketsLoading }) {
                 disabled={!ready}
                 onChange={e => { setActiveField(key); setActiveValue(e.target.value) }}
                 onFocus={() => handleFocus(key)}
-                className="flex-1 sm:w-full font-serif font-medium text-[1.1rem] sm:text-[1.2rem] text-encre
+                className="flex-1 sm:w-full font-serif font-medium text-[1.15rem] sm:text-[1.25rem] text-encre
                   bg-transparent outline-none text-right sm:text-center tabular-nums
                   disabled:opacity-30 placeholder:text-encre-tertiaire/30"
               />
-              <span className="hidden sm:block font-sans text-[9px] text-encre-tertiaire/40 text-center leading-tight">
+              <span className="hidden sm:block font-sans text-[10px] font-medium text-encre-tertiaire/55 text-center leading-tight">
                 {label}
               </span>
             </div>
@@ -745,10 +763,10 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
 
   if (loading) {
     return (
-      <div className="flex flex-col gap-2 px-5 py-4 min-w-[130px] shrink-0">
-        <div className="h-2 w-12 bg-velin-clair/10 rounded animate-pulse" />
-        <div className="h-6 w-24 bg-velin-clair/15 rounded animate-pulse" />
-        <div className="h-4 w-14 bg-velin-clair/10 rounded-full animate-pulse" />
+      <div className="flex flex-col gap-1.5 px-3 py-3 min-w-[100px] shrink-0">
+        <div className="h-2 w-10 bg-velin-clair/10 rounded animate-pulse" />
+        <div className="h-5 w-20 bg-velin-clair/15 rounded animate-pulse" />
+        <div className="h-3.5 w-12 bg-velin-clair/10 rounded-full animate-pulse" />
       </div>
     )
   }
@@ -756,7 +774,7 @@ function WidgetMarche({ label, prix, unite, change, loading, coinId, onChartClic
   return (
     <button
       type="button"
-      className="flex flex-col gap-1 px-5 py-4 min-w-[130px] shrink-0 group/w text-left
+      className="flex flex-col gap-0.5 px-3 py-3 min-w-[100px] shrink-0 group/w text-left
         hover:bg-velin-clair/6 rounded-lg transition-colors duration-200"
       onClick={() => onChartClick({ label, prix, unite, coinId: coinId ?? null })}
     >
@@ -887,23 +905,15 @@ function ColonneNews({ category, articles, loading, error }) {
   return (
     <div className="surface-velin liserer-signature p-5 flex flex-col relative">
       <span
-        className="absolute top-0 left-0 right-0 h-[2px] pointer-events-none rounded-t-xl"
-        style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux) 50%, transparent 100%)' }}
+        className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none rounded-t-xl"
+        style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux-clair) 50%, transparent 100%)' }}
         aria-hidden="true"
       />
-      <div className="flex items-center justify-between mb-4 pb-3 border-b border-or/15">
-        <div className="flex items-center gap-2.5">
-          <Icon size={14} strokeWidth={1.75} className="text-or/70 shrink-0" aria-hidden="true" />
-          <h2 className="font-serif font-medium text-[1.05rem] text-encre leading-none">
-            {category.label}
-          </h2>
-        </div>
-        {!loading && !error && articles.length > 0 && (
-          <span className="text-[9px] font-sans tabular-nums bg-encre/5 text-encre-tertiaire
-            px-1.5 py-0.5 rounded-full leading-none">
-            {articles.length}
-          </span>
-        )}
+      <div className="flex items-center mb-4 pb-3 border-b border-or/15">
+        <Icon size={15} strokeWidth={1.75} className="text-or/70 shrink-0 mr-2.5" aria-hidden="true" />
+        <h2 className="font-serif font-semibold text-[1.15rem] text-encre leading-none">
+          {category.label}
+        </h2>
       </div>
 
       {loading ? (
