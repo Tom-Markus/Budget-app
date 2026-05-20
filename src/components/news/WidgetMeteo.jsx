@@ -1,0 +1,154 @@
+import {
+  Sun, Cloud, CloudRain, CloudSnow, CloudLightning,
+  Wind, MapPin, Sunrise, Sunset,
+} from 'lucide-react'
+
+const WMO = {
+  0:  { Icon: Sun,            label: 'Ensoleillé',  color: '#FBBF24' },
+  1:  { Icon: Sun,            label: 'Dégagé',      color: '#FBBF24' },
+  2:  { Icon: Cloud,          label: 'Nuageux',     color: '#9CA3AF' },
+  3:  { Icon: Cloud,          label: 'Couvert',     color: '#6B7280' },
+  45: { Icon: Cloud,          label: 'Brumeux',     color: '#9CA3AF' },
+  48: { Icon: Cloud,          label: 'Brouillard',  color: '#9CA3AF' },
+  51: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  53: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  55: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
+  61: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
+  63: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
+  65: { Icon: CloudRain,      label: 'Pluie forte', color: '#2563EB' },
+  71: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
+  73: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
+  75: { Icon: CloudSnow,      label: 'Neige forte', color: '#BAE6FD' },
+  80: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
+  81: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
+  82: { Icon: CloudRain,      label: 'Averses',     color: '#2563EB' },
+  95: { Icon: CloudLightning, label: 'Orage',       color: '#8B5CF6' },
+  96: { Icon: CloudLightning, label: 'Orage',       color: '#7C3AED' },
+  99: { Icon: CloudLightning, label: 'Orage fort',  color: '#7C3AED' },
+}
+
+function getWmo(code) {
+  return WMO[code] ?? WMO[Math.floor(code / 10) * 10] ?? { Icon: Cloud, label: '?', color: '#9CA3AF' }
+}
+
+export async function fetchWeather() {
+  return new Promise((resolve) => {
+    if (!('geolocation' in navigator)) { resolve(null); return }
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords: { latitude: lat, longitude: lon } }) => {
+        try {
+          const [wRes, gRes] = await Promise.all([
+            fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,wind_speed_10m&daily=sunrise,sunset,temperature_2m_max,temperature_2m_min,weather_code&timezone=auto&wind_speed_unit=kmh&forecast_days=4`),
+            fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`),
+          ])
+          const [w, g] = await Promise.all([wRes.json(), gRes.json()])
+          const fmtTime = (iso) => iso?.slice(11, 16) ?? null
+          const fmtDay  = (iso) => iso ? new Date(iso).toLocaleDateString('fr-BE', { weekday: 'short' }) : null
+          const daily = w.daily ?? {}
+          const forecast = [1, 2, 3].map(i => ({
+            day:     fmtDay(daily.sunrise?.[i] ?? daily.time?.[i]),
+            maxTemp: daily.temperature_2m_max?.[i] != null ? Math.round(daily.temperature_2m_max[i]) : null,
+            minTemp: daily.temperature_2m_min?.[i] != null ? Math.round(daily.temperature_2m_min[i]) : null,
+            code:    daily.weather_code?.[i] ?? 0,
+          })).filter(d => d.day)
+          resolve({
+            temp:    Math.round(w.current.temperature_2m),
+            code:    w.current.weather_code,
+            wind:    Math.round(w.current.wind_speed_10m),
+            city:    g.address?.city || g.address?.town || g.address?.village || 'Position',
+            sunrise: fmtTime(w.daily?.sunrise?.[0]),
+            sunset:  fmtTime(w.daily?.sunset?.[0]),
+            forecast,
+          })
+        } catch { resolve(null) }
+      },
+      () => resolve(null),
+      { timeout: 6000, maximumAge: 600000 }
+    )
+  })
+}
+
+export function WidgetMeteo({ weather }) {
+
+  if (weather === undefined) {
+    return (
+      <div className="surface-velin liserer-signature p-5 flex gap-4 items-center animate-pulse h-full">
+        <div className="h-9 w-9 bg-encre/6 rounded-full shrink-0" />
+        <div className="flex-1 space-y-2">
+          <div className="h-3 w-20 bg-encre/6 rounded" />
+          <div className="h-5 w-16 bg-encre/8 rounded" />
+          <div className="h-2.5 w-28 bg-encre/5 rounded" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!weather) {
+    return (
+      <div className="surface-velin liserer-signature p-5 h-full flex items-center gap-3">
+        <MapPin size={18} className="text-encre-tertiaire/40 shrink-0" aria-hidden="true" />
+        <p className="font-sans text-[13px] text-encre-tertiaire">Météo indisponible — localisation désactivée</p>
+      </div>
+    )
+  }
+
+  const { Icon: WeatherIcon, label: weatherLabel } = getWmo(weather.code)
+
+  return (
+    <div className="surface-velin liserer-signature p-5 h-full flex flex-col items-center justify-center gap-4">
+      <div className="flex items-center justify-center gap-4 w-full">
+        <WeatherIcon size={40} strokeWidth={1.25} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" className="shrink-0" />
+        <div className="min-w-0">
+          <div className="flex items-baseline gap-2.5 flex-wrap">
+            <span className="font-serif font-medium text-[33px] text-encre leading-none tabular-nums">
+              {weather.temp}°C
+            </span>
+            <span className="font-sans text-[13px] text-encre-secondaire truncate">{weather.city}</span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-1.5">
+            <span className="font-sans italic text-[13px] text-encre-tertiaire">{weatherLabel}</span>
+            <span className="text-encre-tertiaire/30 text-[11px]">·</span>
+            <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
+            <span className="font-sans text-[13px] text-encre-tertiaire">{weather.wind} km/h</span>
+          </div>
+          {(weather.sunrise || weather.sunset) && (
+            <div className="flex items-center gap-4 mt-1.5">
+              {weather.sunrise && (
+                <span className="flex items-center gap-1.5">
+                  <Sunrise size={14} strokeWidth={1.5} className="text-or shrink-0" aria-hidden="true" />
+                  <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunrise}</span>
+                </span>
+              )}
+              {weather.sunset && (
+                <span className="flex items-center gap-1.5">
+                  <Sunset size={14} strokeWidth={1.5} className="text-or/60 shrink-0" aria-hidden="true" />
+                  <span className="font-sans text-[13px] text-encre-secondaire tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>{weather.sunset}</span>
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {weather.forecast?.length > 0 && (
+        <div className="w-full border-t border-encre/6 pt-3 flex items-center justify-center gap-1">
+          {weather.forecast.map((day, i) => {
+            const { Icon: FIcon } = getWmo(day.code)
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-1 px-1">
+                <span className="font-sans text-[11px] text-encre-tertiaire/60 uppercase tracking-wide capitalize">
+                  {day.day}
+                </span>
+                <FIcon size={16} strokeWidth={1.5} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" />
+                <div className="flex items-baseline gap-1 tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
+                  <span className="font-sans text-[13px] font-medium text-encre">{day.maxTemp}°</span>
+                  <span className="font-sans text-[11px] text-encre-tertiaire/50">{day.minTemp}°</span>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
