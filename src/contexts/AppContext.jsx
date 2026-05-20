@@ -208,7 +208,16 @@ export function AppProvider({ children }) {
       }),
 
     modifierEnveloppe: (envId, patch) =>
-      wrap(envId, () => mutations.modifierEnveloppe(envId, patch)),
+      wrap(envId, async () => {
+        const snapshot = envelopes
+        setEnvelopes(prev => prev.map(e => e.id === envId ? { ...e, ...patch } : e))
+        try {
+          await mutations.modifierEnveloppe(envId, patch)
+        } catch (err) {
+          setEnvelopes(snapshot)
+          throw err
+        }
+      }),
 
     supprimerEnveloppe: (envId, modeAvecEnfants = 'cascade') =>
       wrap(envId, async () => {
