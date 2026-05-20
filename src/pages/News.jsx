@@ -956,7 +956,7 @@ function WidgetBceFed() {
       <Row sigle="BCE" info={BCE_INFO} dateStr={nextBce} />
       <Row sigle="FED" info={FED_INFO} dateStr={nextFed} />
       <p className="text-[10px] font-sans text-encre-tertiaire/35 mt-2.5">
-        Calendrier indicatif 2026 · dates de décision
+        Calendrier indicatif {new Date().getFullYear()} · dates de décision
       </p>
     </div>
   )
