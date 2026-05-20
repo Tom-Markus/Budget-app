@@ -14,7 +14,7 @@ appareils, avec authentification Google.
 
 | Brique | Rôle |
 |---|---|
-| **React 18 + Vite** | Interface et serveur de développement |
+| **React 19 + Vite** | Interface et serveur de développement |
 | **Supabase** | Base de données PostgreSQL, authentification Google, synchronisation temps réel |
 | **Tailwind CSS** | Styles utilitaires (couleurs/ombres branchées sur les tokens du design system) |
 | **Framer Motion** | Animations |
@@ -23,6 +23,10 @@ appareils, avec authentification Google.
 | **dnd-kit** | Glisser-déposer tactile et souris |
 | **jsPDF** | Export PDF |
 | **vite-plugin-pwa** | Manifest + service worker (installation de l'app) |
+| **Alpha Vantage** | Taux de change Forex (EUR/USD) pour la page Salon & marchés |
+| **CoinGecko** | Cours crypto BTC, ETH, Or (PAXG) — sans clé |
+| **Yahoo Finance** | Indices boursiers via proxy Vercel — sans clé |
+| **RSS / rss2json** | Actualités financières — sans clé (10 k req/jour) |
 
 ---
 
@@ -60,10 +64,13 @@ Le fichier `.env.local` (jamais commité) doit contenir :
 ```
 VITE_SUPABASE_URL=https://xxxxxxxxxxxxx.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGci...
+VITE_ALPHA_VANTAGE_KEY=               # alphavantage.co — clé gratuite (Forex EUR/USD)
+VITE_GNEWS_KEY=                       # gnews.io — réservé usage futur
+VITE_TWELVE_DATA_KEY=                 # twelvedata.com — réservé usage futur
 ```
 
-Ces valeurs se trouvent dans le tableau de bord Supabase :
-**Project Settings → API**.
+`VITE_SUPABASE_URL` et `VITE_SUPABASE_ANON_KEY` se trouvent dans le tableau de bord Supabase :
+**Project Settings → API**. Les clés d'API tierces sont obtenues sur les sites respectifs (compte gratuit suffisant).
 
 > La clé `anon` est **publique par conception**. La sécurité ne repose pas sur
 > son secret, mais sur les politiques RLS (voir section 5). Le seul élément
@@ -133,11 +140,12 @@ budget-app/
 │   │   ├── formatters.js       Format européen des montants + dates
 │   │   ├── calculs.js          Calcul des soldes côté client + reconstruction d'historique
 │   │   ├── mutations.js        Fonctions qui écrivent dans la base (créer, dépenser, etc.)
+│   │   ├── newsApi.js          Fetch marchés : Forex, crypto, indices, actualités RSS
 │   │   ├── exportJson.js       Génère et télécharge une sauvegarde JSON
 │   │   ├── exportPdf.js        Génère et télécharge un rapport PDF
 │   │   └── importJson.js       Lit, valide et restaure une sauvegarde JSON
 │   │
-│   ├── components/             13 composants du design system + 2 composants techniques
+│   ├── components/             Composants du design system + composants techniques
 │   │   ├── Navbar.jsx              Barre de navigation (haut PC / bas mobile)
 │   │   ├── EcranConnexion.jsx      Écran de connexion Google
 │   │   ├── GrandeEnveloppe.jsx     Enveloppe « Patrimoine » + ligne « à répartir »
@@ -152,11 +160,23 @@ budget-app/
 │   │   ├── PopupConfirmation.jsx   Fenêtre modale de confirmation réutilisable
 │   │   ├── Toast.jsx               Notification + LoaderNoble + SyncingDot
 │   │   ├── AuthGate.jsx            Affiche l'écran de connexion OU l'application
-│   │   └── Layout.jsx              Navbar + zone de page (relie la Navbar au routeur)
+│   │   ├── Layout.jsx              Navbar + zone de page (relie la Navbar au routeur)
+│   │   ├── CurseurDore.jsx         Curseur personnalisé (point doré + anneau)
+│   │   ├── MetaballFond.jsx        Fond animé metaball (canvas WebGL)
+│   │   └── news/                   Composants de la page Salon & marchés
+│   │       ├── BarreMarches.jsx        Bandeau défilant cours BTC/ETH/Or/indices
+│   │       ├── ColonneNews.jsx         Colonne d'actualités RSS
+│   │       ├── GrapheModal.jsx         Modal graphique chandelier crypto/indices
+│   │       ├── WidgetBceFed.jsx        Calendrier des décisions BCE / Fed
+│   │       ├── WidgetFearGreed.jsx     Indicateur Fear & Greed
+│   │       ├── WidgetFx.jsx            Taux de change EUR/USD en direct
+│   │       ├── WidgetMeteo.jsx         Météo locale (géolocalisation)
+│   │       └── WidgetPortfolio.jsx     Mini-portfolio crypto personnalisable
 │   │
 │   └── pages/
 │       ├── Accueil.jsx             Patrimoine + enveloppes + créations + suppressions
 │       ├── GraphesEtDettes.jsx     Camembert + courbe Patrimoine + créances
+│       ├── News.jsx                Salon & marchés : actualités + widgets + graphes
 │       └── Reglages.jsx            Déconnexion + export/import des données
 │
 ├── .env.example                Modèle des variables d'environnement
