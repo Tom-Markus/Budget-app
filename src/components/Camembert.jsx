@@ -25,17 +25,18 @@ import {
 } from 'recharts';
 import OdometerCounter from './OdometerCounter';
 
-// Palette noble pour le camembert — bordeaux, nuit, or, encre, vélin foncé...
-// Évite vert/rouge pour ne pas créer de confusion avec les codes trading.
+// Palette noble pour le camembert — 8 teintes distinctes sur le cercle chromatique,
+// toutes dans un registre sombre et raffiné. Évite vert vif/rouge pour ne pas
+// créer de confusion avec les codes trading.
 const PALETTE_DEFAUT = [
-  '#0E1F3A', // nuit
-  '#5C1A24', // bordeaux
-  '#B8954A', // or
-  '#1A2D52', // nuit-clair
-  '#7A2632', // bordeaux-clair
-  '#8E6F2F', // or-fonce
-  '#3D3934', // graphite
-  '#5C5147', // encre-secondaire
+  '#1E3A5F', // bleu marine
+  '#8B2635', // bordeaux
+  '#C49A3C', // or
+  '#2A5C4A', // vert sauge
+  '#6B3A7D', // prune
+  '#8B4A1E', // cuivre
+  '#3D6E6E', // sarcelle
+  '#5C4E28', // olive
 ];
 
 function formatNombre(v) {
