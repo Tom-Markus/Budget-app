@@ -24,6 +24,7 @@ import Layout from './components/Layout'
 import Accueil from './pages/Accueil'
 import GraphesEtDettes from './pages/GraphesEtDettes'
 import News from './pages/News'
+import Investments from './pages/Investments'
 import Reglages from './pages/Reglages'
 
 export default function App() {
@@ -38,6 +39,7 @@ export default function App() {
                   <Route path="/" element={<Accueil />} />
                   <Route path="/graphes-dettes" element={<GraphesEtDettes />} />
                   <Route path="/news" element={<News />} />
+                  <Route path="/investments" element={<Investments />} />
                   <Route path="/reglages" element={<Reglages />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
