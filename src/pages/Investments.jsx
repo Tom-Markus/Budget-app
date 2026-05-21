@@ -1,13 +1,617 @@
-import { TrendingUp } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { createPortal } from 'react-dom'
+import { motion, AnimatePresence } from 'framer-motion'
+import { TrendingUp, Plus, X, Trash2, Lock } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../hooks/useToast'
+import PopupConfirmation from '../components/PopupConfirmation'
+import {
+  chargerInvestissements,
+  ajouterInvestissement,
+  cloturerInvestissement,
+  supprimerInvestissement,
+} from '../lib/investmentsMutations'
 
-export default function Investments() {
+// ============================================================================
+// Config types
+// ============================================================================
+const TYPES = {
+  action: { label: 'Action',   bg: 'bg-nuit/10',      text: 'text-nuit-clair' },
+  etf:    { label: 'ETF',      bg: 'bg-vert/10',      text: 'text-vert'       },
+  crypto: { label: 'Crypto',   bg: 'bg-or/15',        text: 'text-or-fonce'   },
+  or:     { label: 'Or (XAU)', bg: 'bg-bordeaux/10',  text: 'text-bordeaux-clair' },
+}
+
+// ============================================================================
+// Formatters
+// ============================================================================
+function formatEur(n) {
+  return new Intl.NumberFormat('fr-BE', {
+    style: 'currency', currency: 'EUR',
+    minimumFractionDigits: 2, maximumFractionDigits: 2,
+  }).format(n)
+}
+
+function formatPct(n) {
+  return (n >= 0 ? '+' : '') + n.toFixed(2) + ' %'
+}
+
+function formatDate(d) {
+  if (!d) return '—'
+  return new Intl.DateTimeFormat('fr-BE', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  }).format(new Date(d + 'T00:00:00'))
+}
+
+// ============================================================================
+// Primitives UI réutilisables (scope local à ce fichier)
+// ============================================================================
+const inputCls =
+  'w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-10 ' +
+  'text-encre placeholder:text-encre-tertiaire font-sans text-sm ' +
+  'focus:outline-none focus:border-or/40 transition-colors duration-200'
+
+function Champ({ label, children }) {
   return (
-    <div className="flex flex-col items-center justify-center min-h-[40vh] gap-4 text-center">
-      <TrendingUp size={48} className="text-or opacity-60" />
-      <h1 className="font-serif italic text-2xl text-velin-clair">Investments</h1>
-      <p className="t-label-noble text-encre-tertiaire opacity-70">
-        Cette section est en cours de construction.
-      </p>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-[0.75rem] uppercase tracking-wider text-encre-tertiaire font-medium">
+        {label}
+      </span>
+      {children}
     </div>
+  )
+}
+
+// ============================================================================
+// Modal générique (portal, backdrop blur, escape)
+// ============================================================================
+function Modal({ isOpen, onClose, children }) {
+  useEffect(() => {
+    if (!isOpen) return
+    const fn = (e) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', fn)
+    return () => window.removeEventListener('keydown', fn)
+  }, [isOpen, onClose])
+
+  return createPortal(
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+          transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+          role="dialog" aria-modal="true"
+        >
+          <div
+            className="absolute inset-0"
+            style={{
+              background: 'rgba(14,31,58,0.45)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            }}
+            onClick={onClose}
+            aria-hidden="true"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96, y: 12 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.96, y: 12 }}
+            transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
+            className="relative w-full max-w-lg surface-velin p-6 md:p-7 flex flex-col gap-5 overflow-y-auto max-h-[90vh]"
+            style={{ boxShadow: 'var(--shadow-lg)' }}
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Fermer"
+              className="absolute top-3 right-3 p-2 rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
+            >
+              <X size={18} strokeWidth={1.5} />
+            </button>
+            {children}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>,
+    document.body
+  )
+}
+
+function BoutonSubmit({ disabled, loading, label }) {
+  return (
+    <button
+      type="submit"
+      disabled={disabled || loading}
+      className={`h-10 px-5 rounded-md text-sm font-medium transition-colors duration-200 flex items-center gap-2
+        ${!disabled && !loading
+          ? 'bg-bordeaux text-velin-clair hover:bg-bordeaux-clair'
+          : 'bg-encre/10 text-encre-tertiaire cursor-not-allowed'
+        }`}
+    >
+      {loading && (
+        <span className="animate-spin h-3 w-3 border border-current border-t-transparent rounded-full" />
+      )}
+      {label}
+    </button>
+  )
+}
+
+// ============================================================================
+// Formulaire — Ajouter un investissement
+// ============================================================================
+const FORM_VIDE = { type: 'action', nom: '', ticker: '', date_achat: '', prix_achat: '', quantite: '', notes: '' }
+
+function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState(FORM_VIDE)
+
+  useEffect(() => {
+    if (isOpen) setForm(FORM_VIDE)
+  }, [isOpen])
+
+  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+
+  const valide = form.nom.trim() && form.date_achat && Number(form.prix_achat) > 0 && Number(form.quantite) > 0
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!valide) return
+    onSubmit({
+      type: form.type,
+      nom: form.nom.trim(),
+      ticker: form.ticker.trim() || null,
+      date_achat: form.date_achat,
+      prix_achat: Number(form.prix_achat),
+      quantite: Number(form.quantite),
+      notes: form.notes.trim() || null,
+    })
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose}>
+      <h2 className="font-serif italic font-medium text-2xl text-encre pr-8">
+        Nouvel investissement
+      </h2>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Champ label="Type">
+          <select value={form.type} onChange={set('type')} className={inputCls}>
+            {Object.entries(TYPES).map(([id, t]) => (
+              <option key={id} value={id}>{t.label}</option>
+            ))}
+          </select>
+        </Champ>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Nom *">
+            <input
+              type="text" value={form.nom} onChange={set('nom')}
+              placeholder="ex: Apple" className={inputCls} required
+            />
+          </Champ>
+          <Champ label="Ticker">
+            <input
+              type="text" value={form.ticker} onChange={set('ticker')}
+              placeholder="ex: AAPL" maxLength={12} className={inputCls}
+            />
+          </Champ>
+        </div>
+
+        <Champ label="Date d'achat *">
+          <input type="date" value={form.date_achat} onChange={set('date_achat')} className={inputCls} required />
+        </Champ>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Prix d'achat (€) *">
+            <input
+              type="number" step="any" min="0"
+              value={form.prix_achat} onChange={set('prix_achat')}
+              placeholder="0.00" className={inputCls} required
+            />
+          </Champ>
+          <Champ label="Quantité *">
+            <input
+              type="number" step="any" min="0"
+              value={form.quantite} onChange={set('quantite')}
+              placeholder="1" className={inputCls} required
+            />
+          </Champ>
+        </div>
+
+        <Champ label="Notes">
+          <input
+            type="text" value={form.notes} onChange={set('notes')}
+            placeholder="Optionnel…" className={inputCls}
+          />
+        </Champ>
+
+        <div className="flex justify-end gap-2 mt-1">
+          <button
+            type="button" onClick={onClose}
+            className="h-10 px-4 rounded-md text-sm font-medium text-encre-secondaire hover:bg-velin-fonce transition-colors duration-200"
+          >
+            Annuler
+          </button>
+          <BoutonSubmit disabled={!valide} loading={loading} label="Enregistrer" />
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ============================================================================
+// Formulaire — Clôturer (vendre)
+// ============================================================================
+function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState({ date_vente: '', prix_vente: '' })
+
+  useEffect(() => {
+    if (investissement) setForm({ date_vente: '', prix_vente: '' })
+  }, [investissement])
+
+  const prixVente = Number(form.prix_vente)
+  const valide = form.date_vente && prixVente > 0
+
+  const pnl = investissement && prixVente > 0
+    ? (prixVente - investissement.prix_achat) * investissement.quantite
+    : null
+  const pnlPct = investissement && prixVente > 0
+    ? (prixVente / investissement.prix_achat - 1) * 100
+    : null
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!valide) return
+    onSubmit({ date_vente: form.date_vente, prix_vente: prixVente })
+  }
+
+  return (
+    <Modal isOpen={!!investissement} onClose={onClose}>
+      <h2 className="font-serif italic font-medium text-2xl text-encre pr-8">
+        Clôturer — {investissement?.nom}
+      </h2>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Champ label="Date de vente *">
+          <input
+            type="date" value={form.date_vente}
+            onChange={(e) => setForm((f) => ({ ...f, date_vente: e.target.value }))}
+            className={inputCls} required
+          />
+        </Champ>
+
+        <Champ label="Prix de vente (€) *">
+          <input
+            type="number" step="any" min="0"
+            value={form.prix_vente}
+            onChange={(e) => setForm((f) => ({ ...f, prix_vente: e.target.value }))}
+            placeholder="0.00" className={inputCls} required
+          />
+        </Champ>
+
+        {pnl !== null && (
+          <div className="rounded-md bg-velin-fonce px-4 py-3 text-sm">
+            P&L estimé :{' '}
+            <span className={`font-medium ${pnl >= 0 ? 'text-vert' : 'text-rouge'}`}>
+              {formatEur(pnl)} ({formatPct(pnlPct)})
+            </span>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-2 mt-1">
+          <button
+            type="button" onClick={onClose}
+            className="h-10 px-4 rounded-md text-sm font-medium text-encre-secondaire hover:bg-velin-fonce transition-colors duration-200"
+          >
+            Annuler
+          </button>
+          <BoutonSubmit disabled={!valide} loading={loading} label="Confirmer la vente" />
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ============================================================================
+// Composants affichage
+// ============================================================================
+function StatCard({ label, value, sub, couleur }) {
+  return (
+    <div className="surface-velin p-4 flex flex-col gap-1">
+      <span className="text-[0.7rem] uppercase tracking-wider text-encre-tertiaire font-medium">
+        {label}
+      </span>
+      <span className={`font-serif italic text-2xl ${couleur || 'text-encre'}`}>
+        {value}
+      </span>
+      {sub && <span className="text-xs text-encre-tertiaire">{sub}</span>}
+    </div>
+  )
+}
+
+function TypeBadge({ type }) {
+  const cfg = TYPES[type] || { label: type, bg: 'bg-encre/10', text: 'text-encre-secondaire' }
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-[0.65rem] font-medium uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+      {cfg.label}
+    </span>
+  )
+}
+
+function CarteInvestissement({ inv, onCloturer, onSupprimer }) {
+  const montantInvesti = inv.prix_achat * inv.quantite
+  const estCloture = inv.date_vente && inv.prix_vente
+  const pnl = estCloture ? (inv.prix_vente - inv.prix_achat) * inv.quantite : null
+  const pnlPct = estCloture ? (inv.prix_vente / inv.prix_achat - 1) * 100 : null
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -8 }}
+      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+      className="surface-velin p-4 flex flex-col gap-3"
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-1.5 min-w-0">
+          <TypeBadge type={inv.type} />
+          <div className="flex items-baseline gap-1.5 min-w-0">
+            <span className="font-serif italic text-lg text-encre truncate">{inv.nom}</span>
+            {inv.ticker && (
+              <span className="text-xs text-encre-tertiaire uppercase tracking-wider shrink-0">
+                {inv.ticker}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-0.5 shrink-0">
+          {!estCloture && onCloturer && (
+            <button
+              onClick={() => onCloturer(inv)}
+              title="Clôturer la position"
+              className="h-8 w-8 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
+            >
+              <Lock size={14} strokeWidth={1.75} />
+            </button>
+          )}
+          <button
+            onClick={() => onSupprimer(inv.id)}
+            title="Supprimer"
+            className="h-8 w-8 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-rouge hover:bg-rouge/10 transition-colors duration-200"
+          >
+            <Trash2 size={14} strokeWidth={1.75} />
+          </button>
+        </div>
+      </div>
+
+      {/* Dates */}
+      <div className="flex items-center gap-2 text-xs text-encre-tertiaire">
+        <span>Achat {formatDate(inv.date_achat)}</span>
+        {estCloture && (
+          <>
+            <span aria-hidden="true">→</span>
+            <span>Vente {formatDate(inv.date_vente)}</span>
+          </>
+        )}
+      </div>
+
+      {/* Montants + P&L */}
+      <div className="flex items-end justify-between gap-2">
+        <div className="text-xs text-encre-tertiaire leading-5">
+          {inv.quantite} × {formatEur(inv.prix_achat)}
+          <br />
+          <span className="text-encre font-medium text-sm">{formatEur(montantInvesti)}</span>
+        </div>
+
+        {estCloture && pnl !== null && (
+          <div className={`text-right font-medium text-sm ${pnl >= 0 ? 'text-vert' : 'text-rouge'}`}>
+            {pnl >= 0 ? '+' : ''}{formatEur(pnl)}
+            <br />
+            <span className="text-xs">{formatPct(pnlPct)}</span>
+          </div>
+        )}
+      </div>
+
+      {inv.notes && (
+        <p className="text-xs text-encre-tertiaire italic border-t border-[rgba(31,24,16,0.06)] pt-2 mt-1">
+          {inv.notes}
+        </p>
+      )}
+    </motion.div>
+  )
+}
+
+// ============================================================================
+// Page principale
+// ============================================================================
+export default function Investments() {
+  const { user } = useAuth()
+  const { showToast } = useToast()
+
+  const [investissements, setInvestissements] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [modalAjout, setModalAjout] = useState(false)
+  const [cloturerTarget, setCloturerTarget] = useState(null)
+  const [supprimerTarget, setSupprimerTarget] = useState(null)
+
+  const charger = useCallback(async () => {
+    if (!user) return
+    setLoading(true)
+    try {
+      setInvestissements(await chargerInvestissements(user.id))
+    } catch (err) {
+      showToast({ type: 'erreur', message: err.message })
+    } finally {
+      setLoading(false)
+    }
+  }, [user, showToast])
+
+  useEffect(() => { charger() }, [charger])
+
+  async function handleAjouter(data) {
+    setSaving(true)
+    try {
+      await ajouterInvestissement(user.id, data)
+      setModalAjout(false)
+      await charger()
+      showToast({ message: `${data.nom} ajouté.` })
+    } catch (err) {
+      showToast({ type: 'erreur', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleCloturer(data) {
+    setSaving(true)
+    try {
+      await cloturerInvestissement(cloturerTarget.id, data)
+      const nom = cloturerTarget.nom
+      setCloturerTarget(null)
+      await charger()
+      showToast({ message: `${nom} clôturé.` })
+    } catch (err) {
+      showToast({ type: 'erreur', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleSupprimer() {
+    const id = supprimerTarget
+    setSupprimerTarget(null)
+    try {
+      await supprimerInvestissement(id)
+      setInvestissements((prev) => prev.filter((i) => i.id !== id))
+    } catch (err) {
+      showToast({ type: 'erreur', message: err.message })
+    }
+  }
+
+  const ouvertes  = investissements.filter((i) => !i.date_vente)
+  const cloturees = investissements.filter((i) => i.date_vente)
+
+  const totalInvesti = investissements.reduce((s, i) => s + i.prix_achat * i.quantite, 0)
+  const pnlRealise   = cloturees.reduce((s, i) => s + (i.prix_vente - i.prix_achat) * i.quantite, 0)
+
+  return (
+    <>
+      {/* En-tête de page */}
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="font-serif italic text-3xl text-encre">Investments</h1>
+        <button
+          onClick={() => setModalAjout(true)}
+          className="flex items-center gap-2 h-10 px-4 bg-bordeaux text-velin-clair rounded-md text-sm font-medium hover:bg-bordeaux-clair transition-colors duration-200"
+        >
+          <Plus size={16} strokeWidth={2} aria-hidden="true" />
+          Ajouter
+        </button>
+      </div>
+
+      {/* Résumé chiffres clés */}
+      <div className="grid grid-cols-3 gap-3 mb-8">
+        <StatCard label="Total investi" value={formatEur(totalInvesti)} />
+        <StatCard
+          label="P&L réalisé"
+          value={formatEur(pnlRealise)}
+          couleur={pnlRealise >= 0 ? 'text-vert' : 'text-rouge'}
+        />
+        <StatCard
+          label="Positions ouvertes"
+          value={ouvertes.length}
+          sub={cloturees.length > 0 ? `${cloturees.length} clôturée${cloturees.length > 1 ? 's' : ''}` : undefined}
+        />
+      </div>
+
+      {/* Contenu */}
+      {loading ? (
+        <div className="flex items-center justify-center py-16">
+          <span
+            className="animate-spin h-6 w-6 border-2 border-t-transparent rounded-full"
+            style={{ borderColor: 'var(--or)', borderTopColor: 'transparent' }}
+          />
+        </div>
+      ) : investissements.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
+          <TrendingUp size={44} className="text-or opacity-40" aria-hidden="true" />
+          <p className="font-serif italic text-xl text-encre-secondaire">Aucun investissement enregistré</p>
+          <p className="text-sm text-encre-tertiaire">
+            Clique sur « Ajouter » pour saisir ton premier placement.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-10">
+          {ouvertes.length > 0 && (
+            <section>
+              <h2 className="font-serif italic text-xl text-encre mb-3">
+                Positions ouvertes{' '}
+                <span className="text-encre-tertiaire text-base font-normal not-italic">({ouvertes.length})</span>
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence>
+                  {ouvertes.map((inv) => (
+                    <CarteInvestissement
+                      key={inv.id}
+                      inv={inv}
+                      onCloturer={setCloturerTarget}
+                      onSupprimer={setSupprimerTarget}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </section>
+          )}
+
+          {cloturees.length > 0 && (
+            <section>
+              <h2 className="font-serif italic text-xl text-encre mb-3">
+                Positions clôturées{' '}
+                <span className="text-encre-tertiaire text-base font-normal not-italic">({cloturees.length})</span>
+              </h2>
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <AnimatePresence>
+                  {cloturees.map((inv) => (
+                    <CarteInvestissement
+                      key={inv.id}
+                      inv={inv}
+                      onCloturer={null}
+                      onSupprimer={setSupprimerTarget}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </section>
+          )}
+        </div>
+      )}
+
+      {/* Modals */}
+      <FormulaireAjout
+        isOpen={modalAjout}
+        onClose={() => setModalAjout(false)}
+        onSubmit={handleAjouter}
+        loading={saving}
+      />
+      <FormulaireCloturer
+        investissement={cloturerTarget}
+        onClose={() => setCloturerTarget(null)}
+        onSubmit={handleCloturer}
+        loading={saving}
+      />
+      <PopupConfirmation
+        isOpen={!!supprimerTarget}
+        onClose={() => setSupprimerTarget(null)}
+        title="Supprimer cet investissement ?"
+        message="Cette action est irréversible."
+        tone="destructive"
+        actions={[
+          { label: 'Annuler',    variant: 'ghost',       onClick: () => setSupprimerTarget(null) },
+          { label: 'Supprimer',  variant: 'destructive', onClick: handleSupprimer },
+        ]}
+      />
+    </>
   )
 }
