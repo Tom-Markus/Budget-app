@@ -36,6 +36,11 @@ function formatPct(n) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + ' %'
 }
 
+function formatQte(n) {
+  if (Number.isInteger(n)) return String(n)
+  return parseFloat(n.toFixed(6)).toString()
+}
+
 function formatDate(d) {
   if (!d) return '—'
   return new Intl.DateTimeFormat('fr-BE', {
@@ -68,6 +73,11 @@ const JOURS_ABREV = ['L','M','M','J','V','S','D']
 function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
   const [open, setOpen] = useState(false)
   const [view, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
+  const [yearMode, setYearMode] = useState(false)
+  const [yearStart, setYearStart] = useState(() => {
+    const y = value ? new Date(value + 'T00:00:00').getFullYear() : new Date().getFullYear()
+    return y - 7
+  })
   const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
@@ -88,15 +98,15 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
 
   function handleOpen() {
     const r = triggerRef.current.getBoundingClientRect()
-    const CAL_H = 300
+    const CAL_H = 320
     const CAL_W = Math.max(r.width, 272)
     const vw = window.innerWidth
     const vh = window.innerHeight
-
     const top  = r.bottom + 6 + CAL_H > vh ? r.top - CAL_H - 6 : r.bottom + 6
     const left = Math.min(r.left, vw - CAL_W - 8)
-
     setPos({ top, left, width: CAL_W })
+    setYearMode(false)
+    setYearStart(view.getFullYear() - 7)
     setOpen(true)
   }
 
@@ -108,18 +118,24 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
   const days = []
   let startDow = new Date(year, month, 1).getDay() - 1
   if (startDow < 0) startDow = 6
-  for (let i = startDow - 1; i >= 0; i--)       days.push({ d: new Date(year, month, -i),     other: true })
-  for (let i = 1; i <= new Date(year, month+1, 0).getDate(); i++) days.push({ d: new Date(year, month, i), other: false })
-  while (days.length < 42)                        days.push({ d: new Date(year, month+1, days.length - startDow - new Date(year,month+1,0).getDate() + 1), other: true })
+  for (let i = startDow - 1; i >= 0; i--)
+    days.push({ d: new Date(year, month, -i), other: true })
+  for (let i = 1; i <= new Date(year, month + 1, 0).getDate(); i++)
+    days.push({ d: new Date(year, month, i), other: false })
+  let nextDay = 1
+  while (days.length < 42)
+    days.push({ d: new Date(year, month + 1, nextDay++), other: true })
 
   function pick(d) {
-    onChange(d.toLocaleDateString('fr-CA')) // YYYY-MM-DD
+    onChange(d.toLocaleDateString('fr-CA'))
     setOpen(false)
   }
 
   const display = selected
-    ? new Intl.DateTimeFormat('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' }).format(selected)
+    ? new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(selected)
     : ''
+
+  const years = Array.from({ length: 16 }, (_, i) => yearStart + i)
 
   return (
     <div ref={triggerRef}>
@@ -145,59 +161,86 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
               onMouseDown={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
             >
-              {/* Navigation mois */}
+              {/* Navigation */}
               <div className="flex items-center justify-between mb-3 px-1">
                 <button
                   type="button"
-                  onClick={() => setView(new Date(year, month - 1, 1))}
+                  onClick={() => yearMode ? setYearStart(s => s - 16) : setView(new Date(year, month - 1, 1))}
                   className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronLeft size={14} strokeWidth={2} />
                 </button>
-                <span className="font-serif italic text-encre text-sm">
-                  {MOIS[month]} {year}
-                </span>
+
                 <button
                   type="button"
-                  onClick={() => setView(new Date(year, month + 1, 1))}
+                  onClick={() => setYearMode(m => !m)}
+                  className="font-serif italic text-encre text-sm hover:text-or transition-colors duration-150 px-2 py-1 rounded-sm hover:bg-velin-fonce"
+                >
+                  {yearMode ? `${yearStart} – ${yearStart + 15}` : `${MOIS[month]} ${year}`}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => yearMode ? setYearStart(s => s + 16) : setView(new Date(year, month + 1, 1))}
                   className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
               </div>
 
-              {/* En-têtes jours */}
-              <div className="grid grid-cols-7 mb-1">
-                {JOURS_ABREV.map((j, i) => (
-                  <div key={i} className="text-center text-[0.6rem] uppercase tracking-wider text-encre-tertiaire py-1 font-medium">
-                    {j}
-                  </div>
-                ))}
-              </div>
-
-              {/* Grille jours */}
-              <div className="grid grid-cols-7 gap-px">
-                {days.map(({ d, other }, i) => {
-                  const isSel   = selected && d.toDateString() === selected.toDateString()
-                  const isToday = d.toDateString() === today.toDateString()
-                  return (
+              {yearMode ? (
+                /* Grille années */
+                <div className="grid grid-cols-4 gap-1">
+                  {years.map(y => (
                     <button
-                      key={i}
+                      key={y}
                       type="button"
-                      onClick={() => pick(d)}
+                      onClick={() => { setView(new Date(y, month, 1)); setYearMode(false) }}
                       className={[
-                        'h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
-                        other   ? 'text-encre-tertiaire/35' : 'text-encre-secondaire',
-                        isSel   ? 'bg-bordeaux text-velin-clair font-semibold' : '',
-                        isToday && !isSel ? 'bg-or/20 text-or-fonce font-semibold' : '',
-                        !isSel  ? 'hover:bg-velin-fonce' : '',
+                        'h-9 rounded-sm text-xs font-sans transition-colors duration-100',
+                        y === year ? 'bg-bordeaux text-velin-clair font-semibold' : 'text-encre-secondaire hover:bg-velin-fonce',
                       ].join(' ')}
                     >
-                      {d.getDate()}
+                      {y}
                     </button>
-                  )
-                })}
-              </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {/* En-têtes jours */}
+                  <div className="grid grid-cols-7 mb-1">
+                    {JOURS_ABREV.map((j, i) => (
+                      <div key={i} className="text-center text-[0.6rem] uppercase tracking-wider text-encre-tertiaire py-1 font-medium">
+                        {j}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Grille jours */}
+                  <div className="grid grid-cols-7 gap-px">
+                    {days.map(({ d, other }, i) => {
+                      const isSel   = selected && d.toDateString() === selected.toDateString()
+                      const isToday = d.toDateString() === today.toDateString()
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => pick(d)}
+                          className={[
+                            'h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
+                            other   ? 'text-encre-tertiaire/35' : 'text-encre-secondaire',
+                            isSel   ? 'bg-bordeaux text-velin-clair font-semibold' : '',
+                            isToday && !isSel ? 'bg-or/20 text-or-fonce font-semibold' : '',
+                            !isSel  ? 'hover:bg-velin-fonce' : '',
+                          ].join(' ')}
+                        >
+                          {d.getDate()}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>,
@@ -445,7 +488,7 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
           <DatePicker value={form.date_vente} onChange={(v) => setForm((f) => ({ ...f, date_vente: v }))} />
         </Champ>
 
-        <Champ label="Prix de vente (€) *">
+        <Champ label="Cours de vente (€) *">
           <input
             type="number" step="any" min="0"
             value={form.prix_vente}
@@ -482,14 +525,14 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
 // ============================================================================
 function StatCard({ label, value, sub, couleur }) {
   return (
-    <div className="surface-velin p-4 flex flex-col gap-1">
-      <span className="text-[0.7rem] uppercase tracking-wider text-encre-tertiaire font-medium">
+    <div className="surface-velin p-3 sm:p-4 flex flex-col gap-1 min-w-0">
+      <span className="text-[0.65rem] sm:text-[0.7rem] uppercase tracking-wider text-encre-tertiaire font-medium truncate">
         {label}
       </span>
-      <span className={`font-serif italic text-2xl ${couleur || 'text-encre'}`}>
+      <span className={`font-serif italic text-lg sm:text-2xl truncate ${couleur || 'text-encre'}`}>
         {value}
       </span>
-      {sub && <span className="text-xs text-encre-tertiaire">{sub}</span>}
+      {sub && <span className="text-[0.65rem] sm:text-xs text-encre-tertiaire truncate">{sub}</span>}
     </div>
   )
 }
@@ -541,7 +584,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture }) {
             <button
               onClick={() => onCloturer(inv)}
               title="Clôturer la position"
-              className="h-8 w-8 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
+              className="h-10 w-10 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
             >
               <Lock size={14} strokeWidth={1.75} />
             </button>
@@ -549,7 +592,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture }) {
           <button
             onClick={() => onSupprimer(inv.id)}
             title="Supprimer"
-            className="h-8 w-8 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-rouge hover:bg-rouge/10 transition-colors duration-200"
+            className="h-10 w-10 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-rouge hover:bg-rouge/10 transition-colors duration-200"
           >
             <Trash2 size={14} strokeWidth={1.75} />
           </button>
@@ -570,7 +613,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture }) {
       {/* Montants + P&L */}
       <div className="flex items-end justify-between gap-2">
         <div className="text-xs text-encre-tertiaire leading-5">
-          {inv.quantite} × {formatEur(inv.prix_achat)}
+          {formatQte(inv.quantite)} × {formatEur(inv.prix_achat)}
           <br />
           <span className="text-encre font-medium text-sm">{formatEur(montantInvesti)}</span>
         </div>
@@ -688,12 +731,12 @@ export default function Investments() {
           label="Portefeuille"
           value={formatEur(valeurPortefeuille)}
           sub={`investi ${formatEur(totalInvesti)}`}
-          couleur={valeurPortefeuille >= totalInvesti ? 'text-encre' : 'text-rouge'}
+          couleur={valeurPortefeuille > totalInvesti ? 'text-vert' : valeurPortefeuille < totalInvesti ? 'text-rouge' : 'text-encre'}
         />
         <StatCard
           label="P&L réalisé"
           value={formatEur(pnlRealise)}
-          couleur={pnlRealise >= 0 ? 'text-vert' : 'text-rouge'}
+          couleur={pnlRealise > 0 ? 'text-vert' : pnlRealise < 0 ? 'text-rouge' : 'text-encre'}
         />
         <StatCard
           label="Positions ouvertes"
