@@ -139,7 +139,7 @@ function BoutonSubmit({ disabled, loading, label }) {
 // ============================================================================
 // Formulaire — Ajouter un investissement
 // ============================================================================
-const FORM_VIDE = { type: 'action', nom: '', ticker: '', date_achat: '', prix_achat: '', quantite: '', notes: '' }
+const FORM_VIDE = { type: 'action', nom: '', ticker: '', date_achat: '', cours_achat: '', montant_paye: '', notes: '' }
 
 function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
   const [form, setForm] = useState(FORM_VIDE)
@@ -150,7 +150,11 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
-  const valide = form.nom.trim() && form.date_achat && Number(form.prix_achat) > 0 && Number(form.quantite) > 0
+  const cours   = Number(form.cours_achat)
+  const montant = Number(form.montant_paye)
+  const quantite = cours > 0 && montant > 0 ? montant / cours : null
+
+  const valide = form.nom.trim() && form.date_achat && cours > 0 && montant > 0
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -160,8 +164,8 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
       nom: form.nom.trim(),
       ticker: form.ticker.trim() || null,
       date_achat: form.date_achat,
-      prix_achat: Number(form.prix_achat),
-      quantite: Number(form.quantite),
+      prix_achat: cours,
+      quantite: montant / cours,
       notes: form.notes.trim() || null,
     })
   }
@@ -201,21 +205,27 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
         </Champ>
 
         <div className="grid grid-cols-2 gap-3">
-          <Champ label="Prix d'achat (€) *">
+          <Champ label="Cours à l'achat (€) *">
             <input
               type="number" step="any" min="0"
-              value={form.prix_achat} onChange={set('prix_achat')}
-              placeholder="0.00" className={inputCls} required
+              value={form.cours_achat} onChange={set('cours_achat')}
+              placeholder="ex : 182.50" className={inputCls} required
             />
           </Champ>
-          <Champ label="Quantité *">
+          <Champ label="Montant payé (€) *">
             <input
               type="number" step="any" min="0"
-              value={form.quantite} onChange={set('quantite')}
-              placeholder="1" className={inputCls} required
+              value={form.montant_paye} onChange={set('montant_paye')}
+              placeholder="ex : 1 000" className={inputCls} required
             />
           </Champ>
         </div>
+
+        {quantite !== null && (
+          <p className="text-xs text-encre-tertiaire -mt-1">
+            Quantité calculée : <span className="text-encre font-medium">{quantite.toFixed(6).replace(/\.?0+$/, '')}</span>
+          </p>
+        )}
 
         <Champ label="Notes">
           <input
