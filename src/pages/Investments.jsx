@@ -190,7 +190,7 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
           </Champ>
           <Champ label="Ticker">
             <input
-              type="text" value={form.ticker} onChange={set('ticker')}
+              type="text" value={form.ticker} onChange={(e) => setForm((f) => ({ ...f, ticker: e.target.value.toUpperCase() }))}
               placeholder="ex: AAPL" maxLength={12} className={inputCls}
             />
           </Champ>
