@@ -498,8 +498,9 @@ export default function Investments() {
   const ouvertes  = investissements.filter((i) => !i.date_vente)
   const cloturees = investissements.filter((i) => i.date_vente)
 
-  const totalInvesti = investissements.reduce((s, i) => s + i.prix_achat * i.quantite, 0)
-  const pnlRealise   = cloturees.reduce((s, i) => s + (i.prix_vente - i.prix_achat) * i.quantite, 0)
+  const totalInvesti      = investissements.reduce((s, i) => s + i.prix_achat * i.quantite, 0)
+  const pnlRealise        = cloturees.reduce((s, i) => s + (i.prix_vente - i.prix_achat) * i.quantite, 0)
+  const valeurPortefeuille = totalInvesti + pnlRealise
 
   return (
     <>
@@ -517,7 +518,12 @@ export default function Investments() {
 
       {/* Résumé chiffres clés */}
       <div className="grid grid-cols-3 gap-3 mb-8">
-        <StatCard label="Total investi" value={formatEur(totalInvesti)} />
+        <StatCard
+          label="Portefeuille"
+          value={formatEur(valeurPortefeuille)}
+          sub={`investi ${formatEur(totalInvesti)}`}
+          couleur={valeurPortefeuille >= totalInvesti ? 'text-encre' : 'text-rouge'}
+        />
         <StatCard
           label="P&L réalisé"
           value={formatEur(pnlRealise)}
