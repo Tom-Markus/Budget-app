@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, Plus, X, Trash2, Lock } from 'lucide-react'
+import { TrendingUp, Plus, X, Trash2, Lock, CheckCircle2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import PopupConfirmation from '../components/PopupConfirmation'
@@ -337,7 +337,7 @@ function TypeBadge({ type }) {
   )
 }
 
-function CarteInvestissement({ inv, onCloturer, onSupprimer }) {
+function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture }) {
   const montantInvesti = inv.prix_achat * inv.quantite
   const estCloture = inv.date_vente && inv.prix_vente
   const pnl = estCloture ? (inv.prix_vente - inv.prix_achat) * inv.quantite : null
@@ -350,7 +350,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-      className="surface-velin p-4 flex flex-col gap-3"
+      className={`surface-velin p-4 flex flex-col gap-3 ${cloture ? 'opacity-70 border-l-2 border-encre-tertiaire/30' : 'border-l-2 border-vert/60'}`}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
@@ -546,10 +546,13 @@ export default function Investments() {
         <div className="flex flex-col gap-10">
           {ouvertes.length > 0 && (
             <section>
-              <h2 className="font-serif italic text-xl text-encre mb-3">
-                Positions ouvertes{' '}
-                <span className="text-encre-tertiaire text-base font-normal not-italic">({ouvertes.length})</span>
-              </h2>
+              <div className="flex items-center gap-2 mb-4">
+                <TrendingUp size={18} className="text-vert shrink-0" strokeWidth={2} />
+                <h2 className="font-serif italic text-xl text-encre">
+                  Positions ouvertes
+                  <span className="ml-2 text-encre-tertiaire text-base font-normal not-italic">({ouvertes.length})</span>
+                </h2>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence>
                   {ouvertes.map((inv) => (
@@ -567,16 +570,20 @@ export default function Investments() {
 
           {cloturees.length > 0 && (
             <section>
-              <h2 className="font-serif italic text-xl text-encre mb-3">
-                Positions clôturées{' '}
-                <span className="text-encre-tertiaire text-base font-normal not-italic">({cloturees.length})</span>
-              </h2>
+              <div className="flex items-center gap-2 mb-4">
+                <CheckCircle2 size={18} className="text-encre-tertiaire shrink-0" strokeWidth={1.75} />
+                <h2 className="font-serif italic text-xl text-encre-secondaire">
+                  Positions clôturées
+                  <span className="ml-2 text-encre-tertiaire text-base font-normal not-italic">({cloturees.length})</span>
+                </h2>
+              </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence>
                   {cloturees.map((inv) => (
                     <CarteInvestissement
                       key={inv.id}
                       inv={inv}
+                      cloture
                       onCloturer={null}
                       onSupprimer={setSupprimerTarget}
                     />
