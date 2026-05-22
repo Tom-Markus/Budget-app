@@ -350,7 +350,11 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture }) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
-      className={`surface-velin p-4 flex flex-col gap-3 ${cloture ? 'opacity-70 border-l-2 border-encre-tertiaire/30' : 'border-l-2 border-vert/60'}`}
+      className={`surface-velin p-4 flex flex-col gap-3 ${cloture ? 'opacity-60' : ''}`}
+      style={cloture
+        ? { borderLeft: '3px solid rgba(31,24,16,0.18)' }
+        : { borderLeft: '3px solid var(--vert)' }
+      }
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-2">
@@ -543,15 +547,23 @@ export default function Investments() {
           </p>
         </div>
       ) : (
-        <div className="flex flex-col gap-10">
+        <div className="flex flex-col gap-8">
           {ouvertes.length > 0 && (
-            <section>
+            <section
+              className="rounded-xl p-5"
+              style={{ background: 'color-mix(in srgb, var(--vert) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--vert) 20%, transparent)' }}
+            >
               <div className="flex items-center gap-2 mb-4">
-                <TrendingUp size={18} className="text-vert shrink-0" strokeWidth={2} />
+                <TrendingUp size={16} strokeWidth={2} style={{ color: 'var(--vert)' }} />
                 <h2 className="font-serif italic text-xl text-encre">
                   Positions ouvertes
-                  <span className="ml-2 text-encre-tertiaire text-base font-normal not-italic">({ouvertes.length})</span>
                 </h2>
+                <span
+                  className="ml-1 px-2 py-0.5 rounded-full text-xs font-medium font-sans"
+                  style={{ background: 'color-mix(in srgb, var(--vert) 15%, transparent)', color: 'var(--vert)' }}
+                >
+                  {ouvertes.length}
+                </span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence>
@@ -569,13 +581,18 @@ export default function Investments() {
           )}
 
           {cloturees.length > 0 && (
-            <section>
+            <section
+              className="rounded-xl p-5"
+              style={{ background: 'rgba(31,24,16,0.03)', border: '1px solid rgba(31,24,16,0.08)' }}
+            >
               <div className="flex items-center gap-2 mb-4">
-                <CheckCircle2 size={18} className="text-encre-tertiaire shrink-0" strokeWidth={1.75} />
+                <CheckCircle2 size={16} strokeWidth={1.75} className="text-encre-tertiaire" />
                 <h2 className="font-serif italic text-xl text-encre-secondaire">
                   Positions clôturées
-                  <span className="ml-2 text-encre-tertiaire text-base font-normal not-italic">({cloturees.length})</span>
                 </h2>
+                <span className="ml-1 px-2 py-0.5 rounded-full text-xs font-medium font-sans bg-encre/8 text-encre-tertiaire">
+                  {cloturees.length}
+                </span>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 <AnimatePresence>
