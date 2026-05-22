@@ -79,12 +79,24 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
     if (!open) return
     const fn = (e) => { if (!triggerRef.current?.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', fn)
-    return () => document.removeEventListener('mousedown', fn)
+    document.addEventListener('touchstart', fn, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', fn)
+      document.removeEventListener('touchstart', fn)
+    }
   }, [open])
 
   function handleOpen() {
     const r = triggerRef.current.getBoundingClientRect()
-    setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 272) })
+    const CAL_H = 300
+    const CAL_W = Math.max(r.width, 272)
+    const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    const top  = r.bottom + 6 + CAL_H > vh ? r.top - CAL_H - 6 : r.bottom + 6
+    const left = Math.min(r.left, vw - CAL_W - 8)
+
+    setPos({ top, left, width: CAL_W })
     setOpen(true)
   }
 
@@ -131,13 +143,14 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
               style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 300 }}
               className="surface-velin p-3"
               onMouseDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
             >
               {/* Navigation mois */}
               <div className="flex items-center justify-between mb-3 px-1">
                 <button
                   type="button"
                   onClick={() => setView(new Date(year, month - 1, 1))}
-                  className="h-7 w-7 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronLeft size={14} strokeWidth={2} />
                 </button>
@@ -147,7 +160,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                 <button
                   type="button"
                   onClick={() => setView(new Date(year, month + 1, 1))}
-                  className="h-7 w-7 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
@@ -173,7 +186,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                       type="button"
                       onClick={() => pick(d)}
                       className={[
-                        'h-8 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
+                        'h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
                         other   ? 'text-encre-tertiaire/35' : 'text-encre-secondaire',
                         isSel   ? 'bg-bordeaux text-velin-clair font-semibold' : '',
                         isToday && !isSel ? 'bg-or/20 text-or-fonce font-semibold' : '',
