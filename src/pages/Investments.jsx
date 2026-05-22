@@ -323,11 +323,26 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Champ label="Type">
-          <select value={form.type} onChange={set('type')} className={inputCls}>
-            {Object.entries(TYPES).map(([id, t]) => (
-              <option key={id} value={id}>{t.label}</option>
-            ))}
-          </select>
+          <div className="grid grid-cols-4 gap-2">
+            {Object.entries(TYPES).map(([id, t]) => {
+              const selected = form.type === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, type: id }))}
+                  className={[
+                    'h-10 rounded-md text-sm font-medium font-sans transition-colors duration-150 border',
+                    selected
+                      ? `${t.bg} ${t.text} border-current/30`
+                      : 'bg-transparent text-encre-tertiaire border-[rgba(31,24,16,0.10)] hover:bg-velin-fonce hover:text-encre',
+                  ].join(' ')}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
         </Champ>
 
         <div className="grid grid-cols-2 gap-3">
