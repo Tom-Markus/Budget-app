@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { TrendingUp, Plus, X, Trash2, Lock, CheckCircle2 } from 'lucide-react'
+import { TrendingUp, Plus, X, Trash2, Lock, CheckCircle2, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import PopupConfirmation from '../components/PopupConfirmation'
@@ -58,6 +58,138 @@ function Champ({ label, children }) {
         {label}
       </span>
       {children}
+    </div>
+  )
+}
+
+const MOIS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const JOURS_ABREV = ['L','M','M','J','V','S','D']
+
+function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
+  const [open, setOpen] = useState(false)
+  const [view, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+
+  useEffect(() => {
+    if (value) setView(new Date(value + 'T00:00:00'))
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+    const fn = (e) => { if (!triggerRef.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [open])
+
+  function handleOpen() {
+    const r = triggerRef.current.getBoundingClientRect()
+    setPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 272) })
+    setOpen(true)
+  }
+
+  const selected = value ? new Date(value + 'T00:00:00') : null
+  const today = new Date(); today.setHours(0,0,0,0)
+  const year = view.getFullYear()
+  const month = view.getMonth()
+
+  const days = []
+  let startDow = new Date(year, month, 1).getDay() - 1
+  if (startDow < 0) startDow = 6
+  for (let i = startDow - 1; i >= 0; i--)       days.push({ d: new Date(year, month, -i),     other: true })
+  for (let i = 1; i <= new Date(year, month+1, 0).getDate(); i++) days.push({ d: new Date(year, month, i), other: false })
+  while (days.length < 42)                        days.push({ d: new Date(year, month+1, days.length - startDow - new Date(year,month+1,0).getDate() + 1), other: true })
+
+  function pick(d) {
+    onChange(d.toLocaleDateString('fr-CA')) // YYYY-MM-DD
+    setOpen(false)
+  }
+
+  const display = selected
+    ? new Intl.DateTimeFormat('fr-BE', { day:'2-digit', month:'2-digit', year:'numeric' }).format(selected)
+    : ''
+
+  return (
+    <div ref={triggerRef}>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className={`${inputCls} flex items-center justify-between gap-2 cursor-pointer`}
+      >
+        <span className={display ? 'text-encre' : 'text-encre-tertiaire'}>{display || placeholder}</span>
+        <Calendar size={14} className="text-encre-tertiaire shrink-0" strokeWidth={1.75} />
+      </button>
+
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 300 }}
+              className="surface-velin p-3"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              {/* Navigation mois */}
+              <div className="flex items-center justify-between mb-3 px-1">
+                <button
+                  type="button"
+                  onClick={() => setView(new Date(year, month - 1, 1))}
+                  className="h-7 w-7 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                >
+                  <ChevronLeft size={14} strokeWidth={2} />
+                </button>
+                <span className="font-serif italic text-encre text-sm">
+                  {MOIS[month]} {year}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setView(new Date(year, month + 1, 1))}
+                  className="h-7 w-7 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                >
+                  <ChevronRight size={14} strokeWidth={2} />
+                </button>
+              </div>
+
+              {/* En-têtes jours */}
+              <div className="grid grid-cols-7 mb-1">
+                {JOURS_ABREV.map((j, i) => (
+                  <div key={i} className="text-center text-[0.6rem] uppercase tracking-wider text-encre-tertiaire py-1 font-medium">
+                    {j}
+                  </div>
+                ))}
+              </div>
+
+              {/* Grille jours */}
+              <div className="grid grid-cols-7 gap-px">
+                {days.map(({ d, other }, i) => {
+                  const isSel   = selected && d.toDateString() === selected.toDateString()
+                  const isToday = d.toDateString() === today.toDateString()
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => pick(d)}
+                      className={[
+                        'h-8 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
+                        other   ? 'text-encre-tertiaire/35' : 'text-encre-secondaire',
+                        isSel   ? 'bg-bordeaux text-velin-clair font-semibold' : '',
+                        isToday && !isSel ? 'bg-or/20 text-or-fonce font-semibold' : '',
+                        !isSel  ? 'hover:bg-velin-fonce' : '',
+                      ].join(' ')}
+                    >
+                      {d.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }
@@ -201,7 +333,7 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
         </div>
 
         <Champ label="Date d'achat *">
-          <input type="date" value={form.date_achat} onChange={set('date_achat')} className={inputCls} required />
+          <DatePicker value={form.date_achat} onChange={(v) => setForm((f) => ({ ...f, date_achat: v }))} />
         </Champ>
 
         <div className="grid grid-cols-2 gap-3">
@@ -282,11 +414,7 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Champ label="Date de vente *">
-          <input
-            type="date" value={form.date_vente}
-            onChange={(e) => setForm((f) => ({ ...f, date_vente: e.target.value }))}
-            className={inputCls} required
-          />
+          <DatePicker value={form.date_vente} onChange={(v) => setForm((f) => ({ ...f, date_vente: v }))} />
         </Champ>
 
         <Champ label="Prix de vente (€) *">
