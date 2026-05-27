@@ -1,30 +1,51 @@
 import {
-  Sun, Cloud, CloudRain, CloudSnow, CloudLightning,
+  Sun, Cloud, Cloudy, CloudSun, CloudSunRain,
+  CloudDrizzle, CloudRain, CloudRainWind,
+  CloudSnow, CloudFog, CloudLightning, Snowflake,
   Wind, MapPin, Sunrise, Sunset,
 } from 'lucide-react'
 
+/* ── Codes WMO (Open-Meteo) → icône + label + couleur ─────────────────────── */
 const WMO = {
-  0:  { Icon: Sun,            label: 'Ensoleillé',  color: '#FBBF24' },
-  1:  { Icon: Sun,            label: 'Dégagé',      color: '#FBBF24' },
-  2:  { Icon: Cloud,          label: 'Nuageux',     color: '#9CA3AF' },
-  3:  { Icon: Cloud,          label: 'Couvert',     color: '#6B7280' },
-  45: { Icon: Cloud,          label: 'Brumeux',     color: '#9CA3AF' },
-  48: { Icon: Cloud,          label: 'Brouillard',  color: '#9CA3AF' },
-  51: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
-  53: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
-  55: { Icon: CloudRain,      label: 'Bruine',      color: '#60A5FA' },
-  61: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
-  63: { Icon: CloudRain,      label: 'Pluie',       color: '#3B82F6' },
-  65: { Icon: CloudRain,      label: 'Pluie forte', color: '#2563EB' },
-  71: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
-  73: { Icon: CloudSnow,      label: 'Neige',       color: '#BAE6FD' },
-  75: { Icon: CloudSnow,      label: 'Neige forte', color: '#BAE6FD' },
-  80: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
-  81: { Icon: CloudRain,      label: 'Averses',     color: '#3B82F6' },
-  82: { Icon: CloudRain,      label: 'Averses',     color: '#2563EB' },
-  95: { Icon: CloudLightning, label: 'Orage',       color: '#8B5CF6' },
-  96: { Icon: CloudLightning, label: 'Orage',       color: '#7C3AED' },
-  99: { Icon: CloudLightning, label: 'Orage fort',  color: '#7C3AED' },
+  // Ciel dégagé / dégagé
+  0:  { Icon: Sun,            label: 'Ensoleillé',              color: '#FBBF24' },
+  1:  { Icon: Sun,            label: 'Ciel dégagé',             color: '#FBBF24' },
+  // Nuages
+  2:  { Icon: CloudSun,       label: 'Mi-nuageux',              color: '#FBBF24' },
+  3:  { Icon: Cloudy,         label: 'Couvert',                 color: '#6B7280' },
+  // Brouillard
+  45: { Icon: CloudFog,       label: 'Brumeux',                 color: '#9CA3AF' },
+  48: { Icon: CloudFog,       label: 'Brouillard givrant',      color: '#93C5FD' },
+  // Bruine
+  51: { Icon: CloudDrizzle,   label: 'Bruine légère',           color: '#7DD3FC' },
+  53: { Icon: CloudDrizzle,   label: 'Bruine',                  color: '#60A5FA' },
+  55: { Icon: CloudDrizzle,   label: 'Bruine forte',            color: '#3B82F6' },
+  // Bruine verglaçante
+  56: { Icon: CloudDrizzle,   label: 'Bruine verglaçante',      color: '#67E8F9' },
+  57: { Icon: CloudDrizzle,   label: 'Bruine verglaçante',      color: '#22D3EE' },
+  // Pluie
+  61: { Icon: CloudRain,      label: 'Pluie légère',            color: '#60A5FA' },
+  63: { Icon: CloudRain,      label: 'Pluie',                   color: '#3B82F6' },
+  65: { Icon: CloudRain,      label: 'Pluie forte',             color: '#1D4ED8' },
+  // Pluie verglaçante
+  66: { Icon: CloudRain,      label: 'Pluie verglaçante',       color: '#67E8F9' },
+  67: { Icon: CloudRainWind,  label: 'Pluie verglaçante forte', color: '#22D3EE' },
+  // Neige
+  71: { Icon: CloudSnow,      label: 'Neige légère',            color: '#BAE6FD' },
+  73: { Icon: CloudSnow,      label: 'Neige',                   color: '#93C5FD' },
+  75: { Icon: CloudSnow,      label: 'Neige forte',             color: '#7DD3FC' },
+  77: { Icon: Snowflake,      label: 'Grains de neige',         color: '#BAE6FD' },
+  // Averses de pluie
+  80: { Icon: CloudSunRain,   label: 'Averses légères',         color: '#60A5FA' },
+  81: { Icon: CloudRain,      label: 'Averses',                 color: '#3B82F6' },
+  82: { Icon: CloudRainWind,  label: 'Averses violentes',       color: '#1D4ED8' },
+  // Averses de neige
+  85: { Icon: CloudSnow,      label: 'Averses de neige',        color: '#BAE6FD' },
+  86: { Icon: CloudSnow,      label: 'Averses de neige fortes', color: '#93C5FD' },
+  // Orage
+  95: { Icon: CloudLightning, label: 'Orage',                   color: '#A78BFA' },
+  96: { Icon: CloudLightning, label: 'Orage avec grêle',        color: '#8B5CF6' },
+  99: { Icon: CloudLightning, label: 'Orage fort avec grêle',   color: '#7C3AED' },
 }
 
 function getWmo(code) {
@@ -158,8 +179,8 @@ export function WidgetMeteo({ weather }) {
             const { Icon: FIcon, color: fColor } = getWmo(day.code)
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1 px-1">
-                <span className="font-sans text-[11px] text-encre-tertiaire/60 uppercase tracking-wide capitalize">
-                  {day.day}
+                <span className="font-sans text-[11px] text-encre-tertiaire/60 uppercase tracking-widest">
+                  {day.day?.replace('.', '')}
                 </span>
                 <FIcon size={16} strokeWidth={1.5} style={{ color: fColor }} aria-hidden="true" />
                 <div className="flex items-baseline gap-1 tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
