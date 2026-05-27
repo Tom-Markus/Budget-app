@@ -11,7 +11,7 @@
  * ----------------------------------------------------------------------------
  */
 import { Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Navbar from './Navbar'
 import MetaballFond from './MetaballFond'
 import CurseurDore from './CurseurDore'
@@ -54,8 +54,11 @@ export default function Layout() {
     if (url) navigate(url)
   }
 
-  // Stable — évite de passer une nouvelle Date à chaque render de Layout
-  const today = useMemo(() => new Date(), [])
+  const [today, setToday] = useState(new Date())
+  useEffect(() => {
+    const t = setInterval(() => setToday(new Date()), 60_000)
+    return () => clearInterval(t)
+  }, [])
 
   return (
     <>
