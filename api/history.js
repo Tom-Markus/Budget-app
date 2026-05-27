@@ -18,7 +18,7 @@ const TF_YF = {
   '24h': { range: '1d',  interval: '1h'  },
   '7j':  { range: '8d',  interval: '1h'  },
   '3M':  { range: '3mo', interval: '1d'  },
-  '1A':  { range: '1y',  interval: '1wk' },
+  '1A':  { range: '1y',  interval: '1d'  },
   '5A':  { range: '5y',  interval: '1mo' },
 }
 

@@ -145,9 +145,8 @@ function filterCGLinePrices(prices, tf) {
   }
 
   if (tf === '1A') {
-    // Données journalières pour >90j → garder 1 point/semaine
-    ;(prices || []).forEach(([ts, price], i) => {
-      if (i % 7 !== 0) return
+    // CoinGecko renvoie 1 point/jour pour days=365 → garder tout
+    ;(prices || []).forEach(([ts, price]) => {
       const d = new Date(ts)
       pts.push({
         idx: pts.length,
@@ -238,20 +237,8 @@ async function fetchCGOhlc(coinId, tf) {
   }
 
   if (tf === '1A') {
-    // Agréger en hebdomadaire
-    const weekMap = new Map()
-    arr.sort((a, b) => a[0] - b[0]).forEach(([ts, open, high, low, close]) => {
-      const d = new Date(ts)
-      const weekStart = new Date(d)
-      weekStart.setUTCDate(d.getUTCDate() - d.getUTCDay())
-      const key = weekStart.toISOString().slice(0, 10)
-      if (!weekMap.has(key)) weekMap.set(key, { ts, open, high, low, close })
-      else {
-        const e = weekMap.get(key)
-        e.high = Math.max(e.high, high); e.low = Math.min(e.low, low); e.close = close
-      }
-    })
-    return [...weekMap.values()].sort((a, b) => a.ts - b.ts).map(({ ts, open, high, low, close }) => ({
+    // CoinGecko renvoie des bougies journalières pour days=365 → garder tout
+    return arr.sort((a, b) => a[0] - b[0]).map(([ts, open, high, low, close]) => ({
       date: new Date(ts).toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' }),
       ts, open, high, low, close,
     }))
