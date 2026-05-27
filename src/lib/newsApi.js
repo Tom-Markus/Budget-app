@@ -76,15 +76,18 @@ async function fetchCoinGecko() {
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const res = await fetch(
-    'https://api.coingecko.com/api/v3/simple/price' +
-    '?ids=bitcoin,ethereum,solana,ripple,binancecoin,pax-gold,avalanche-2,dogecoin' +
-    '&vs_currencies=eur,usd' +
-    '&include_24hr_change=true'
-  )
+  let res
+  try {
+    res = await fetch('/api/cg-prices')
+  } catch {
+    return null
+  }
   if (!res.ok) return null
 
-  const data = await res.json()
+  let data
+  try { data = await res.json() } catch { return null }
+  if (!data || data.error) return null
+
   setCache(cacheKey, data)
   return data
 }

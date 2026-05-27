@@ -2,7 +2,7 @@
  * src/pages/News.jsx — Salon & marchés
  * Terminal de veille & marchés : prix temps réel, météo, sentiment, actualités.
  */
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, Component } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw, Star } from 'lucide-react'
 import { BarChart2, Cpu, FlaskConical, Globe2 } from 'lucide-react'
@@ -10,6 +10,16 @@ import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '..
 import { supabase } from '../lib/supabase'
 
 import { GrapheModal }      from '../components/news/GrapheModal'
+
+// Error boundary : contient les crashes de GrapheModal pour ne pas tuer la page
+class ModalBoundary extends Component {
+  state = { dead: false }
+  static getDerivedStateFromError() { return { dead: true } }
+  componentDidUpdate(prev) {
+    if (prev.itemKey !== this.props.itemKey) this.setState({ dead: false })
+  }
+  render() { return this.state.dead ? null : this.props.children }
+}
 import { WidgetMeteo,      fetchWeather }    from '../components/news/WidgetMeteo'
 import { WidgetFearGreed,  fetchFearGreed }  from '../components/news/WidgetFearGreed'
 import { WidgetFx,         fetchFx }         from '../components/news/WidgetFx'
@@ -415,15 +425,17 @@ export default function News() {
       </div>
 
       {/* ── Modal graphe prix ── */}
-      <AnimatePresence>
-        {chartItem && (
-          <GrapheModal
-            key="chart-modal"
-            item={chartItem}
-            onClose={() => setChartItem(null)}
-          />
-        )}
-      </AnimatePresence>
+      <ModalBoundary itemKey={chartItem?.label}>
+        <AnimatePresence>
+          {chartItem && (
+            <GrapheModal
+              key="chart-modal"
+              item={chartItem}
+              onClose={() => setChartItem(null)}
+            />
+          )}
+        </AnimatePresence>
+      </ModalBoundary>
 
     </div>
   )
