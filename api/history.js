@@ -143,8 +143,26 @@ export default async function handler(req, res) {
     })
     ohlcDays = ohlcDays.slice(-7)
 
+  } else if (tf === '3M') {
+    // 2 pts/jour (ouverture + clôture) depuis données journalières
+    const fmt     = ts => new Date(ts * 1000).toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' })
+    const fmtFull = ts => new Date(ts * 1000).toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    timestamps.forEach((ts, i) => {
+      const o = opens[i], h = highs[i], l = lows[i], c = closes[i]
+      const label = fmt(ts), full = fmtFull(ts)
+      if (o != null)
+        points.push({ date: label, ts: ts * 1000, price: round2(o), isOpen: true,  fullDate: `${full} · ouverture` })
+      if (c != null)
+        points.push({ date: '',    ts: ts * 1000, price: round2(c), isOpen: false, fullDate: `${full} · clôture`  })
+      const fb = c ?? o ?? h ?? l
+      if (fb != null) ohlcDays.push({
+        date: label, ts: ts * 1000,
+        open: round2(o ?? fb), high: round2(h ?? fb), low: round2(l ?? fb), close: round2(c ?? fb),
+      })
+    })
+
   } else {
-    // 3M, 1A, 5A — intervalle déjà correct (quotidien/hebdo/mensuel)
+    // 1A, 5A — 1 pt/jour ou 1 pt/mois
     const fmtLabel = ts => {
       const d = new Date(ts * 1000)
       if (tf === '5A') return d.toLocaleDateString('fr-BE', { month: 'short', year: '2-digit' })

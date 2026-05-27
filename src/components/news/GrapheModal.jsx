@@ -128,16 +128,19 @@ function filterCGLinePrices(prices, tf) {
   }
 
   if (tf === '3M') {
+    // Données horaires pour days=90 → garder 00h et 12h (2 pts/jour)
     ;(prices || []).forEach(([ts, price]) => {
       const d = new Date(ts)
-      if (d.getUTCHours() !== 0) return
-      const day = d.toISOString().slice(0, 10)
-      if (seen.has(day)) return
-      seen.add(day)
+      const h = d.getUTCHours()
+      if (h !== 0 && h !== 12) return
+      const key = `${d.toISOString().slice(0, 10)}-${h}`
+      if (seen.has(key)) return
+      seen.add(key)
+      const dayLabel = d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' })
       pts.push({
         idx: pts.length,
-        date: d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' }),
-        fullDate: d.toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        date: h === 0 ? dayLabel : '',
+        fullDate: `${dayLabel} · ${h === 0 ? '00h' : '12h'}`,
         ts, price,
       })
     })
