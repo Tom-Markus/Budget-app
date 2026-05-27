@@ -58,6 +58,8 @@ export async function fetchWeather() {
             city:    g.address?.city || g.address?.town || g.address?.village || 'Position',
             sunrise: fmtTime(w.daily?.sunrise?.[0]),
             sunset:  fmtTime(w.daily?.sunset?.[0]),
+            todayMax: daily.temperature_2m_max?.[0] != null ? Math.round(daily.temperature_2m_max[0]) : null,
+            todayMin: daily.temperature_2m_min?.[0] != null ? Math.round(daily.temperature_2m_min[0]) : null,
             forecast,
           })
         } catch { resolve(null) }
@@ -105,11 +107,31 @@ export function WidgetMeteo({ weather }) {
             </span>
             <span className="font-sans text-[13px] text-encre-secondaire truncate">{weather.city}</span>
           </div>
-          <div className="flex items-center gap-1.5 mt-1.5">
+          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
             <span className="font-sans italic text-[13px] text-encre-tertiaire">{weatherLabel}</span>
             <span className="text-encre-tertiaire/30 text-[11px]">·</span>
             <Wind size={11} strokeWidth={1.5} className="text-encre-tertiaire/50 shrink-0" aria-hidden="true" />
             <span className="font-sans text-[13px] text-encre-tertiaire">{weather.wind} km/h</span>
+            {(weather.todayMax != null || weather.todayMin != null) && (
+              <>
+                <span className="text-encre-tertiaire/30 text-[11px]">·</span>
+                <span
+                  className="font-sans text-[13px] tabular-nums"
+                  style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
+                  title="Min / Max du jour"
+                >
+                  {weather.todayMin != null && (
+                    <span className="text-nuit-clair/70">↓{weather.todayMin}°</span>
+                  )}
+                  {weather.todayMin != null && weather.todayMax != null && (
+                    <span className="text-encre-tertiaire/40 mx-0.5"> </span>
+                  )}
+                  {weather.todayMax != null && (
+                    <span className="text-rouge/70">↑{weather.todayMax}°</span>
+                  )}
+                </span>
+              </>
+            )}
           </div>
           {(weather.sunrise || weather.sunset) && (
             <div className="flex items-center gap-4 mt-1.5">
