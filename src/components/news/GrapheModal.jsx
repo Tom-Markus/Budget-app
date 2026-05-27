@@ -313,6 +313,7 @@ export function GrapheModal({ item, onClose }) {
 
   // Réinitialiser le mode et les données OHLC quand l'actif ou le TF change
   useEffect(() => {
+    if (item.coinId && tf === '5A') setTf('1A')
     setChartMode('line')
     setOhlcData(null)
     setOhlcError(false)
@@ -500,7 +501,7 @@ export function GrapheModal({ item, onClose }) {
         {/* Sélecteur de période */}
         {canHaveChart && (
           <div className="flex items-center gap-0.5 mb-4">
-            {TF_OPTIONS.map(opt => (
+            {TF_OPTIONS.filter(opt => !(opt.key === '5A' && item.coinId)).map(opt => (
               <button
                 key={opt.key}
                 type="button"
