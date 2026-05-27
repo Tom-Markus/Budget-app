@@ -16,6 +16,7 @@ export default async function handler(req, res) {
     '^FCHI': 'CAC 40', '^GSPC': 'S&P 500', '^BFX': 'BEL 20',
     'NVDA': 'NVIDIA', 'TSLA': 'Tesla', 'AAPL': 'Apple',
     'ORCL': 'Oracle', 'MSFT': 'Microsoft', 'META': 'Meta',
+    'CL=F': 'Pétrole WTI', 'BZ=F': 'Pétrole Brent',
   }
   if (!symbol || !ALLOWED[symbol]) {
     return res.status(400).json({ error: 'symbole non autorisé' })
