@@ -535,10 +535,11 @@ export function GrapheModal({ item, onClose }) {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                 <XAxis
-                  dataKey="date"
+                  dataKey="idx"
                   interval={lineXInterval}
                   tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
                   axisLine={false} tickLine={false}
+                  tickFormatter={i => chartData?.[i]?.date ?? ''}
                 />
                 <YAxis
                   domain={['auto', 'auto']}
