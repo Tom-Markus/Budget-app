@@ -104,7 +104,7 @@ function filterCGLinePrices(prices, tf) {
       if (seen.has(key)) return
       seen.add(key)
       const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
-      const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', month: 'short' })
+      const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' })
       pts.push({ idx: pts.length, date: timeLabel, ts, price, fullDate: `${dayLabel} · ${timeLabel}` })
     })
     return pts
@@ -118,7 +118,7 @@ function filterCGLinePrices(prices, tf) {
       const key = `${d.toISOString().slice(0, 10)}-${h}`
       if (seen.has(key)) return
       seen.add(key)
-      const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+      const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })
       const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
       pts.push({
         idx: pts.length,
@@ -192,7 +192,7 @@ async function fetchCGOhlc(coinId, tf) {
   if (tf === '24h') {
     // Bougies 30min — garder directement (≈ 48 bougies/jour)
     return arr.sort((a, b) => a[0] - b[0]).map(([ts, open, high, low, close]) => ({
-      date: new Date(ts).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date(ts).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' }),
       ts, open, high, low, close,
     }))
   }
