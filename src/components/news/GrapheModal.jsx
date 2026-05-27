@@ -109,18 +109,20 @@ function filterCGLinePrices(prices, tf) {
   }
 
   if (tf === '7j') {
+    // Filtre toutes les 4h → 6 pts/jour sur marché 24h (0h, 4h, 8h, 12h, 16h, 20h)
     ;(prices || []).forEach(([ts, price]) => {
       const d = new Date(ts)
       const h = d.getUTCHours()
-      if (h !== 0 && h !== 12) return
+      if (h % 4 !== 0) return
       const key = `${d.toISOString().slice(0, 10)}-${h}`
       if (seen.has(key)) return
       seen.add(key)
-      const dayLabel = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+      const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
+      const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
       pts.push({
         idx: pts.length,
         date: h === 0 ? dayLabel : '',
-        fullDate: `${dayLabel} · ${h === 0 ? '00h' : '12h'}`,
+        fullDate: `${dayLabel} · ${timeLabel}`,
         ts, price,
       })
     })

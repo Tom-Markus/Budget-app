@@ -85,36 +85,32 @@ export default async function handler(req, res) {
     })
 
   } else if (tf === '7j') {
-    // 2 pts/jour (ouverture + clôture) pour la courbe
-    const dayMap = new Map()
+    // Tous les points horaires de marché (~6-9 pts/jour selon les horaires du marché)
+    const raw = []
     timestamps.forEach((ts, i) => {
       const price = closes[i]
       if (price == null) return
-      const dateKey = new Date(ts * 1000).toDateString()
-      if (!dayMap.has(dateKey)) {
-        dayMap.set(dateKey, { openTs: ts, openPrice: price, closeTs: ts, closePrice: price })
-      } else {
-        const d = dayMap.get(dateKey)
-        d.closeTs    = ts
-        d.closePrice = price
-      }
+      const d = new Date(ts * 1000)
+      raw.push({
+        dayStr:   d.toDateString(),
+        dayLabel: d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' }),
+        ts:       ts * 1000,
+        price:    round2(price),
+        fullDate: d.toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }) +
+                  ' · ' + d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
+      })
     })
-    const rawPts = []
-    dayMap.forEach(({ openTs, openPrice, closeTs, closePrice }) => {
-      rawPts.push({ date: '', ts: openTs * 1000, isOpen: true,  price: openPrice  })
-      if (closeTs !== openTs)
-        rawPts.push({ date: '', ts: closeTs * 1000, isOpen: false, price: closePrice })
-    })
-    const sliced = rawPts.slice(-10)
+    // Garder les 7 derniers jours calendaires
+    const uniqueDays = [...new Set(raw.map(p => p.dayStr))]
+    const last7 = new Set(uniqueDays.slice(-7))
+    const sliced = raw.filter(p => last7.has(p.dayStr))
+    // Label axe X sur le premier point de chaque jour uniquement
     let lastDay = ''
     sliced.forEach(p => {
-      const dayStr = new Date(p.ts).toDateString()
-      if (p.isOpen && dayStr !== lastDay) {
-        lastDay = dayStr
-        p.date = new Date(p.ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric' })
-      }
-      p.fullDate = new Date(p.ts).toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' }) +
-        (p.isOpen ? ' · ouverture' : ' · clôture')
+      p.date = p.dayStr !== lastDay ? p.dayLabel : ''
+      if (p.dayStr !== lastDay) lastDay = p.dayStr
+      delete p.dayStr
+      delete p.dayLabel
     })
     points = sliced
 
