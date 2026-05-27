@@ -7,6 +7,7 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw, Star } from 'lucide-react'
 import { BarChart2, Cpu, FlaskConical, Globe2 } from 'lucide-react'
 import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '../lib/newsApi'
+import { supabase } from '../lib/supabase'
 
 import { GrapheModal }      from '../components/news/GrapheModal'
 import { WidgetMeteo,      fetchWeather }    from '../components/news/WidgetMeteo'
@@ -48,7 +49,7 @@ export default function News() {
   const [fx,             setFx]             = useState(undefined)
   const [stocks,         setStocks]         = useState(null)
 
-  // ── Favoris (localStorage) ──────────────────────────────────────────────────
+  // ── Favoris (localStorage + Supabase user_metadata pour sync multi-appareils) ─
   const [savedArticles, setSavedArticles] = useState(() => {
     try {
       const raw = localStorage.getItem('news_favoris')
@@ -58,12 +59,30 @@ export default function News() {
 
   const savedUrls = useMemo(() => new Set(savedArticles.map(a => a.url)), [savedArticles])
 
+  // Chargement Supabase au montage — écrase le localStorage si des données remotees existent
+  useEffect(() => {
+    async function loadFavorisRemote() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        const remote = user?.user_metadata?.news_favoris
+        if (Array.isArray(remote) && remote.length > 0) {
+          setSavedArticles(remote)
+          try { localStorage.setItem('news_favoris', JSON.stringify(remote)) } catch {}
+        }
+      } catch { /* silencieux */ }
+    }
+    loadFavorisRemote()
+  }, [])
+
   const toggleSave = useCallback((article) => {
     setSavedArticles(prev => {
       const next = prev.some(a => a.url === article.url)
         ? prev.filter(a => a.url !== article.url)
         : [...prev, article]
+      // Persistance locale (instantanée)
       try { localStorage.setItem('news_favoris', JSON.stringify(next)) } catch {}
+      // Sync Supabase (cross-device) — asynchrone et silencieuse
+      supabase.auth.updateUser({ data: { news_favoris: next } }).catch(() => {})
       return next
     })
   }, [])
@@ -208,7 +227,8 @@ export default function News() {
       </div>
 
       {/* ── Barre marchés ── */}
-      <div className="rounded-xl overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
+      {/* bg-nuit class = hook CSS pour le scope-fix dark mode (text-velin-clair reste clair) */}
+      <div className="bg-nuit rounded-xl overflow-hidden relative" style={{ background: 'var(--nuit)' }}>
         <span
           className="absolute bottom-0 left-0 right-0 h-px pointer-events-none"
           style={{ background: 'var(--gradient-signature)' }}

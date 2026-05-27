@@ -281,8 +281,8 @@ export default function GraphesEtDettes() {
             <AreaChart data={courbeAffichee} margin={{ top: 8, right: 12, bottom: 4, left: 0 }}>
               <defs>
                 <linearGradient id="patrimoine-fill" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--nuit)" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="var(--nuit)" stopOpacity={0} />
+                  <stop offset="5%" stopColor="var(--encre)" stopOpacity={0.12} />
+                  <stop offset="95%" stopColor="var(--encre)" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
@@ -305,7 +305,7 @@ export default function GraphesEtDettes() {
               <Area
                 type="monotone"
                 dataKey="valeur"
-                stroke="var(--nuit)"
+                stroke="var(--encre)"
                 strokeWidth={2}
                 fill="url(#patrimoine-fill)"
                 dot={false}

@@ -752,12 +752,26 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
               </button>
             </div>
 
+            {investissements.length === 0 ? (
+              /* Aucun investissement — état vide explicite */
+              <div className="flex flex-col items-center justify-center h-56 md:h-72 gap-3 text-center">
+                <TrendingUp size={40} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
+                <p className="font-serif italic text-lg text-encre-secondaire">Aucun investissement</p>
+                <p className="text-sm text-encre-tertiaire">
+                  Ajoute un investissement pour voir l'évolution du portefeuille.
+                </p>
+              </div>
+            ) : !aHistorique ? (
+              /* Investissements présents mais historique insuffisant */
+              <div className="flex flex-col items-center justify-center h-56 md:h-72 gap-2 text-center">
+                <BarChart2 size={36} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
+                <p className="t-label-noble">Données insuffisantes</p>
+                <p className="text-sm text-encre-tertiaire">
+                  L'historique se construira au fil de tes ordres.
+                </p>
+              </div>
+            ) : (
             <div className="relative w-full h-56 md:h-72">
-              {!aHistorique && (
-                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                  <span className="t-label-noble">Pas encore d'historique</span>
-                </div>
-              )}
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={points} margin={{ top: 8, right: 8, left: 8, bottom: 8 }}>
                   <defs>
@@ -790,6 +804,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+            )}
           </motion.div>
         </motion.div>
       )}
