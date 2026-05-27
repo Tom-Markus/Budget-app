@@ -108,7 +108,7 @@ export default function GrandeEnveloppe({
         "
         style={{
           border: '1px solid rgba(184, 149, 74, 0.18)',
-          boxShadow: '0 12px 32px rgba(31, 24, 16, 0.12), 0 4px 8px rgba(31, 24, 16, 0.06), inset 0 1px 0 rgba(184, 149, 74, 0.08)',
+          boxShadow: 'var(--shadow-lg), inset 0 1px 0 rgba(184, 149, 74, 0.08)',
         }}
       >
         {/* Ligne 1 : titre + compteur + flèche */}
@@ -227,7 +227,7 @@ export default function GrandeEnveloppe({
                 <div className="flex items-center gap-2">
                   <div
                     className="flex-1 h-1.5 rounded-full overflow-hidden"
-                    style={{ background: 'rgba(31,24,16,0.08)' }}
+                    style={{ background: 'var(--fond-leger)' }}
                     role="progressbar"
                     aria-valuenow={Math.round(pctAlloue)}
                     aria-valuemin={0}

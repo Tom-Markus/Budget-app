@@ -228,7 +228,7 @@ export function GrapheModal({ item, onClose }) {
     >
       <motion.div
         className="absolute inset-0"
-        style={{ background: 'rgba(14,31,58,0.7)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+        style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
         onClick={onClose}
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
       />
@@ -321,7 +321,7 @@ export function GrapheModal({ item, onClose }) {
                     <stop offset="95%" stopColor={lineColor} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                 <XAxis
                   dataKey="fullDate"
                   tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}
@@ -379,7 +379,7 @@ export function GrapheModal({ item, onClose }) {
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <ComposedChart data={ohlcData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.06)" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" vertical={false} />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 11, fontFamily: 'var(--font-sans)', fill: 'var(--encre-tertiaire)' }}

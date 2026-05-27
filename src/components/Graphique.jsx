@@ -24,6 +24,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -75,7 +76,7 @@ function CustomTooltip({ active, payload }) {
       style={{
         background: 'var(--velin-clair)',
         boxShadow: 'var(--shadow-md)',
-        border: '1px solid rgba(31,24,16,0.08)',
+        border: '1px solid var(--border-doux)',
       }}
     >
       <div className="t-label-noble">{formatDate(date)}</div>
@@ -94,6 +95,10 @@ export default function Graphique({
   mouvements = [],
   dernierMvtSigne = 'positif',
 }) {
+  const { theme } = useTheme();
+  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)';
+  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)';
+
   const [periode, setPeriode] = useState('30J');
 
   // preparerCourbe étend l'axe à toute la fenêtre de période choisie et
@@ -135,7 +140,7 @@ export default function Graphique({
           <div
             className="absolute inset-0"
             style={{
-              background: 'rgba(14, 31, 58, 0.4)',
+              background: 'var(--overlay-bg)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
             }}
@@ -222,22 +227,22 @@ export default function Graphique({
                     </linearGradient>
                   </defs>
                   <CartesianGrid
-                    stroke="rgba(14, 31, 58, 0.08)"
+                    stroke={chartGrid}
                     strokeDasharray="2 4"
                   />
                   <XAxis
                     dataKey="date"
                     tickFormatter={formatDateCompacte}
-                    stroke="var(--nuit)"
+                    stroke={chartAxis}
                     fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: 'rgba(14, 31, 58, 0.2)' }}
+                    axisLine={{ stroke: chartAxis }}
                   />
                   <YAxis
-                    stroke="var(--nuit)"
+                    stroke={chartAxis}
                     fontSize={11}
                     tickLine={false}
-                    axisLine={{ stroke: 'rgba(14, 31, 58, 0.2)' }}
+                    axisLine={{ stroke: chartAxis }}
                     tickFormatter={(v) =>
                       v.toLocaleString('fr-BE', { maximumFractionDigits: 0 })
                     }

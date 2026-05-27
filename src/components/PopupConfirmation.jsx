@@ -80,7 +80,7 @@ export default function PopupConfirmation({
           <div
             className="absolute inset-0"
             style={{
-              background: 'rgba(14, 31, 58, 0.45)',
+              background: 'var(--overlay-bg)',
               backdropFilter: 'blur(8px)',
               WebkitBackdropFilter: 'blur(8px)',
             }}

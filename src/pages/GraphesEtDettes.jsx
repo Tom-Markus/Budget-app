@@ -8,6 +8,7 @@
  * ----------------------------------------------------------------------------
  */
 import { useState, useCallback } from 'react'
+import { useTheme } from '../hooks/useTheme'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Trash2, GripHorizontal } from 'lucide-react'
 import {
@@ -42,7 +43,7 @@ function CourbeTooltip({ active, payload }) {
   return (
     <div className="px-3 py-2 rounded-md" style={{
       background: 'var(--velin-clair)', boxShadow: 'var(--shadow-md)',
-      border: '1px solid rgba(31,24,16,0.08)',
+      border: '1px solid var(--border-doux)',
     }}>
       <div className="t-label-noble">{formatDateHistorique(new Date(date))}</div>
       <div className="font-sans font-medium text-encre tabular-nums mt-0.5">
@@ -101,6 +102,10 @@ export default function GraphesEtDettes() {
     envelopes, mouvements,
     soldeDe, actions, estSyncing,
   } = useApp()
+
+  const { theme } = useTheme()
+  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(31,24,16,0.08)'
+  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(31,24,16,0.15)'
 
   const [periodeCourbe, setPeriodeCourbe] = useState('30J')
   const [inputCreance, setInputCreance] = useState({})
@@ -280,19 +285,19 @@ export default function GraphesEtDettes() {
                   <stop offset="95%" stopColor="var(--nuit)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(31,24,16,0.08)" vertical={false} />
+              <CartesianGrid strokeDasharray="3 3" stroke={chartGrid} vertical={false} />
               <XAxis
                 dataKey="date"
                 tickFormatter={(d) => formatDateHistorique(new Date(d))}
                 tick={{ fontSize: 11, fill: 'var(--encre-tertiaire)' }}
-                axisLine={{ stroke: 'rgba(31,24,16,0.15)' }}
+                axisLine={{ stroke: chartAxis }}
                 tickLine={false}
                 minTickGap={24}
               />
               <YAxis
                 tickFormatter={(v) => v.toLocaleString('fr-BE', { maximumFractionDigits: 0 })}
                 tick={{ fontSize: 11, fill: 'var(--encre-tertiaire)' }}
-                axisLine={{ stroke: 'rgba(31,24,16,0.15)' }}
+                axisLine={{ stroke: chartAxis }}
                 tickLine={false}
                 width={50}
               />

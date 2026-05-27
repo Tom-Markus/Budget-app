@@ -55,7 +55,7 @@ function CustomTooltipCamembert({ active, payload }) {
       style={{
         background: 'var(--velin-clair)',
         boxShadow: 'var(--shadow-md)',
-        border: '1px solid rgba(31,24,16,0.08)',
+        border: '1px solid var(--border-doux)',
       }}
     >
       <div className="font-serif italic text-sm text-encre">{d.nom}</div>

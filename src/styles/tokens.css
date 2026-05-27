@@ -110,6 +110,23 @@
       rgba(184, 149, 74, 0.6) 50%,
       rgba(92, 26, 36, 0.0) 95%,
       transparent 100%);
+
+  /* --- VARIABLES ADAPTATIVES (bordures / fonds / graphiques / overlays) ----- */
+  /* Utilisées partout où rgba(31,24,16,X) ou rgba(14,31,58,X) étaient hardcodés. */
+
+  --border-fin:    rgba(31, 24, 16, 0.06);
+  --border-doux:   rgba(31, 24, 16, 0.08);
+  --border-moyen:  rgba(31, 24, 16, 0.12);
+  --border-fort:   rgba(31, 24, 16, 0.20);
+
+  --fond-micro:    rgba(31, 24, 16, 0.02);
+  --fond-subtil:   rgba(31, 24, 16, 0.05);
+  --fond-leger:    rgba(31, 24, 16, 0.08);
+
+  --chart-grid:    rgba(14, 31, 58, 0.08);
+  --chart-axis:    rgba(14, 31, 58, 0.20);
+
+  --overlay-bg:    rgba(14, 31, 58, 0.45);
 }
 
 /* ============================================================================
@@ -120,9 +137,29 @@
   --velin-clair:  #0F1E36;
   --velin-fonce:  #162842;
 
-  --encre:           #EDE8DC;
+  --encre:            #EDE8DC;
   --encre-secondaire: #B8AFA0;
   --encre-tertiaire:  #7A7268;
+
+  /* Couleurs fonctionnelles remappées pour la lisibilité sur fond sombre */
+  --nuit-clair:   #4A8AD4;  /* text-nuit-clair lisible sur fond sombre */
+  --graphite:     #9A9289;  /* text-graphite lisible sur fond sombre */
+  --graphite-clair: #B5AFA8;
+
+  /* Variables adaptatives — version fond sombre */
+  --border-fin:    rgba(241, 236, 224, 0.07);
+  --border-doux:   rgba(241, 236, 224, 0.09);
+  --border-moyen:  rgba(241, 236, 224, 0.14);
+  --border-fort:   rgba(241, 236, 224, 0.25);
+
+  --fond-micro:    rgba(241, 236, 224, 0.03);
+  --fond-subtil:   rgba(241, 236, 224, 0.05);
+  --fond-leger:    rgba(241, 236, 224, 0.07);
+
+  --chart-grid:    rgba(241, 236, 224, 0.07);
+  --chart-axis:    rgba(241, 236, 224, 0.15);
+
+  --overlay-bg:    rgba(0, 0, 0, 0.65);
 
   --shadow-xs: 0 1px 2px rgba(0,0,0,0.25);
   --shadow-sm: 0 2px 6px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);

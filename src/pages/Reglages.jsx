@@ -30,7 +30,7 @@ function BoutonReglage({ onClick, disabled, children, icon: Icon, danger }) {
         transition-all duration-300 ease-noble
         ${danger
           ? 'border-rouge/30 text-rouge hover:bg-rouge/10'
-          : 'border-[rgba(31,24,16,0.12)] text-encre hover:bg-white hover:shadow-md'}
+          : 'border-[rgba(31,24,16,0.12)] text-encre hover:bg-velin-fonce hover:shadow-md'}
         ${disabled ? 'opacity-60 cursor-wait' : ''}
         focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2
       `}
@@ -182,7 +182,7 @@ export default function Reglages() {
                   : 'linear-gradient(135deg, #FFFDF7 0%, #F5EFE0 100%)',
                 boxShadow: theme === 'dark'
                   ? '0 1px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,149,74,0.15)'
-                  : '0 1px 4px rgba(31,24,16,0.18), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  : '0 1px 4px var(--border-fort), inset 0 1px 0 rgba(255,255,255,0.9)',
               }}
             >
               {theme === 'dark'
@@ -205,7 +205,7 @@ export default function Reglages() {
           {/* Enveloppes */}
           <div
             className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
           >
             <Layers size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
             <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
@@ -220,7 +220,7 @@ export default function Reglages() {
           {/* Mouvements */}
           <div
             className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
           >
             <TrendingUp size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
             <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
@@ -235,7 +235,7 @@ export default function Reglages() {
           {/* Depuis */}
           <div
             className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
           >
             <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
             <span className="font-serif font-semibold text-[1.15rem] leading-snug"
@@ -312,7 +312,7 @@ export default function Reglages() {
       </section>
 
       {/* === Zone dangereuse === */}
-      <section className="surface-velin p-6 md:p-8" style={{ boxShadow: '0 0 0 1px rgba(180,30,30,0.15), 0 2px 6px rgba(31,24,16,0.06)' }}>
+      <section className="surface-velin p-6 md:p-8" style={{ boxShadow: '0 0 0 1px rgba(180,30,30,0.15), var(--shadow-sm)' }}>
         <p className="t-label" style={{ color: 'var(--rouge)' }}>Zone dangereuse</p>
         <h2 className="t-h2 mt-2">Remettre à zéro</h2>
         <p className="t-body-secondaire mt-4">

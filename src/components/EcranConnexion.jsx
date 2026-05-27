@@ -143,7 +143,7 @@ export default function EcranConnexion({ onLogin, loading = false, error = null 
               inline-flex items-center justify-center gap-3
               bg-velin-clair text-encre
               border border-[rgba(31,24,16,0.12)]
-              hover:bg-white hover:shadow-md
+              hover:bg-velin-fonce hover:shadow-md
               transition-all duration-300 ease-noble
               font-sans text-base font-medium
               ${loading ? 'opacity-60 cursor-wait' : ''}

@@ -274,7 +274,7 @@ export default function News() {
       {/* ── Tabs mobile ── */}
       <div
         className="md:hidden flex border-b"
-        style={{ borderColor: 'rgba(31,24,16,0.08)' }}
+        style={{ borderColor: 'var(--border-doux)' }}
         role="tablist"
       >
         {CATEGORIES.map((cat, i) => {

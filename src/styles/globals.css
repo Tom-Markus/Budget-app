@@ -198,6 +198,39 @@ a {
   opacity: 0.4;
 }
 
+/* ── Navbar & éléments bg-nuit : texte clair reste lisible ──────────────────── */
+/* text-velin-clair devient sombre dans le dark theme (velin-clair = fond sombre),
+   on le restaure localement à la valeur claire pour tout enfant d'un bg-nuit.   */
+[data-theme="dark"] .bg-nuit {
+  --velin-clair: #EDE8DC;
+}
+
+/* ── Bordures Tailwind arbitrary values — rgba(31,24,16,X) → rgba encre claire ─ */
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.06\)\]  { border-color: var(--border-fin);   }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.07\)\]  { border-color: var(--border-fin);   }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.08\)\]  { border-color: var(--border-doux);  }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.10\)\]  { border-color: var(--border-doux);  }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.12\)\]  { border-color: var(--border-moyen); }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.14\)\]  { border-color: var(--border-moyen); }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.15\)\]  { border-color: var(--border-moyen); }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.18\)\]  { border-color: var(--border-fort);  }
+[data-theme="dark"] .border-\[rgba\(31\,24\,16\,0\.20\)\]  { border-color: var(--border-fort);  }
+
+/* ── hover:bg-white → fond sombre en dark mode ─────────────────────────────── */
+[data-theme="dark"] .hover\:bg-white:hover {
+  background-color: var(--velin-fonce) !important;
+}
+
+/* ── Scrollbar sombre ───────────────────────────────────────────────────────── */
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(241, 236, 224, 0.15);
+  background-clip: content-box;
+}
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(241, 236, 224, 0.25);
+  background-clip: content-box;
+}
+
 /* Scrollbar discrète et noble */
 ::-webkit-scrollbar {
   width: 10px;

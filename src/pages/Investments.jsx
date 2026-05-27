@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
+import { useTheme } from '../hooks/useTheme'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -377,7 +378,7 @@ function Modal({ isOpen, onClose, children }) {
         >
           <div
             className="absolute inset-0"
-            style={{ background: 'rgba(14,31,58,0.45)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
             onClick={onClose}
             aria-hidden="true"
           />
@@ -686,7 +687,7 @@ function LiveTooltip({ active, payload }) {
   return (
     <div className="px-3 py-2 rounded-md text-xs" style={{
       background: 'var(--velin-clair)', boxShadow: 'var(--shadow-md)',
-      border: '1px solid rgba(31,24,16,0.08)',
+      border: '1px solid var(--border-doux)',
     }}>
       <div className="t-label-noble">{formatDateCompacte(date)}</div>
       <div className="font-sans font-medium text-encre tabular-nums mt-0.5">
@@ -723,7 +724,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
         >
           <div
             className="absolute inset-0"
-            style={{ background: 'rgba(14,31,58,0.45)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+            style={{ background: 'var(--overlay-bg)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
             onClick={onClose}
             aria-hidden="true"
           />
@@ -765,16 +766,16 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
                       <stop offset="95%" stopColor="var(--vert)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="rgba(14,31,58,0.08)" strokeDasharray="2 4" />
+                  <CartesianGrid stroke={chartGrid} strokeDasharray="2 4" />
                   <XAxis
                     dataKey="date"
                     tickFormatter={formatDateCompacte}
-                    stroke="var(--nuit)" fontSize={11} tickLine={false}
-                    axisLine={{ stroke: 'rgba(14,31,58,0.2)' }}
+                    stroke={chartAxis} fontSize={11} tickLine={false}
+                    axisLine={{ stroke: chartAxis }}
                   />
                   <YAxis
-                    stroke="var(--nuit)" fontSize={11} tickLine={false}
-                    axisLine={{ stroke: 'rgba(14,31,58,0.2)' }}
+                    stroke={chartAxis} fontSize={11} tickLine={false}
+                    axisLine={{ stroke: chartAxis }}
                     tickFormatter={(v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     width={64}
                   />
@@ -804,7 +805,7 @@ function DonutTooltip({ active, payload }) {
   return (
     <div className="px-3 py-2 rounded-md text-xs" style={{
       background: 'var(--velin-clair)', boxShadow: 'var(--shadow-md)',
-      border: '1px solid rgba(31,24,16,0.08)',
+      border: '1px solid var(--border-doux)',
     }}>
       <div className="font-serif italic text-sm text-encre">{d.label}</div>
       <div className="font-sans font-medium text-encre tabular-nums mt-0.5">{formatEur(d.value)}</div>
@@ -880,7 +881,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
       transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
       className={`surface-velin p-4 flex flex-col gap-3 ${cloture ? 'opacity-60' : ''}`}
       style={cloture
-        ? { borderLeft: '3px solid rgba(31,24,16,0.18)' }
+        ? { borderLeft: '3px solid var(--border-fort)' }
         : { borderLeft: '3px solid var(--vert)' }
       }
     >
@@ -968,7 +969,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
       {!estCloture && (
         <div
           className="flex items-center justify-between gap-2 pt-2 border-t"
-          style={{ borderColor: 'rgba(31,24,16,0.07)' }}
+          style={{ borderColor: 'var(--border-fin)' }}
         >
           {liveLoading ? (
             <div className="flex-1 h-4 bg-encre/6 rounded animate-pulse" />
@@ -1008,6 +1009,10 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
 // Page principale
 // ============================================================================
 export default function Investments() {
+  const { theme } = useTheme()
+  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)'
+  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)'
+
   const { user } = useAuth()
   const { showToast } = useToast()
 
@@ -1211,7 +1216,7 @@ export default function Investments() {
           {cloturees.length > 0 && (
             <section
               className="rounded-xl p-5"
-              style={{ background: 'rgba(31,24,16,0.03)', border: '1px solid rgba(31,24,16,0.08)' }}
+              style={{ background: 'var(--fond-micro)', border: '1px solid var(--border-doux)' }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <CheckCircle2 size={16} strokeWidth={1.75} className="text-encre-tertiaire" />
