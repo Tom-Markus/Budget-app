@@ -177,6 +177,27 @@ a {
   }
 }
 
+/* ============================================================================
+   Overrides dark mode
+   ============================================================================ */
+[data-theme="dark"] body {
+  background-color: var(--velin);
+}
+
+[data-theme="dark"] .surface-velin {
+  background: var(--velin-clair);
+  border-color: rgba(241, 236, 224, 0.07);
+}
+
+[data-theme="dark"] .surface-velin::after {
+  opacity: 0.06;
+  mix-blend-mode: screen;
+}
+
+[data-theme="dark"] .liserer-signature::before {
+  opacity: 0.4;
+}
+
 /* Scrollbar discrète et noble */
 ::-webkit-scrollbar {
   width: 10px;

@@ -113,6 +113,24 @@
 }
 
 /* ============================================================================
+   Thème sombre — appliqué via data-theme="dark" sur <html>
+   ============================================================================ */
+[data-theme="dark"] {
+  --velin:        #0B1628;
+  --velin-clair:  #0F1E36;
+  --velin-fonce:  #162842;
+
+  --encre:           #EDE8DC;
+  --encre-secondaire: #B8AFA0;
+  --encre-tertiaire:  #7A7268;
+
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-sm: 0 2px 6px rgba(0,0,0,0.35), 0 1px 2px rgba(0,0,0,0.25);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.3);
+  --shadow-lg: 0 12px 32px rgba(0,0,0,0.55), 0 4px 8px rgba(0,0,0,0.4);
+}
+
+/* ============================================================================
    Préférence utilisateur — animations réduites
    ============================================================================ */
 @media (prefers-reduced-motion: reduce) {

@@ -19,6 +19,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { AppProvider } from './contexts/AppContext'
+import { ThemeProvider } from './contexts/ThemeContext'
 import AuthGate from './components/AuthGate'
 import Layout from './components/Layout'
 import Accueil from './pages/Accueil'
@@ -30,6 +31,7 @@ import Reglages from './pages/Reglages'
 export default function App() {
   return (
     <BrowserRouter>
+      <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
           <AuthGate>
@@ -48,6 +50,7 @@ export default function App() {
           </AuthGate>
         </ToastProvider>
       </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

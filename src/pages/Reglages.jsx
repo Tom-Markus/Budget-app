@@ -1,14 +1,16 @@
 /**
  * src/pages/Reglages.jsx — version Bloc H
  * ----------------------------------------------------------------------------
- * Compte (déconnexion) + Export (JSON / PDF) + Réimport (avec confirmation).
+ * Compte (déconnexion) + Apparence (dark mode) + Stats + Export (JSON / PDF)
+ * + Réimport (avec confirmation).
  * ----------------------------------------------------------------------------
  */
-import { useState, useRef } from 'react'
-import { LogOut, Download, Upload, FileJson, FileText, RotateCcw } from 'lucide-react'
+import { useState, useRef, useMemo } from 'react'
+import { LogOut, Download, Upload, FileJson, FileText, RotateCcw, Sun, Moon, TrendingUp, Layers, Calendar } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useApp } from '../hooks/useApp'
 import { useToast } from '../hooks/useToast'
+import { useTheme } from '../hooks/useTheme'
 import PopupConfirmation from '../components/PopupConfirmation'
 import { exporterJson } from '../lib/exportJson'
 import { exporterPdf } from '../lib/exportPdf'
@@ -43,6 +45,24 @@ export default function Reglages() {
   const { user, logout } = useAuth()
   const { envelopes, mouvements } = useApp()
   const { showToast } = useToast()
+  const { theme, toggleTheme } = useTheme()
+
+  // --- Stats du cabinet ---
+  const stats = useMemo(() => {
+    const nbEnveloppes = envelopes.filter(e => e.type !== 'total').length
+    const actifs = mouvements.filter(m => !m.is_undone)
+    const nbMouvements = actifs.length
+    const premier = actifs.reduce((min, m) => {
+      if (!min) return m
+      return new Date(m.created_at) < new Date(min.created_at) ? m : min
+    }, null)
+    const datePremier = premier
+      ? new Date(premier.created_at).toLocaleDateString('fr-BE', {
+          day: 'numeric', month: 'long', year: 'numeric',
+        })
+      : null
+    return { nbEnveloppes, nbMouvements, datePremier }
+  }, [envelopes, mouvements])
 
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [choixExport, setChoixExport] = useState(false)
@@ -130,6 +150,105 @@ export default function Reglages() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
+
+      {/* === Apparence === */}
+      <section className="surface-velin p-6 md:p-8">
+        <p className="t-label">Apparence</p>
+        <h2 className="t-h2 mt-2">Thème</h2>
+        <p className="t-body-secondaire mt-4">
+          Choisis l'ambiance qui te convient. Le réglage est mémorisé d'une session à l'autre.
+        </p>
+        <div className="mt-5 flex items-center gap-4">
+          {/* Toggle pill */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+            className="relative inline-flex h-9 w-[4.5rem] shrink-0 items-center rounded-full
+              border border-[rgba(31,24,16,0.14)] bg-velin-fonce
+              transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2"
+            style={theme === 'dark' ? {
+              background: 'rgba(11,22,40,0.85)',
+              borderColor: 'rgba(184,149,74,0.25)',
+            } : {}}
+          >
+            <span
+              className="pointer-events-none absolute left-1 flex h-7 w-7 items-center justify-center
+                rounded-full shadow-sm transition-transform duration-300"
+              style={{
+                transform: theme === 'dark' ? 'translateX(2.25rem)' : 'translateX(0)',
+                background: theme === 'dark'
+                  ? 'linear-gradient(135deg, #162842 0%, #0B1628 100%)'
+                  : 'linear-gradient(135deg, #FFFDF7 0%, #F5EFE0 100%)',
+                boxShadow: theme === 'dark'
+                  ? '0 1px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,149,74,0.15)'
+                  : '0 1px 4px rgba(31,24,16,0.18), inset 0 1px 0 rgba(255,255,255,0.9)',
+              }}
+            >
+              {theme === 'dark'
+                ? <Moon size={14} strokeWidth={1.75} className="text-or" aria-hidden="true" />
+                : <Sun size={14} strokeWidth={1.75} style={{ color: 'var(--bordeaux)' }} aria-hidden="true" />
+              }
+            </span>
+          </button>
+          <span className="font-sans text-sm font-medium" style={{ color: 'var(--encre)' }}>
+            {theme === 'dark' ? 'Mode sombre' : 'Mode clair'}
+          </span>
+        </div>
+      </section>
+
+      {/* === Stats du cabinet === */}
+      <section className="surface-velin p-6 md:p-8">
+        <p className="t-label">Historique</p>
+        <h2 className="t-h2 mt-2">Stats du cabinet</h2>
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* Enveloppes */}
+          <div
+            className="flex flex-col gap-2 p-4 rounded-lg border"
+            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+          >
+            <Layers size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+            <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+              style={{ color: 'var(--encre)' }}>
+              {stats.nbEnveloppes}
+            </span>
+            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+              {stats.nbEnveloppes <= 1 ? 'Enveloppe' : 'Enveloppes'}
+            </span>
+          </div>
+
+          {/* Mouvements */}
+          <div
+            className="flex flex-col gap-2 p-4 rounded-lg border"
+            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+          >
+            <TrendingUp size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+            <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+              style={{ color: 'var(--encre)' }}>
+              {stats.nbMouvements.toLocaleString('fr-BE')}
+            </span>
+            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+              {stats.nbMouvements <= 1 ? 'Mouvement' : 'Mouvements'}
+            </span>
+          </div>
+
+          {/* Depuis */}
+          <div
+            className="flex flex-col gap-2 p-4 rounded-lg border"
+            style={{ background: 'rgba(31,24,16,0.02)', borderColor: 'rgba(31,24,16,0.07)' }}
+          >
+            <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+            <span className="font-serif font-semibold text-[1.15rem] leading-snug"
+              style={{ color: 'var(--encre)' }}>
+              {stats.datePremier ?? '—'}
+            </span>
+            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+              Premier mouvement
+            </span>
+          </div>
+        </div>
+      </section>
+
       {/* === Compte === */}
       <section className="surface-velin p-6 md:p-8">
         <p className="t-label">Compte</p>

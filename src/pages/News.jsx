@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { RefreshCw } from 'lucide-react'
+import { RefreshCw, Star } from 'lucide-react'
 import { BarChart2, Cpu, FlaskConical, Globe2 } from 'lucide-react'
 import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '../lib/newsApi'
 
@@ -15,7 +15,7 @@ import { WidgetFx,         fetchFx }         from '../components/news/WidgetFx'
 import { WidgetBceFed }    from '../components/news/WidgetBceFed'
 import { WidgetPortfolio } from '../components/news/WidgetPortfolio'
 import { WidgetMarche, SepGroupe } from '../components/news/BarreMarches'
-import { ColonneNews }     from '../components/news/ColonneNews'
+import { ColonneNews, SectionFavoris } from '../components/news/ColonneNews'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
@@ -47,6 +47,26 @@ export default function News() {
   const [fg,             setFg]             = useState(undefined)
   const [fx,             setFx]             = useState(undefined)
   const [stocks,         setStocks]         = useState(null)
+
+  // ── Favoris (localStorage) ──────────────────────────────────────────────────
+  const [savedArticles, setSavedArticles] = useState(() => {
+    try {
+      const raw = localStorage.getItem('news_favoris')
+      return raw ? JSON.parse(raw) : []
+    } catch { return [] }
+  })
+
+  const savedUrls = useMemo(() => new Set(savedArticles.map(a => a.url)), [savedArticles])
+
+  const toggleSave = useCallback((article) => {
+    setSavedArticles(prev => {
+      const next = prev.some(a => a.url === article.url)
+        ? prev.filter(a => a.url !== article.url)
+        : [...prev, article]
+      try { localStorage.setItem('news_favoris', JSON.stringify(next)) } catch {}
+      return next
+    })
+  }, [])
 
   const chargerMarches = useCallback(async () => {
     setMarketsLoading(true)
@@ -285,7 +305,41 @@ export default function News() {
             </button>
           )
         })}
+        {/* Onglet Favoris mobile */}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 4}
+          onClick={() => setActiveTab(4)}
+          className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
+            uppercase tracking-wider transition-colors duration-200 relative
+            ${activeTab === 4 ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
+        >
+          <Star
+            size={13}
+            strokeWidth={activeTab === 4 ? 2 : 1.5}
+            fill={activeTab === 4 ? 'currentColor' : 'none'}
+            aria-hidden="true"
+          />
+          Favoris
+          {activeTab === 4 && (
+            <motion.span
+              layoutId="news-tab"
+              className="absolute bottom-0 left-2 right-2 h-px"
+              style={{ background: 'var(--or)' }}
+              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
+              aria-hidden="true"
+            />
+          )}
+        </button>
       </div>
+
+      {/* ── Section favoris desktop (au-dessus de la grille) ── */}
+      {savedArticles.length > 0 && (
+        <div className="hidden md:block">
+          <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
+        </div>
+      )}
 
       {/* ── Grille desktop ── */}
       <div className="hidden md:grid grid-cols-2 gap-4 items-start">
@@ -296,6 +350,8 @@ export default function News() {
             articles={newsData[cat.id] || []}
             loading={!!newsLoading[cat.id]}
             error={newsError[cat.id] || null}
+            savedUrls={savedUrls}
+            onToggleSave={toggleSave}
           />
         ))}
       </div>
@@ -310,12 +366,29 @@ export default function News() {
             exit={{ opacity: 0, x: -14 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           >
-            <ColonneNews
-              category={CATEGORIES[activeTab]}
-              articles={newsData[CATEGORIES[activeTab].id] || []}
-              loading={!!newsLoading[CATEGORIES[activeTab].id]}
-              error={newsError[CATEGORIES[activeTab].id] || null}
-            />
+            {activeTab === 4 ? (
+              /* Onglet Favoris mobile */
+              savedArticles.length === 0 ? (
+                <div className="flex flex-col items-center gap-3 py-16 text-center">
+                  <Star size={32} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
+                  <p className="font-serif italic text-encre-secondaire">Aucun article sauvegardé</p>
+                  <p className="text-sm text-encre-tertiaire">
+                    Clique sur l'étoile d'un article pour le retrouver ici.
+                  </p>
+                </div>
+              ) : (
+                <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
+              )
+            ) : (
+              <ColonneNews
+                category={CATEGORIES[activeTab]}
+                articles={newsData[CATEGORIES[activeTab].id] || []}
+                loading={!!newsLoading[CATEGORIES[activeTab].id]}
+                error={newsError[CATEGORIES[activeTab].id] || null}
+                savedUrls={savedUrls}
+                onToggleSave={toggleSave}
+              />
+            )}
           </motion.div>
         </AnimatePresence>
       </div>
