@@ -22,6 +22,7 @@ import { ColonneNews, SectionFavoris } from '../components/news/ColonneNews'
 class ModalBoundary extends Component {
   state = { dead: false }
   static getDerivedStateFromError() { return { dead: true } }
+  componentDidCatch() { this.props.onError?.() }
   componentDidUpdate(prev) {
     if (prev.itemKey !== this.props.itemKey) this.setState({ dead: false })
   }
@@ -425,7 +426,7 @@ export default function News() {
       </div>
 
       {/* ── Modal graphe prix ── */}
-      <ModalBoundary itemKey={chartItem?.label}>
+      <ModalBoundary itemKey={chartItem?.label} onError={() => setChartItem(null)}>
         <AnimatePresence>
           {chartItem && (
             <GrapheModal
