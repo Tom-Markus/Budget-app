@@ -19,7 +19,7 @@ const TF_YF = {
   '7j':  { range: '8d',  interval: '1h'  },
   '3M':  { range: '3mo', interval: '1d'  },
   '1A':  { range: '1y',  interval: '1wk' },
-  '10A': { range: '10y', interval: '1mo' },
+  '5A':  { range: '5y',  interval: '1mo' },
 }
 
 const round2 = v => v != null ? Math.round(v * 100) / 100 : null
@@ -144,15 +144,15 @@ export default async function handler(req, res) {
     ohlcDays = ohlcDays.slice(-7)
 
   } else {
-    // 3M, 1A, 10A — intervalle déjà correct (quotidien/hebdo/mensuel)
+    // 3M, 1A, 5A — intervalle déjà correct (quotidien/hebdo/mensuel)
     const fmtLabel = ts => {
       const d = new Date(ts * 1000)
-      if (tf === '10A') return d.toLocaleDateString('fr-BE', { month: 'short', year: '2-digit' })
+      if (tf === '5A') return d.toLocaleDateString('fr-BE', { month: 'short', year: '2-digit' })
       return d.toLocaleDateString('fr-BE', { day: 'numeric', month: 'short' })
     }
     const fmtFull = ts => {
       const d = new Date(ts * 1000)
-      if (tf === '10A') return d.toLocaleDateString('fr-BE', { month: 'long', year: 'numeric' })
+      if (tf === '5A') return d.toLocaleDateString('fr-BE', { month: 'long', year: 'numeric' })
       return d.toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     }
     timestamps.forEach((ts, i) => {

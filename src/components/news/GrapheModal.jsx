@@ -78,7 +78,7 @@ const TF_OPTIONS = [
   { key: '7j',  label: '7j',  cgDays: 7    },
   { key: '3M',  label: '3M',  cgDays: 90   },
   { key: '1A',  label: '1A',  cgDays: 365  },
-  { key: '10A', label: '10A', cgDays: 'max' },
+  { key: '5A',  label: '5A',  cgDays: 1825  },
 ]
 
 const TF_DISPLAY = {
@@ -86,7 +86,7 @@ const TF_DISPLAY = {
   '7j':  '7 jours',
   '3M':  '3 mois',
   '1A':  '1 an',
-  '10A': '10 ans',
+  '5A':  '5 ans',
 }
 
 // ─── CoinGecko line data filtering ───────────────────────────────────────────
@@ -159,7 +159,7 @@ function filterCGLinePrices(prices, tf) {
     return pts
   }
 
-  // 10A — 1 point/mois
+  // 5A — 1 point/mois
   ;(prices || []).forEach(([ts, price], i) => {
     if (i % 30 !== 0) return
     const d = new Date(ts)
@@ -176,7 +176,7 @@ function filterCGLinePrices(prices, tf) {
 // ─── CoinGecko OHLC data per timeframe ───────────────────────────────────────
 
 async function fetchCGOhlc(coinId, tf) {
-  const cgDays = { '24h': 1, '7j': 7, '3M': 90, '1A': 365, '10A': 'max' }[tf] || 7
+  const cgDays = { '24h': 1, '7j': 7, '3M': 90, '1A': 365, '5A': 1825 }[tf] || 7
   const r = await fetch(
     `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${cgDays}`
   )
@@ -257,7 +257,7 @@ async function fetchCGOhlc(coinId, tf) {
     }))
   }
 
-  // 10A — agréger en mensuel
+  // 5A — agréger en mensuel
   const monthMap = new Map()
   arr.forEach(([ts, open, high, low, close]) => {
     const d   = new Date(ts)
