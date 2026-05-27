@@ -797,7 +797,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
   )
 }
 
-// ── Donut répartition par type ───────────────────────────────────────────────
+// ── Donut répartition par type (version StatCard) ────────────────────────────
 function DonutTooltip({ active, payload }) {
   if (!active || !payload?.[0]) return null
   const d = payload[0].payload
@@ -813,42 +813,25 @@ function DonutTooltip({ active, payload }) {
   )
 }
 
-function DonutRepartition({ investissements }) {
-  const ouvertes = investissements.filter(i => !i.date_vente)
-  if (ouvertes.length === 0) return null
-
-  const data = Object.entries(TYPES).map(([id, cfg]) => {
-    const total = ouvertes
-      .filter(i => i.type === id)
-      .reduce((s, i) => s + i.prix_achat * i.quantite, 0)
-    return { id, label: cfg.label, value: total }
-  }).filter(d => d.value > 0)
-
-  // Au moins 2 types différents pour que le donut soit utile
-  if (data.length < 2) return null
-
-  const total = data.reduce((s, d) => s + d.value, 0)
-  const dataAvecPct = data.map(d => ({ ...d, pct: total > 0 ? (d.value / total) * 100 : 0 }))
-
+function DonutStatCard({ data }) {
   return (
-    <div className="surface-velin p-4 sm:p-5">
-      <div className="flex items-center gap-2 mb-4">
-        <p className="t-label">Répartition</p>
-        <span className="text-[0.7rem] text-encre-tertiaire font-sans">Positions ouvertes</span>
-      </div>
-      <div className="flex flex-col sm:flex-row items-center gap-4">
-        <div style={{ width: 160, height: 160, flexShrink: 0 }}>
+    <div className="surface-velin p-3 sm:p-4 flex flex-col gap-2 min-w-0">
+      <span className="text-[0.65rem] sm:text-[0.7rem] uppercase tracking-wider text-encre-tertiaire font-medium truncate">
+        Répartition
+      </span>
+      <div className="flex items-center justify-center flex-1">
+        <div style={{ width: 88, height: 88, flexShrink: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
-                data={dataAvecPct}
+                data={data}
                 cx="50%" cy="50%"
-                innerRadius={46} outerRadius={72}
+                innerRadius={24} outerRadius={40}
                 paddingAngle={2}
                 dataKey="value"
                 animationDuration={600}
               >
-                {dataAvecPct.map((d) => (
+                {data.map((d) => (
                   <Cell key={d.id} fill={DONUT_COLORS[d.id] ?? '#888'} stroke="var(--velin-clair)" strokeWidth={2} />
                 ))}
               </Pie>
@@ -856,20 +839,18 @@ function DonutRepartition({ investissements }) {
             </PieChart>
           </ResponsiveContainer>
         </div>
-        {/* Légende */}
-        <ul className="flex flex-wrap sm:flex-col gap-2 sm:gap-2.5">
-          {dataAvecPct.map(d => (
-            <li key={d.id} className="flex items-center gap-2 min-w-[120px]">
-              <span
-                className="w-2.5 h-2.5 rounded-sm shrink-0"
-                style={{ background: DONUT_COLORS[d.id] ?? '#888' }}
-                aria-hidden="true"
-              />
-              <span className="text-xs text-encre-secondaire">{d.label}</span>
-              <span className="text-xs text-encre-tertiaire ml-auto tabular-nums">{d.pct.toFixed(0)}%</span>
-            </li>
-          ))}
-        </ul>
+      </div>
+      <div className="flex flex-wrap gap-x-2.5 gap-y-1 justify-center">
+        {data.map(d => (
+          <span key={d.id} className="flex items-center gap-1">
+            <span
+              className="w-1.5 h-1.5 rounded-sm shrink-0"
+              style={{ background: DONUT_COLORS[d.id] ?? '#888' }}
+              aria-hidden="true"
+            />
+            <span className="text-[0.6rem] text-encre-tertiaire tabular-nums">{d.pct.toFixed(0)}%</span>
+          </span>
+        ))}
       </div>
     </div>
   )
@@ -942,13 +923,29 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
       </div>
 
       {/* Dates */}
-      <div className="flex items-center gap-2 text-xs text-encre-tertiaire">
-        <span>Achat {formatDate(inv.date_achat)}</span>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-center gap-2 text-xs text-encre-tertiaire">
+          <span>Achat {formatDate(inv.date_achat)}</span>
+          {estCloture && (
+            <>
+              <span aria-hidden="true">→</span>
+              <span>Vente {formatDate(inv.date_vente)}</span>
+            </>
+          )}
+        </div>
+        {/* Comparaison des cours pour les positions clôturées */}
         {estCloture && (
-          <>
-            <span aria-hidden="true">→</span>
-            <span>Vente {formatDate(inv.date_vente)}</span>
-          </>
+          <div className="flex items-center gap-1.5 text-xs">
+            <span className="tabular-nums text-encre-tertiaire">
+              {inv.prix_achat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-encre-tertiaire/40" aria-hidden="true">→</span>
+            <span
+              className={`tabular-nums font-medium ${inv.prix_vente >= inv.prix_achat ? 'text-vert' : 'text-rouge'}`}
+            >
+              {inv.prix_vente.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
         )}
       </div>
 
@@ -963,8 +960,6 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
         {estCloture && pnl !== null && (
           <div className={`text-right font-medium text-sm ${pnl >= 0 ? 'text-vert' : 'text-rouge'}`}>
             {pnl >= 0 ? '+' : ''}{formatEur(pnl)}
-            <br />
-            <span className="text-xs">{formatPct(pnlPct)}</span>
           </div>
         )}
       </div>
@@ -1112,6 +1107,17 @@ export default function Investments() {
   const pnlRealise         = cloturees.reduce((s, i) => s + (i.prix_vente - i.prix_achat) * i.quantite, 0)
   const valeurPortefeuille = totalInvesti + pnlRealise
 
+  // Données donut (pré-calculées ici pour conditionner le nombre de colonnes)
+  const donutData = useMemo(() => {
+    const data = Object.entries(TYPES).map(([id, cfg]) => {
+      const total = ouvertes.filter(i => i.type === id).reduce((s, i) => s + i.prix_achat * i.quantite, 0)
+      return { id, label: cfg.label, value: total }
+    }).filter(d => d.value > 0)
+    if (data.length < 2) return []
+    const tot = data.reduce((s, d) => s + d.value, 0)
+    return data.map(d => ({ ...d, pct: tot > 0 ? (d.value / tot) * 100 : 0 }))
+  }, [ouvertes])
+
   return (
     <>
       {/* En-tête de page */}
@@ -1126,8 +1132,8 @@ export default function Investments() {
         </button>
       </div>
 
-      {/* Résumé chiffres clés */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      {/* Résumé chiffres clés + donut sur la même ligne */}
+      <div className={`grid gap-3 mb-6 ${donutData.length >= 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
         <StatCard
           label="Portefeuille"
           value={formatEur(valeurPortefeuille)}
@@ -1145,14 +1151,10 @@ export default function Investments() {
           value={ouvertes.length}
           sub={cloturees.length > 0 ? `${cloturees.length} clôturée${cloturees.length > 1 ? 's' : ''}` : undefined}
         />
+        {!loading && donutData.length >= 2 && (
+          <DonutStatCard data={donutData} />
+        )}
       </div>
-
-      {/* Donut répartition par type */}
-      {!loading && ouvertes.length > 0 && (
-        <div className="mb-6">
-          <DonutRepartition investissements={investissements} />
-        </div>
-      )}
 
       {/* Contenu */}
       {loading ? (

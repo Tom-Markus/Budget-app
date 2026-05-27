@@ -305,41 +305,7 @@ export default function News() {
             </button>
           )
         })}
-        {/* Onglet Favoris mobile */}
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === 4}
-          onClick={() => setActiveTab(4)}
-          className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
-            uppercase tracking-wider transition-colors duration-200 relative
-            ${activeTab === 4 ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
-        >
-          <Star
-            size={13}
-            strokeWidth={activeTab === 4 ? 2 : 1.5}
-            fill={activeTab === 4 ? 'currentColor' : 'none'}
-            aria-hidden="true"
-          />
-          Favoris
-          {activeTab === 4 && (
-            <motion.span
-              layoutId="news-tab"
-              className="absolute bottom-0 left-2 right-2 h-px"
-              style={{ background: 'var(--or)' }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              aria-hidden="true"
-            />
-          )}
-        </button>
       </div>
-
-      {/* ── Section favoris desktop (au-dessus de la grille) ── */}
-      {savedArticles.length > 0 && (
-        <div className="hidden md:block">
-          <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
-        </div>
-      )}
 
       {/* ── Grille desktop ── */}
       <div className="hidden md:grid grid-cols-2 gap-4 items-start">
@@ -356,6 +322,13 @@ export default function News() {
         ))}
       </div>
 
+      {/* ── Section favoris desktop (en dessous de la grille) ── */}
+      {savedArticles.length > 0 && (
+        <div className="hidden md:block">
+          <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
+        </div>
+      )}
+
       {/* ── Colonne active mobile ── */}
       <div className="md:hidden">
         <AnimatePresence mode="wait">
@@ -366,31 +339,23 @@ export default function News() {
             exit={{ opacity: 0, x: -14 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           >
-            {activeTab === 4 ? (
-              /* Onglet Favoris mobile */
-              savedArticles.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-16 text-center">
-                  <Star size={32} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
-                  <p className="font-serif italic text-encre-secondaire">Aucun article sauvegardé</p>
-                  <p className="text-sm text-encre-tertiaire">
-                    Clique sur l'étoile d'un article pour le retrouver ici.
-                  </p>
-                </div>
-              ) : (
-                <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
-              )
-            ) : (
-              <ColonneNews
-                category={CATEGORIES[activeTab]}
-                articles={newsData[CATEGORIES[activeTab].id] || []}
-                loading={!!newsLoading[CATEGORIES[activeTab].id]}
-                error={newsError[CATEGORIES[activeTab].id] || null}
-                savedUrls={savedUrls}
-                onToggleSave={toggleSave}
-              />
-            )}
+            <ColonneNews
+              category={CATEGORIES[activeTab]}
+              articles={newsData[CATEGORIES[activeTab].id] || []}
+              loading={!!newsLoading[CATEGORIES[activeTab].id]}
+              error={newsError[CATEGORIES[activeTab].id] || null}
+              savedUrls={savedUrls}
+              onToggleSave={toggleSave}
+            />
           </motion.div>
         </AnimatePresence>
+
+        {/* Favoris mobile — en dessous de l'onglet actif */}
+        {savedArticles.length > 0 && (
+          <div className="mt-6">
+            <SectionFavoris articles={savedArticles} onToggleSave={toggleSave} />
+          </div>
+        )}
       </div>
 
       {/* ── Modal graphe prix ── */}

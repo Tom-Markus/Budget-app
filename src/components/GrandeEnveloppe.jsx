@@ -197,57 +197,60 @@ export default function GrandeEnveloppe({
           ? Math.min(100, Math.max(0, ((patrimoine - aRepartir) / patrimoine) * 100))
           : 0
         return (
-          <div className="mt-3 px-4 md:px-6 flex items-center gap-4">
-            {/* Pill À répartir */}
-            <div
-              className={`
-                inline-flex items-center gap-3 px-4 py-2 rounded-full
-                border transition-colors duration-500 shrink-0
-                ${aRepartir > 0
-                  ? 'bg-or/10 border-or/25'
-                  : 'bg-velin-fonce border-[rgba(31,24,16,0.07)]'}
-              `}
-            >
-              <span className="t-label-noble">À répartir</span>
-              <span
-                className={`w-1 h-1 rounded-full shrink-0 ${aRepartir > 0 ? 'bg-or' : 'bg-encre-tertiaire/40'}`}
-                aria-hidden="true"
-              />
-              <OdometerCounter
-                value={aRepartir}
-                color={couleurARepartir}
-                size="sm"
-              />
-            </div>
-
-            {/* Barre de progression d'allocation */}
-            {patrimoine > 0 && (
-              <div className="flex-1 flex items-center gap-2.5 min-w-0">
-                <div
-                  className="flex-1 h-1.5 rounded-full overflow-hidden"
-                  style={{ background: 'rgba(31,24,16,0.08)' }}
-                  role="progressbar"
-                  aria-valuenow={Math.round(pctAlloue)}
-                  aria-valuemin={0}
-                  aria-valuemax={100}
-                  aria-label="Taux d'allocation"
-                >
-                  <div
-                    className="h-full rounded-full transition-all duration-700"
-                    style={{
-                      width: `${pctAlloue}%`,
-                      background: 'var(--gradient-signature)',
-                    }}
-                  />
-                </div>
+          <div className="mt-3 px-4 md:px-6">
+            {/* Wrapper inline-flex : la barre s'aligne sur la largeur du pill */}
+            <div className="inline-flex flex-col gap-1.5">
+              {/* Pill À répartir */}
+              <div
+                className={`
+                  inline-flex items-center gap-3 px-4 py-2 rounded-full
+                  border transition-colors duration-500
+                  ${aRepartir > 0
+                    ? 'bg-or/10 border-or/25'
+                    : 'bg-velin-fonce border-[rgba(31,24,16,0.07)]'}
+                `}
+              >
+                <span className="t-label-noble">À répartir</span>
                 <span
-                  className="text-[0.7rem] tabular-nums font-medium shrink-0 font-sans"
-                  style={{ color: 'var(--encre-tertiaire)' }}
-                >
-                  {Math.round(pctAlloue)}%
-                </span>
+                  className={`w-1 h-1 rounded-full shrink-0 ${aRepartir > 0 ? 'bg-or' : 'bg-encre-tertiaire/40'}`}
+                  aria-hidden="true"
+                />
+                <OdometerCounter
+                  value={aRepartir}
+                  color={couleurARepartir}
+                  size="sm"
+                />
               </div>
-            )}
+
+              {/* Barre de progression — même largeur que le pill */}
+              {patrimoine > 0 && (
+                <div className="flex items-center gap-2">
+                  <div
+                    className="flex-1 h-1.5 rounded-full overflow-hidden"
+                    style={{ background: 'rgba(31,24,16,0.08)' }}
+                    role="progressbar"
+                    aria-valuenow={Math.round(pctAlloue)}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    aria-label="Taux d'allocation"
+                  >
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${pctAlloue}%`,
+                        background: 'var(--gradient-signature)',
+                      }}
+                    />
+                  </div>
+                  <span
+                    className="text-[0.7rem] tabular-nums font-medium shrink-0 font-sans"
+                    style={{ color: 'var(--encre-tertiaire)' }}
+                  >
+                    {Math.round(pctAlloue)}%
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         )
       })()}
