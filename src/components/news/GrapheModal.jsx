@@ -298,7 +298,7 @@ export function GrapheModal({ item, onClose }) {
   const [tf,          setTf]          = useState('7j')
   const [chartData,   setChartData]   = useState(null)
   const [loading,     setLoading]     = useState(true)
-  const [error,       setError]       = useState(false)
+  const [error,       setError]       = useState(null)   // null | string
   const [chartMode,   setChartMode]   = useState('line')
   const [ohlcData,    setOhlcData]    = useState(null)
   const [ohlcLoading, setOhlcLoading] = useState(false)
@@ -322,7 +322,7 @@ export function GrapheModal({ item, onClose }) {
   // Charger les données de la courbe
   useEffect(() => {
     setChartData(null)
-    setError(false)
+    setError(null)
     setLoading(true)
     if (!item.coinId && !item.indexSymbol) { setLoading(false); return }
     let cancelled = false
@@ -336,12 +336,22 @@ export function GrapheModal({ item, onClose }) {
       .then(data => {
         if (cancelled) return
         if (item.coinId) {
+          if (data.error || !data.prices) {
+            const isLimit = data.error?.status?.error_code === 10012
+            throw Object.assign(new Error(), { isLimit })
+          }
           setChartData(filterCGLinePrices(data.prices, tf))
         } else {
           setChartData((data.points || []).map((p, i) => ({ ...p, idx: i })))
         }
       })
-      .catch(() => { if (!cancelled) setError(true) })
+      .catch(err => {
+        if (!cancelled) setError(
+          err?.isLimit
+            ? 'Historique limité à 1 an sur l\'API gratuite CoinGecko.'
+            : 'Impossible de charger le graphique.'
+        )
+      })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true; controller.abort() }
   }, [item.coinId, item.indexSymbol, tf])
@@ -512,7 +522,7 @@ export function GrapheModal({ item, onClose }) {
           loading ? (
             <ChartSpinner />
           ) : !canHaveChart || error ? (
-            <ChartError msg={!canHaveChart ? 'Historique indisponible pour cet actif.' : 'Impossible de charger le graphique.'} />
+            <ChartError msg={!canHaveChart ? 'Historique indisponible pour cet actif.' : (error || 'Impossible de charger le graphique.')} />
           ) : (
             <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={chartData} margin={{ top: 4, right: 16, bottom: 0, left: -8 }}>
