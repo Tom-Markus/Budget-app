@@ -244,30 +244,65 @@ export default function Reglages() {
           <section className="surface-velin p-6 md:p-8">
             <p className="t-label">Historique</p>
             <h2 className="t-h2 mt-2">Stats du cabinet</h2>
-            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+            {/* Grille strictement 2 colonnes — 4 rangées complètes, zéro trou */}
+            <div className="mt-5 grid grid-cols-2 gap-3">
+
+              {/* ── Rangée 1 : Patrimoine | Taux d'épargne ── */}
 
               {/* Patrimoine net */}
-              <div
-                className="col-span-2 sm:col-span-3 flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <Wallet size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-                <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+                <span className="font-serif font-semibold text-[1.4rem] leading-tight tabular-nums"
                   style={{ color: 'var(--encre)' }}>
                   {stats.patrimoineNet !== null ? formatEuros(stats.patrimoineNet) : '—'}
                 </span>
                 <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-                  Patrimoine net actuel
+                  Patrimoine net
                 </span>
               </div>
 
-              {/* Total rentré */}
-              <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
-                <ArrowDownCircle size={15} strokeWidth={1.75} style={{ color: 'var(--vert, #2d7a45)' }} aria-hidden="true" />
-                <span className="font-serif font-semibold text-[1.35rem] leading-tight tabular-nums"
+              {/* Taux d'épargne */}
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
+                <PiggyBank size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[1.4rem] leading-tight tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.tauxEpargne !== null ? `${stats.tauxEpargne} %` : '—'}
+                </span>
+                {/* Mini barre */}
+                {stats.tauxEpargne !== null && (
+                  <div className="w-full h-1.5 rounded-full overflow-hidden"
+                    style={{ background: 'var(--border-fin)' }}>
+                    <div className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(stats.tauxEpargne, 100)}%`,
+                        background: stats.tauxEpargne >= 20 ? '#2d7a45'
+                          : stats.tauxEpargne >= 10 ? '#d97706'
+                          : 'var(--rouge)',
+                      }} />
+                  </div>
+                )}
+                <span className="font-sans text-[12px]"
+                  style={{ color: stats.tauxEpargne === null ? 'var(--encre-tertiaire)'
+                    : stats.tauxEpargne >= 20 ? '#2d7a45'
+                    : stats.tauxEpargne >= 10 ? '#d97706'
+                    : 'var(--rouge)' }}>
+                  {stats.tauxEpargne === null ? 'Taux d\'épargne'
+                    : stats.tauxEpargne >= 20 ? 'Bonne épargne ✓'
+                    : stats.tauxEpargne >= 10 ? 'Épargne modérée'
+                    : stats.tauxEpargne > 0 ? 'Épargne faible'
+                    : 'Déficit !'}
+                </span>
+              </div>
+
+              {/* ── Rangée 2 : Total rentré | Total dépensé ── */}
+
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
+                <ArrowDownCircle size={15} strokeWidth={1.75} style={{ color: '#2d7a45' }} aria-hidden="true" />
+                <span className="font-serif font-semibold text-[1.4rem] leading-tight tabular-nums"
                   style={{ color: 'var(--encre)' }}>
                   {formatEuros(stats.totalRevenu)}
                 </span>
@@ -276,13 +311,10 @@ export default function Reglages() {
                 </span>
               </div>
 
-              {/* Total dépensé */}
-              <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <ArrowUpCircle size={15} strokeWidth={1.75} style={{ color: 'var(--rouge)' }} aria-hidden="true" />
-                <span className="font-serif font-semibold text-[1.35rem] leading-tight tabular-nums"
+                <span className="font-serif font-semibold text-[1.4rem] leading-tight tabular-nums"
                   style={{ color: 'var(--encre)' }}>
                   {formatEuros(stats.totalDepense)}
                 </span>
@@ -291,73 +323,22 @@ export default function Reglages() {
                 </span>
               </div>
 
-              {/* Taux d'épargne */}
-              <div
-                className="col-span-2 sm:col-span-3 flex flex-col gap-3 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <PiggyBank size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-                    <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-                      Taux d'épargne
-                    </span>
-                  </div>
-                  <span className="font-serif font-semibold text-[1.5rem] leading-none tabular-nums"
-                    style={{ color: 'var(--encre)' }}>
-                    {stats.tauxEpargne !== null ? `${stats.tauxEpargne} %` : '—'}
-                  </span>
-                </div>
-                {/* Barre de progression */}
-                {stats.tauxEpargne !== null && (
-                  <div className="w-full h-2 rounded-full overflow-hidden"
-                    style={{ background: 'var(--border-fin)' }}>
-                    <div
-                      className="h-full rounded-full transition-all duration-700"
-                      style={{
-                        width: `${Math.min(stats.tauxEpargne, 100)}%`,
-                        background: stats.tauxEpargne >= 20
-                          ? 'var(--vert, #2d7a45)'
-                          : stats.tauxEpargne >= 10
-                            ? '#d97706'
-                            : 'var(--rouge)',
-                      }}
-                    />
-                  </div>
-                )}
-                {stats.tauxEpargne !== null && (
-                  <span className="font-sans text-[11px]" style={{ color: 'var(--encre-tertiaire)' }}>
-                    {stats.tauxEpargne >= 20
-                      ? '🟢 Bonne épargne — continue comme ça !'
-                      : stats.tauxEpargne >= 10
-                        ? '🟡 Épargne modérée — vise 20 % pour plus de confort.'
-                        : stats.tauxEpargne > 0
-                          ? '🔴 Épargne faible — essaie de réduire quelques dépenses.'
-                          : '🔴 Tu dépenses plus que tu ne gagnes — attention !'}
-                  </span>
-                )}
-              </div>
+              {/* ── Rangée 3 : Mois d'activité | Enveloppes ── */}
 
-              {/* Mois d'activité */}
-              <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <Activity size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
                 <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
                   style={{ color: 'var(--encre)' }}>
                   {stats.nbMoisActifs}
                 </span>
                 <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-                  {stats.nbMoisActifs <= 1 ? 'Mois d\'activité' : 'Mois d\'activité'}
+                  Mois d'activité
                 </span>
               </div>
 
-              {/* Enveloppes */}
-              <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <Layers size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
                 <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
                   style={{ color: 'var(--encre)' }}>
@@ -368,11 +349,10 @@ export default function Reglages() {
                 </span>
               </div>
 
-              {/* Mouvements */}
-              <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              {/* ── Rangée 4 : Mouvements | Premier mouvement ── */}
+
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <TrendingUp size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
                 <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
                   style={{ color: 'var(--encre)' }}>
@@ -383,11 +363,8 @@ export default function Reglages() {
                 </span>
               </div>
 
-              {/* Premier mouvement */}
-              <div
-                className="col-span-2 sm:col-span-1 flex flex-col gap-2 p-4 rounded-lg border"
-                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-              >
+              <div className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}>
                 <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
                 <span className="font-serif font-semibold text-[1rem] leading-snug"
                   style={{ color: 'var(--encre)' }}>
