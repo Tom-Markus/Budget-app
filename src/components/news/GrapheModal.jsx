@@ -348,6 +348,7 @@ export function GrapheModal({ item, onClose }) {
     if (ohlcKeyRef.current === key) return
     if (!item.coinId && !item.indexSymbol) return
     ohlcKeyRef.current = key
+    setOhlcData(null)
     setOhlcLoading(true)
     setOhlcError(false)
     try {
@@ -376,7 +377,7 @@ export function GrapheModal({ item, onClose }) {
     if (!lows.length || !highs.length) return ['auto', 'auto']
     const min = Math.min(...lows)
     const max = Math.max(...highs)
-    const pad = (max - min) * 0.08
+    const pad = min === max ? Math.max(min * 0.01, 0.5) : (max - min) * 0.08
     return [min - pad, max + pad]
   }, [ohlcData])
 

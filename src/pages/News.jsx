@@ -10,6 +10,13 @@ import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '..
 import { supabase } from '../lib/supabase'
 
 import { GrapheModal }      from '../components/news/GrapheModal'
+import { WidgetMeteo,      fetchWeather }    from '../components/news/WidgetMeteo'
+import { WidgetFearGreed,  fetchFearGreed }  from '../components/news/WidgetFearGreed'
+import { WidgetFx,         fetchFx }         from '../components/news/WidgetFx'
+import { WidgetBceFed }    from '../components/news/WidgetBceFed'
+import { WidgetPortfolio } from '../components/news/WidgetPortfolio'
+import { WidgetMarche, SepGroupe } from '../components/news/BarreMarches'
+import { ColonneNews, SectionFavoris } from '../components/news/ColonneNews'
 
 // Error boundary : contient les crashes de GrapheModal pour ne pas tuer la page
 class ModalBoundary extends Component {
@@ -20,13 +27,6 @@ class ModalBoundary extends Component {
   }
   render() { return this.state.dead ? null : this.props.children }
 }
-import { WidgetMeteo,      fetchWeather }    from '../components/news/WidgetMeteo'
-import { WidgetFearGreed,  fetchFearGreed }  from '../components/news/WidgetFearGreed'
-import { WidgetFx,         fetchFx }         from '../components/news/WidgetFx'
-import { WidgetBceFed }    from '../components/news/WidgetBceFed'
-import { WidgetPortfolio } from '../components/news/WidgetPortfolio'
-import { WidgetMarche, SepGroupe } from '../components/news/BarreMarches'
-import { ColonneNews, SectionFavoris } from '../components/news/ColonneNews'
 
 // ── Constantes ────────────────────────────────────────────────────────────────
 
