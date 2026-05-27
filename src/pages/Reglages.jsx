@@ -6,7 +6,7 @@
  * ----------------------------------------------------------------------------
  */
 import { useState, useRef, useMemo } from 'react'
-import { LogOut, Download, Upload, FileJson, FileText, RotateCcw, Sun, Moon, TrendingUp, Layers, Calendar } from 'lucide-react'
+import { LogOut, Download, Upload, FileJson, FileText, RotateCcw, Sun, Moon, TrendingUp, Layers, Calendar, Wallet, ArrowDownCircle, ArrowUpCircle, Activity } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useApp } from '../hooks/useApp'
 import { useToast } from '../hooks/useToast'
@@ -16,6 +16,7 @@ import { exporterJson } from '../lib/exportJson'
 import { exporterPdf } from '../lib/exportPdf'
 import { lireFichierJson, validerImport, appliquerImport } from '../lib/importJson'
 import { remettreAZero } from '../lib/mutations'
+import { formatEuros } from '../lib/formatters'
 
 // Bouton réutilisable, style cohérent design system
 function BoutonReglage({ onClick, disabled, children, icon: Icon, danger }) {
@@ -43,7 +44,7 @@ function BoutonReglage({ onClick, disabled, children, icon: Icon, danger }) {
 
 export default function Reglages() {
   const { user, logout } = useAuth()
-  const { envelopes, mouvements } = useApp()
+  const { envelopes, mouvements, soldeDe, patrimoine } = useApp()
   const { showToast } = useToast()
   const { theme, toggleTheme } = useTheme()
 
@@ -52,6 +53,8 @@ export default function Reglages() {
     const nbEnveloppes = envelopes.filter(e => e.type !== 'total').length
     const actifs = mouvements.filter(m => !m.is_undone)
     const nbMouvements = actifs.length
+
+    // Premier mouvement
     const premier = actifs.reduce((min, m) => {
       if (!min) return m
       return new Date(m.created_at) < new Date(min.created_at) ? m : min
@@ -61,8 +64,19 @@ export default function Reglages() {
           day: 'numeric', month: 'long', year: 'numeric',
         })
       : null
-    return { nbEnveloppes, nbMouvements, datePremier }
-  }, [envelopes, mouvements])
+
+    // Mois d'activité uniques
+    const nbMoisActifs = new Set(actifs.map(m => m.created_at.slice(0, 7))).size
+
+    // Cumuls financiers
+    const totalRevenu  = actifs.filter(m => m.type === 'income').reduce((s, m) => s + (m.amount ?? 0), 0)
+    const totalDepense = actifs.filter(m => m.type === 'spend').reduce((s, m) => s + (m.amount ?? 0), 0)
+
+    // Patrimoine net courant
+    const patrimoineNet = patrimoine ? soldeDe(patrimoine.id) : null
+
+    return { nbEnveloppes, nbMouvements, datePremier, nbMoisActifs, totalRevenu, totalDepense, patrimoineNet }
+  }, [envelopes, mouvements, soldeDe, patrimoine])
 
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [choixExport, setChoixExport] = useState(false)
@@ -207,7 +221,68 @@ export default function Reglages() {
           <section className="surface-velin p-6 md:p-8">
             <p className="t-label">Historique</p>
             <h2 className="t-h2 mt-2">Stats du cabinet</h2>
-            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="mt-5 grid grid-cols-2 sm:grid-cols-3 gap-3">
+
+              {/* Patrimoine net */}
+              <div
+                className="col-span-2 sm:col-span-3 flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <Wallet size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.patrimoineNet !== null ? formatEuros(stats.patrimoineNet) : '—'}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  Patrimoine net actuel
+                </span>
+              </div>
+
+              {/* Total rentré */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <ArrowDownCircle size={15} strokeWidth={1.75} style={{ color: 'var(--vert, #2d7a45)' }} aria-hidden="true" />
+                <span className="font-serif font-semibold text-[1.35rem] leading-tight tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {formatEuros(stats.totalRevenu)}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  Total rentré
+                </span>
+              </div>
+
+              {/* Total dépensé */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <ArrowUpCircle size={15} strokeWidth={1.75} style={{ color: 'var(--rouge)' }} aria-hidden="true" />
+                <span className="font-serif font-semibold text-[1.35rem] leading-tight tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {formatEuros(stats.totalDepense)}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  Total dépensé
+                </span>
+              </div>
+
+              {/* Mois d'activité */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <Activity size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.nbMoisActifs}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  {stats.nbMoisActifs <= 1 ? 'Mois d\'activité' : 'Mois d\'activité'}
+                </span>
+              </div>
+
               {/* Enveloppes */}
               <div
                 className="flex flex-col gap-2 p-4 rounded-lg border"
@@ -238,13 +313,13 @@ export default function Reglages() {
                 </span>
               </div>
 
-              {/* Depuis */}
+              {/* Premier mouvement */}
               <div
-                className="flex flex-col gap-2 p-4 rounded-lg border"
+                className="col-span-2 sm:col-span-1 flex flex-col gap-2 p-4 rounded-lg border"
                 style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
               >
                 <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-                <span className="font-serif font-semibold text-[1.15rem] leading-snug"
+                <span className="font-serif font-semibold text-[1rem] leading-snug"
                   style={{ color: 'var(--encre)' }}>
                   {stats.datePremier ?? '—'}
                 </span>
@@ -252,6 +327,7 @@ export default function Reglages() {
                   Premier mouvement
                 </span>
               </div>
+
             </div>
           </section>
 
