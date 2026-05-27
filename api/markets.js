@@ -4,7 +4,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
 
-  const TICKERS = { cac40: '^FCHI', sp500: '^GSPC', bel20: '^BFX', oil: 'CL=F' }
+  const TICKERS = { cac40: '^FCHI', sp500: '^GSPC', bel20: '^BFX', oil: 'CL=F', brent: 'BZ=F' }
 
   const fetches = Object.entries(TICKERS).map(async ([key, ticker]) => {
     const url =

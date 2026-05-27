@@ -177,7 +177,8 @@ export default function News() {
           key: 'or', label: 'Matières premières',
           items: [
             { label: 'Or (XAU)',      prix: fmtS(markets?.gold?.usd),   unite: '$',    change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null  },
-            { label: 'Pétrole (WTI)', prix: fmtS(markets?.oil?.price,0), unite: '$/b', change: markets?.oil?.change          ?? null, coinId: null,       indexSymbol: 'CL=F' },
+            { label: 'Pétrole (WTI)',   prix: fmtS(markets?.oil?.price,   0), unite: '$/b', change: markets?.oil?.change   ?? null, coinId: null, indexSymbol: 'CL=F' },
+            { label: 'Pétrole (Brent)', prix: fmtS(markets?.brent?.price, 0), unite: '$/b', change: markets?.brent?.change ?? null, coinId: null, indexSymbol: 'BZ=F' },
           ],
         },
         {

@@ -191,5 +191,6 @@ export async function fetchMarkets() {
     cac40: indices?.cac40 ?? null,
     bel20: indices?.bel20 ?? null,
     oil:   indices?.oil   ?? null,
+    brent: indices?.brent ?? null,
   }
 }
