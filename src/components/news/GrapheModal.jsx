@@ -181,10 +181,7 @@ function filterCGLinePrices(prices, tf) {
 // ─── CoinGecko OHLC data per timeframe ───────────────────────────────────────
 
 async function fetchCGOhlc(coinId, tf) {
-  const cgDays = { '24h': 1, '7j': 7, '3M': 90, '1A': 365, '5A': 1825 }[tf] || 7
-  const r = await fetch(
-    `https://api.coingecko.com/api/v3/coins/${coinId}/ohlc?vs_currency=usd&days=${cgDays}`
-  )
+  const r = await fetch(`/api/cg-history?coinId=${encodeURIComponent(coinId)}&tf=${tf}&type=ohlc`)
   if (!r.ok) throw new Error()
   const arr = (await r.json()) || []
   if (!Array.isArray(arr)) throw new Error()
@@ -312,9 +309,8 @@ export function GrapheModal({ item, onClose }) {
     if (!item.coinId && !item.indexSymbol) { setLoading(false); return }
     let cancelled = false
     const controller = new AbortController()
-    const cgDays = TF_OPTIONS.find(o => o.key === tf)?.cgDays ?? 7
     const url = item.coinId
-      ? `https://api.coingecko.com/api/v3/coins/${item.coinId}/market_chart?vs_currency=usd&days=${cgDays}`
+      ? `/api/cg-history?coinId=${encodeURIComponent(item.coinId)}&tf=${tf}&type=line`
       : `/api/history?symbol=${encodeURIComponent(item.indexSymbol)}&tf=${tf}`
     fetch(url, { signal: controller.signal })
       .then(r => r.json())
@@ -322,7 +318,7 @@ export function GrapheModal({ item, onClose }) {
         if (cancelled) return
         if (item.coinId) {
           if (data.error || !data.prices) {
-            const isLimit = data.error?.status?.error_code === 10012
+            const isLimit = data.cgErrorCode === 10012
             throw Object.assign(new Error(), { isLimit })
           }
           setChartData(filterCGLinePrices(data.prices, tf))
