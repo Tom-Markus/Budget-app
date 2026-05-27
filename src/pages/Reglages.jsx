@@ -149,191 +149,206 @@ export default function Reglages() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
+    <div className="max-w-5xl mx-auto">
 
-      {/* === Apparence === */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Apparence</p>
-        <h2 className="t-h2 mt-2">Thème</h2>
-        <p className="t-body-secondaire mt-4">
-          Choisis l'ambiance qui te convient. Le réglage est mémorisé d'une session à l'autre.
-        </p>
-        <div className="mt-5 flex items-center gap-4">
-          {/* Toggle pill */}
-          <button
-            type="button"
-            onClick={toggleTheme}
-            aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
-            className="relative inline-flex h-9 w-[4.5rem] shrink-0 items-center rounded-full
-              border border-[rgba(31,24,16,0.14)] bg-velin-fonce
-              transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2"
-            style={theme === 'dark' ? {
-              background: 'rgba(11,22,40,0.85)',
-              borderColor: 'rgba(184,149,74,0.25)',
-            } : {}}
-          >
-            <span
-              className="pointer-events-none absolute left-1 flex h-7 w-7 items-center justify-center
-                rounded-full shadow-sm transition-transform duration-300"
-              style={{
-                transform: theme === 'dark' ? 'translateX(2.25rem)' : 'translateX(0)',
-                background: theme === 'dark'
-                  ? 'linear-gradient(135deg, #162842 0%, #0B1628 100%)'
-                  : 'linear-gradient(135deg, #FFFDF7 0%, #F5EFE0 100%)',
-                boxShadow: theme === 'dark'
-                  ? '0 1px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,149,74,0.15)'
-                  : '0 1px 4px var(--border-fort), inset 0 1px 0 rgba(255,255,255,0.9)',
-              }}
-            >
-              {theme === 'dark'
-                ? <Moon size={14} strokeWidth={1.75} className="text-or" aria-hidden="true" />
-                : <Sun size={14} strokeWidth={1.75} style={{ color: 'var(--bordeaux)' }} aria-hidden="true" />
-              }
-            </span>
-          </button>
-          <span className="font-sans text-sm font-medium" style={{ color: 'var(--encre)' }}>
-            {theme === 'dark' ? 'Mode sombre' : 'Mode clair'}
-          </span>
-        </div>
-      </section>
+      {/* ── Layout 2 colonnes sur desktop, 1 colonne sur mobile ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
-      {/* === Stats du cabinet === */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Historique</p>
-        <h2 className="t-h2 mt-2">Stats du cabinet</h2>
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {/* Enveloppes */}
-          <div
-            className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-          >
-            <Layers size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-            <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
-              style={{ color: 'var(--encre)' }}>
-              {stats.nbEnveloppes}
-            </span>
-            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-              {stats.nbEnveloppes <= 1 ? 'Enveloppe' : 'Enveloppes'}
-            </span>
-          </div>
+        {/* ════════════ COLONNE GAUCHE ════════════ */}
+        <div className="space-y-6">
 
-          {/* Mouvements */}
-          <div
-            className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-          >
-            <TrendingUp size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-            <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
-              style={{ color: 'var(--encre)' }}>
-              {stats.nbMouvements.toLocaleString('fr-BE')}
-            </span>
-            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-              {stats.nbMouvements <= 1 ? 'Mouvement' : 'Mouvements'}
-            </span>
-          </div>
+          {/* === Apparence === */}
+          <section className="surface-velin p-6 md:p-8">
+            <p className="t-label">Apparence</p>
+            <h2 className="t-h2 mt-2">Thème</h2>
+            <p className="t-body-secondaire mt-4">
+              Choisis l'ambiance qui te convient. Le réglage est mémorisé d'une session à l'autre.
+            </p>
+            <div className="mt-5 flex items-center gap-4">
+              {/* Toggle pill */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
+                className="relative inline-flex h-9 w-[4.5rem] shrink-0 items-center rounded-full
+                  border border-[rgba(31,24,16,0.14)] bg-velin-fonce
+                  transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2"
+                style={theme === 'dark' ? {
+                  background: 'rgba(11,22,40,0.85)',
+                  borderColor: 'rgba(184,149,74,0.25)',
+                } : {}}
+              >
+                <span
+                  className="pointer-events-none absolute left-1 flex h-7 w-7 items-center justify-center
+                    rounded-full shadow-sm transition-transform duration-300"
+                  style={{
+                    transform: theme === 'dark' ? 'translateX(2.25rem)' : 'translateX(0)',
+                    background: theme === 'dark'
+                      ? 'linear-gradient(135deg, #162842 0%, #0B1628 100%)'
+                      : 'linear-gradient(135deg, #FFFDF7 0%, #F5EFE0 100%)',
+                    boxShadow: theme === 'dark'
+                      ? '0 1px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(184,149,74,0.15)'
+                      : '0 1px 4px var(--border-fort), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  }}
+                >
+                  {theme === 'dark'
+                    ? <Moon size={14} strokeWidth={1.75} className="text-or" aria-hidden="true" />
+                    : <Sun size={14} strokeWidth={1.75} style={{ color: 'var(--bordeaux)' }} aria-hidden="true" />
+                  }
+                </span>
+              </button>
+              <span className="font-sans text-sm font-medium" style={{ color: 'var(--encre)' }}>
+                {theme === 'dark' ? 'Mode sombre' : 'Mode clair'}
+              </span>
+            </div>
+          </section>
 
-          {/* Depuis */}
-          <div
-            className="flex flex-col gap-2 p-4 rounded-lg border"
-            style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
-          >
-            <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
-            <span className="font-serif font-semibold text-[1.15rem] leading-snug"
-              style={{ color: 'var(--encre)' }}>
-              {stats.datePremier ?? '—'}
-            </span>
-            <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
-              Premier mouvement
-            </span>
-          </div>
-        </div>
-      </section>
+          {/* === Stats du cabinet === */}
+          <section className="surface-velin p-6 md:p-8">
+            <p className="t-label">Historique</p>
+            <h2 className="t-h2 mt-2">Stats du cabinet</h2>
+            <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3 gap-4">
+              {/* Enveloppes */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <Layers size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.nbEnveloppes}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  {stats.nbEnveloppes <= 1 ? 'Enveloppe' : 'Enveloppes'}
+                </span>
+              </div>
 
-      {/* === Compte === */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Compte</p>
-        <h2 className="t-h2 mt-2">Ton accès</h2>
-        <p className="t-body-secondaire mt-4">
-          Connecté avec{' '}
-          <span className="italic" style={{ color: 'var(--encre)' }}>{user?.email}</span>.
-        </p>
-        <div className="mt-6">
-          <BoutonReglage onClick={handleLogout} disabled={logoutLoading} icon={LogOut}>
-            {logoutLoading ? 'Déconnexion...' : 'Se déconnecter'}
-          </BoutonReglage>
-        </div>
-      </section>
+              {/* Mouvements */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <TrendingUp size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[2rem] leading-none tabular-nums"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.nbMouvements.toLocaleString('fr-BE')}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  {stats.nbMouvements <= 1 ? 'Mouvement' : 'Mouvements'}
+                </span>
+              </div>
 
-      {/* === Données === */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Données</p>
-        <h2 className="t-h2 mt-2">Sauvegarde &amp; restauration</h2>
+              {/* Depuis */}
+              <div
+                className="flex flex-col gap-2 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <Calendar size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                <span className="font-serif font-semibold text-[1.15rem] leading-snug"
+                  style={{ color: 'var(--encre)' }}>
+                  {stats.datePremier ?? '—'}
+                </span>
+                <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                  Premier mouvement
+                </span>
+              </div>
+            </div>
+          </section>
 
-        {/* Export */}
-        <p className="t-body-secondaire mt-4">
-          Exporte une copie de tout ton cabinet — en JSON (réimportable) ou en
-          PDF (rapport lisible).
-        </p>
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          <BoutonReglage onClick={() => setChoixExport(v => !v)} icon={Download}>
-            Exporter mes données
-          </BoutonReglage>
-          {choixExport && (
-            <>
-              <BoutonReglage onClick={handleExportJson} icon={FileJson}>
-                Format JSON
+          {/* === À propos === */}
+          <section className="surface-velin p-6 md:p-8">
+            <p className="t-label">À propos</p>
+            <h2 className="t-h2 mt-2">Tom's Cabinet</h2>
+            <p className="t-body-secondaire mt-4">
+              Budget personnel par enveloppes. Version 1.0.1.
+            </p>
+          </section>
+
+        </div>{/* fin colonne gauche */}
+
+        {/* ════════════ COLONNE DROITE ════════════ */}
+        <div className="space-y-6">
+
+          {/* === Compte === */}
+          <section className="surface-velin p-6 md:p-8">
+            <p className="t-label">Compte</p>
+            <h2 className="t-h2 mt-2">Ton accès</h2>
+            <p className="t-body-secondaire mt-4">
+              Connecté avec{' '}
+              <span className="italic" style={{ color: 'var(--encre)' }}>{user?.email}</span>.
+            </p>
+            <div className="mt-6">
+              <BoutonReglage onClick={handleLogout} disabled={logoutLoading} icon={LogOut}>
+                {logoutLoading ? 'Déconnexion...' : 'Se déconnecter'}
               </BoutonReglage>
-              <BoutonReglage onClick={handleExportPdf} disabled={exportLoading} icon={FileText}>
-                {exportLoading ? 'Génération...' : 'Format PDF'}
+            </div>
+          </section>
+
+          {/* === Données === */}
+          <section className="surface-velin p-6 md:p-8">
+            <p className="t-label">Données</p>
+            <h2 className="t-h2 mt-2">Sauvegarde &amp; restauration</h2>
+
+            {/* Export */}
+            <p className="t-body-secondaire mt-4">
+              Exporte une copie de tout ton cabinet — en JSON (réimportable) ou en
+              PDF (rapport lisible).
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <BoutonReglage onClick={() => setChoixExport(v => !v)} icon={Download}>
+                Exporter mes données
               </BoutonReglage>
-            </>
-          )}
-        </div>
+              {choixExport && (
+                <>
+                  <BoutonReglage onClick={handleExportJson} icon={FileJson}>
+                    Format JSON
+                  </BoutonReglage>
+                  <BoutonReglage onClick={handleExportPdf} disabled={exportLoading} icon={FileText}>
+                    {exportLoading ? 'Génération...' : 'Format PDF'}
+                  </BoutonReglage>
+                </>
+              )}
+            </div>
 
-        {/* Import */}
-        <div className="mt-8 pt-6 border-t border-[rgba(31,24,16,0.08)]">
-          <p className="t-body-secondaire">
-            Réimporte une sauvegarde JSON. Cela <strong>remplacera</strong> toutes
-            tes données actuelles — garde toujours ton fichier de côté.
-          </p>
-          <div className="mt-4">
-            <BoutonReglage onClick={() => fileInputRef.current?.click()} icon={Upload}>
-              Réimporter mes données
-            </BoutonReglage>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,application/json"
-            onChange={handleFichierChoisi}
-            className="hidden"
-          />
-        </div>
-      </section>
+            {/* Import */}
+            <div className="mt-8 pt-6 border-t border-[rgba(31,24,16,0.08)]">
+              <p className="t-body-secondaire">
+                Réimporte une sauvegarde JSON. Cela <strong>remplacera</strong> toutes
+                tes données actuelles — garde toujours ton fichier de côté.
+              </p>
+              <div className="mt-4">
+                <BoutonReglage onClick={() => fileInputRef.current?.click()} icon={Upload}>
+                  Réimporter mes données
+                </BoutonReglage>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,application/json"
+                onChange={handleFichierChoisi}
+                className="hidden"
+              />
+            </div>
+          </section>
 
-      {/* === Zone dangereuse === */}
-      <section className="surface-velin p-6 md:p-8" style={{ boxShadow: '0 0 0 1px rgba(180,30,30,0.15), var(--shadow-sm)' }}>
-        <p className="t-label" style={{ color: 'var(--rouge)' }}>Zone dangereuse</p>
-        <h2 className="t-h2 mt-2">Remettre à zéro</h2>
-        <p className="t-body-secondaire mt-4">
-          Supprime <strong>toutes tes enveloppes et tous tes mouvements</strong>.
-          Ton Patrimoine est conservé mais son solde retombe à 0. Cette action est <strong>irréversible</strong> — exporte tes données d'abord si tu veux garder une trace.
-        </p>
-        <div className="mt-6">
-          <BoutonReglage onClick={() => setResetPopup(true)} icon={RotateCcw} danger>
-            Tout remettre à zéro
-          </BoutonReglage>
-        </div>
-      </section>
+          {/* === Zone dangereuse === */}
+          <section className="surface-velin p-6 md:p-8" style={{ boxShadow: '0 0 0 1px rgba(180,30,30,0.15), var(--shadow-sm)' }}>
+            <p className="t-label" style={{ color: 'var(--rouge)' }}>Zone dangereuse</p>
+            <h2 className="t-h2 mt-2">Remettre à zéro</h2>
+            <p className="t-body-secondaire mt-4">
+              Supprime <strong>toutes tes enveloppes et tous tes mouvements</strong>.
+              Ton Patrimoine est conservé mais son solde retombe à 0. Cette action est <strong>irréversible</strong> — exporte tes données d'abord si tu veux garder une trace.
+            </p>
+            <div className="mt-6">
+              <BoutonReglage onClick={() => setResetPopup(true)} icon={RotateCcw} danger>
+                Tout remettre à zéro
+              </BoutonReglage>
+            </div>
+          </section>
 
-      {/* === À propos === */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">À propos</p>
-        <h2 className="t-h2 mt-2">Tom's Cabinet</h2>
-        <p className="t-body-secondaire mt-4">
-          Budget personnel par enveloppes. Version 1.0.1.
-        </p>
-      </section>
+        </div>{/* fin colonne droite */}
+
+      </div>{/* fin grid */}
 
       {/* Popup remise à zéro */}
       <PopupConfirmation
