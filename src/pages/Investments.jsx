@@ -699,6 +699,10 @@ function LiveTooltip({ active, payload }) {
 
 // ── Graphe portefeuille (modal) ───────────────────────────────────────────────
 function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liveStocks }) {
+  const { theme } = useTheme()
+  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)'
+  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)'
+
   const points = useMemo(
     () => buildPortfolioHistory(investissements, liveMarkets, liveStocks),
     [investissements, liveMarkets, liveStocks],
@@ -792,6 +796,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
                     axisLine={{ stroke: chartAxis }}
                     tickFormatter={(v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })}
                     width={64}
+                    domain={[0, 'auto']}
                   />
                   <Tooltip content={<LiveTooltip />} />
                   <Area
