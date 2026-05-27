@@ -190,5 +190,6 @@ export async function fetchMarkets() {
     sp500: indices?.sp500 ?? null,
     cac40: indices?.cac40 ?? null,
     bel20: indices?.bel20 ?? null,
+    oil:   indices?.oil   ?? null,
   }
 }

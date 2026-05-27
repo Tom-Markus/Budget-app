@@ -174,9 +174,10 @@ export default function News() {
       // ── Ligne 2 : Or + Actions ────────────────────────────────────────────
       [
         {
-          key: 'or', label: 'Or',
+          key: 'or', label: 'Matières premières',
           items: [
-            { label: 'Or (XAU)', prix: fmtS(markets?.gold?.usd), unite: '$', change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null },
+            { label: 'Or (XAU)',      prix: fmtS(markets?.gold?.usd),   unite: '$',    change: markets?.gold?.usd_24h_change ?? null, coinId: 'pax-gold', indexSymbol: null  },
+            { label: 'Pétrole (WTI)', prix: fmtS(markets?.oil?.price,0), unite: '$/b', change: markets?.oil?.change          ?? null, coinId: null,       indexSymbol: 'CL=F' },
           ],
         },
         {
