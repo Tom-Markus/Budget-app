@@ -55,7 +55,7 @@ function CandleTooltip({ active, payload, unite }) {
       padding: '8px 12px',
       minWidth: 128,
     }}>
-      <div style={{ color: 'var(--encre-tertiaire)', marginBottom: 6, fontSize: 11 }}>{d.date}</div>
+      <div style={{ color: 'var(--encre-tertiaire)', marginBottom: 6, fontSize: 11 }}>{d.label ?? d.date}</div>
       {[['O', d.open], ['H', d.high], ['L', d.low], ['C', d.close]].map(([label, val]) => (
         <div key={label} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 2 }}>
           <span style={{ color: 'var(--encre-tertiaire)' }}>{label}</span>
@@ -209,7 +209,11 @@ async function fetchCGOhlc(coinId, tf) {
     })
     return [...halfMap.values()].sort((a, b) => a.ts - b.ts).slice(-14).map(({ ts, open, high, low, close, half }) => {
       const dayLabel = new Date(ts).toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', timeZone: 'UTC' })
-      return { date: `${dayLabel} · ${half}`, ts, open, high, low, close }
+      return {
+        date:  half === '00h' ? dayLabel : '',   // axe X : label sur la 1re bougie du jour seulement
+        label: `${dayLabel} · ${half}`,           // tooltip : détail complet
+        ts, open, high, low, close,
+      }
     })
   }
 
