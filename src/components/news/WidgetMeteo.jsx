@@ -94,12 +94,12 @@ export function WidgetMeteo({ weather }) {
     )
   }
 
-  const { Icon: WeatherIcon, label: weatherLabel } = getWmo(weather.code)
+  const { Icon: WeatherIcon, label: weatherLabel, color: weatherColor } = getWmo(weather.code)
 
   return (
     <div className="surface-velin liserer-signature p-5 h-full flex flex-col items-center justify-center gap-4">
       <div className="flex items-center justify-center gap-4 w-full">
-        <WeatherIcon size={40} strokeWidth={1.25} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" className="shrink-0" />
+        <WeatherIcon size={40} strokeWidth={1.25} style={{ color: weatherColor }} aria-hidden="true" className="shrink-0" />
         <div className="min-w-0">
           <div className="flex items-baseline gap-2.5 flex-wrap">
             <span className="font-serif font-medium text-[33px] text-encre leading-none tabular-nums">
@@ -155,13 +155,13 @@ export function WidgetMeteo({ weather }) {
       {weather.forecast?.length > 0 && (
         <div className="w-full border-t border-encre/6 pt-3 flex items-center justify-center gap-1">
           {weather.forecast.map((day, i) => {
-            const { Icon: FIcon } = getWmo(day.code)
+            const { Icon: FIcon, color: fColor } = getWmo(day.code)
             return (
               <div key={i} className="flex-1 flex flex-col items-center gap-1 px-1">
                 <span className="font-sans text-[11px] text-encre-tertiaire/60 uppercase tracking-wide capitalize">
                   {day.day}
                 </span>
-                <FIcon size={16} strokeWidth={1.5} style={{ color: 'var(--encre-tertiaire)' }} aria-hidden="true" />
+                <FIcon size={16} strokeWidth={1.5} style={{ color: fColor }} aria-hidden="true" />
                 <div className="flex items-baseline gap-1 tabular-nums" style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}>
                   <span className="font-sans text-[13px] font-medium text-encre">{day.maxTemp}°</span>
                   <span className="font-sans text-[11px] text-encre-tertiaire/50">{day.minTemp}°</span>
