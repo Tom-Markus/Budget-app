@@ -5,8 +5,8 @@
  * + Réimport (avec confirmation).
  * ----------------------------------------------------------------------------
  */
-import { useState, useRef, useMemo } from 'react'
-import { LogOut, Download, Upload, FileJson, FileText, RotateCcw, Sun, Moon, TrendingUp, Layers, Calendar, Wallet, ArrowDownCircle, ArrowUpCircle, Activity } from 'lucide-react'
+import { useState, useRef, useMemo, useEffect } from 'react'
+import { LogOut, Download, Upload, FileJson, FileText, RotateCcw, Sun, Moon, TrendingUp, Layers, Calendar, Wallet, ArrowDownCircle, ArrowUpCircle, Activity, Smartphone, PiggyBank } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useApp } from '../hooks/useApp'
 import { useToast } from '../hooks/useToast'
@@ -72,11 +72,34 @@ export default function Reglages() {
     const totalRevenu  = actifs.filter(m => m.type === 'income').reduce((s, m) => s + (m.amount ?? 0), 0)
     const totalDepense = actifs.filter(m => m.type === 'spend').reduce((s, m) => s + (m.amount ?? 0), 0)
 
+    // Taux d'épargne : (revenu - dépense) / revenu
+    const tauxEpargne = totalRevenu > 0
+      ? Math.max(0, Math.round(((totalRevenu - totalDepense) / totalRevenu) * 100))
+      : null
+
     // Patrimoine net courant
     const patrimoineNet = patrimoine ? soldeDe(patrimoine.id) : null
 
-    return { nbEnveloppes, nbMouvements, datePremier, nbMoisActifs, totalRevenu, totalDepense, patrimoineNet }
+    return { nbEnveloppes, nbMouvements, datePremier, nbMoisActifs, totalRevenu, totalDepense, patrimoineNet, tauxEpargne }
   }, [envelopes, mouvements, soldeDe, patrimoine])
+
+  // --- PWA install prompt ---
+  const [pwaPrompt, setPwaPrompt] = useState(null)
+  const [pwaInstalled, setPwaInstalled] = useState(false)
+  useEffect(() => {
+    const handler = (e) => { e.preventDefault(); setPwaPrompt(e) }
+    window.addEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', () => { setPwaInstalled(true); setPwaPrompt(null) })
+    return () => window.removeEventListener('beforeinstallprompt', handler)
+  }, [])
+
+  const handleInstallPwa = async () => {
+    if (!pwaPrompt) return
+    pwaPrompt.prompt()
+    const { outcome } = await pwaPrompt.userChoice
+    if (outcome === 'accepted') setPwaInstalled(true)
+    setPwaPrompt(null)
+  }
 
   const [logoutLoading, setLogoutLoading] = useState(false)
   const [choixExport, setChoixExport] = useState(false)
@@ -268,6 +291,53 @@ export default function Reglages() {
                 </span>
               </div>
 
+              {/* Taux d'épargne */}
+              <div
+                className="col-span-2 sm:col-span-3 flex flex-col gap-3 p-4 rounded-lg border"
+                style={{ background: 'var(--fond-micro)', borderColor: 'var(--border-fin)' }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <PiggyBank size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                    <span className="font-sans text-[12px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                      Taux d'épargne
+                    </span>
+                  </div>
+                  <span className="font-serif font-semibold text-[1.5rem] leading-none tabular-nums"
+                    style={{ color: 'var(--encre)' }}>
+                    {stats.tauxEpargne !== null ? `${stats.tauxEpargne} %` : '—'}
+                  </span>
+                </div>
+                {/* Barre de progression */}
+                {stats.tauxEpargne !== null && (
+                  <div className="w-full h-2 rounded-full overflow-hidden"
+                    style={{ background: 'var(--border-fin)' }}>
+                    <div
+                      className="h-full rounded-full transition-all duration-700"
+                      style={{
+                        width: `${Math.min(stats.tauxEpargne, 100)}%`,
+                        background: stats.tauxEpargne >= 20
+                          ? 'var(--vert, #2d7a45)'
+                          : stats.tauxEpargne >= 10
+                            ? '#d97706'
+                            : 'var(--rouge)',
+                      }}
+                    />
+                  </div>
+                )}
+                {stats.tauxEpargne !== null && (
+                  <span className="font-sans text-[11px]" style={{ color: 'var(--encre-tertiaire)' }}>
+                    {stats.tauxEpargne >= 20
+                      ? '🟢 Bonne épargne — continue comme ça !'
+                      : stats.tauxEpargne >= 10
+                        ? '🟡 Épargne modérée — vise 20 % pour plus de confort.'
+                        : stats.tauxEpargne > 0
+                          ? '🔴 Épargne faible — essaie de réduire quelques dépenses.'
+                          : '🔴 Tu dépenses plus que tu ne gagnes — attention !'}
+                  </span>
+                )}
+              </div>
+
               {/* Mois d'activité */}
               <div
                 className="flex flex-col gap-2 p-4 rounded-lg border"
@@ -338,6 +408,28 @@ export default function Reglages() {
             <p className="t-body-secondaire mt-4">
               Budget personnel par enveloppes. Version 1.0.1.
             </p>
+
+            {/* Bouton installer PWA — n'apparaît que si le navigateur le propose */}
+            {(pwaPrompt || pwaInstalled) && (
+              <div className="mt-5 pt-5 border-t border-[rgba(31,24,16,0.08)]">
+                {pwaInstalled ? (
+                  <p className="font-sans text-sm flex items-center gap-2"
+                    style={{ color: 'var(--encre-secondaire)' }}>
+                    <Smartphone size={15} strokeWidth={1.75} className="text-or/70" aria-hidden="true" />
+                    Application installée ✓
+                  </p>
+                ) : (
+                  <>
+                    <p className="t-body-secondaire mb-4">
+                      Installe l'app sur ton appareil pour un accès rapide, même hors connexion.
+                    </p>
+                    <BoutonReglage onClick={handleInstallPwa} icon={Smartphone}>
+                      Installer l'application
+                    </BoutonReglage>
+                  </>
+                )}
+              </div>
+            )}
           </section>
 
         </div>{/* fin colonne gauche */}
