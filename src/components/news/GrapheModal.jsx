@@ -501,7 +501,7 @@ export function GrapheModal({ item, onClose }) {
         {/* Sélecteur de période */}
         {canHaveChart && (
           <div className="flex items-center gap-0.5 mb-4">
-            {TF_OPTIONS.filter(opt => !(opt.key === '5A' && item.coinId)).map(opt => (
+            {TF_OPTIONS.filter(opt => opt.key !== '5A' || !item.coinId).map(opt => (
               <button
                 key={opt.key}
                 type="button"
