@@ -15,7 +15,7 @@ const ALLOWED = {
 }
 
 const TF_YF = {
-  '24h': { range: '1d',  interval: '1h'  },
+  '24h': { range: '1d',  interval: '5m'  },
   '7j':  { range: '8d',  interval: '1h'  },
   '3M':  { range: '3mo', interval: '1d'  },
   '1A':  { range: '1y',  interval: '1d'  },
@@ -65,23 +65,35 @@ export default async function handler(req, res) {
   let ohlcDays = []
 
   if (tf === '24h') {
-    // Un point/bougie par heure
+    // Agréger les données 5min en bougies/points de 20min
+    const lineBuckets = new Map()
+    const ohlcBuckets = new Map()
     timestamps.forEach((ts, i) => {
+      const bucket = Math.floor(ts / (20 * 60))
       const c = closes[i]
-      if (c == null) return
+      if (c != null) lineBuckets.set(bucket, { ts, price: c })
+      const o = opens[i], h = highs[i], l = lows[i]
+      const fb = c ?? o ?? h ?? l
+      if (fb != null) {
+        if (!ohlcBuckets.has(bucket)) {
+          ohlcBuckets.set(bucket, { ts, open: o ?? fb, high: h ?? fb, low: l ?? fb, close: c ?? fb })
+        } else {
+          const e = ohlcBuckets.get(bucket)
+          if (h != null) e.high  = Math.max(e.high, h)
+          if (l != null) e.low   = Math.min(e.low, l)
+          if (c != null) e.close = c
+        }
+      }
+    })
+    ;[...lineBuckets.entries()].sort((a, b) => a[0] - b[0]).forEach(([, { ts, price }]) => {
       const d         = new Date(ts * 1000)
       const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })
       const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'long', day: 'numeric', month: 'long' })
-      points.push({ date: timeLabel, ts: ts * 1000, price: round2(c), fullDate: `${dayLabel} · ${timeLabel}` })
-
-      const o = opens[i], h = highs[i], l = lows[i]
-      const fb = c ?? o ?? h ?? l
-      if (fb == null) return
-      ohlcDays.push({
-        date: timeLabel, ts: ts * 1000,
-        open: round2(o ?? fb), high: round2(h ?? fb),
-        low:  round2(l ?? fb), close: round2(fb),
-      })
+      points.push({ date: timeLabel, ts: ts * 1000, price: round2(price), fullDate: `${dayLabel} · ${timeLabel}` })
+    })
+    ;[...ohlcBuckets.entries()].sort((a, b) => a[0] - b[0]).forEach(([, { ts, open, high, low, close }]) => {
+      const label = new Date(ts * 1000).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })
+      ohlcDays.push({ date: label, ts: ts * 1000, open: round2(open), high: round2(high), low: round2(low), close: round2(close) })
     })
 
   } else if (tf === '7j') {

@@ -97,11 +97,13 @@ function filterCGLinePrices(prices, tf) {
 
   if (tf === '24h') {
     ;(prices || []).forEach(([ts, price]) => {
-      const d   = new Date(ts)
-      const key = d.toISOString().slice(0, 13)
+      const d = new Date(ts)
+      const m = d.getUTCMinutes()
+      if (m % 20 !== 0) return
+      const key = `${d.toISOString().slice(0, 13)}-${m}`
       if (seen.has(key)) return
       seen.add(key)
-      const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' })
+      const timeLabel = d.toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' })
       const dayLabel  = d.toLocaleDateString('fr-BE', { weekday: 'short', day: 'numeric', month: 'short' })
       pts.push({ idx: pts.length, date: timeLabel, ts, price, fullDate: `${dayLabel} · ${timeLabel}` })
     })
@@ -188,17 +190,8 @@ async function fetchCGOhlc(coinId, tf) {
   if (!Array.isArray(arr)) throw new Error()
 
   if (tf === '24h') {
-    // Bougies 30min → agréger en bougies 1h
-    const hourMap = new Map()
-    arr.forEach(([ts, open, high, low, close]) => {
-      const key = new Date(ts).toISOString().slice(0, 13)
-      if (!hourMap.has(key)) hourMap.set(key, { ts, open, high, low, close })
-      else {
-        const e = hourMap.get(key)
-        e.high = Math.max(e.high, high); e.low = Math.min(e.low, low); e.close = close
-      }
-    })
-    return [...hourMap.values()].sort((a, b) => a.ts - b.ts).map(({ ts, open, high, low, close }) => ({
+    // Bougies 30min — garder directement (≈ 48 bougies/jour)
+    return arr.sort((a, b) => a[0] - b[0]).map(([ts, open, high, low, close]) => ({
       date: new Date(ts).toLocaleTimeString('fr-BE', { hour: '2-digit', minute: '2-digit' }),
       ts, open, high, low, close,
     }))
