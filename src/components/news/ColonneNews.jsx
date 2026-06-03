@@ -119,11 +119,11 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
   )
 }
 
-export function ColonneNews({ category, articles, loading, error, savedUrls, onToggleSave }) {
+export function ColonneNews({ category, articles, loading, error, savedUrls, onToggleSave, className = '' }) {
   const { Icon } = category
 
   return (
-    <div className="surface-velin liserer-signature p-5 flex flex-col relative">
+    <div className={`surface-velin liserer-signature p-5 flex flex-col relative ${className}`}>
       <span
         className="absolute top-0 left-0 right-0 h-[3px] pointer-events-none rounded-t-xl"
         style={{ background: 'linear-gradient(90deg, transparent 0%, var(--bordeaux-clair) 50%, transparent 100%)' }}

@@ -1,5 +1,5 @@
 // Vercel serverless — proxy RSS multi-sources par catégorie
-// Fetche tous les flux en parallèle, trie par date, renvoie les 3 plus récents.
+// Fetche tous les flux en parallèle, trie par date, renvoie les N plus récents.
 
 const FEEDS = {
   business: [
@@ -7,18 +7,31 @@ const FEEDS = {
     { url: 'https://www.theguardian.com/business/rss',        source: 'The Guardian' },
   ],
   technology: [
-    { url: 'https://techcrunch.com/feed/',                    source: 'TechCrunch' },
-    { url: 'https://www.wired.com/feed/rss',                  source: 'Wired' },
+    { url: 'https://techcrunch.com/feed/',                    source: 'TechCrunch'     },
+    { url: 'https://www.wired.com/feed/rss',                  source: 'Wired'          },
     { url: 'https://www.technologyreview.com/feed/',          source: 'MIT Tech Review' },
   ],
+  ai: [
+    { url: 'https://venturebeat.com/category/ai/feed/',                           source: 'VentureBeat AI'   },
+    { url: 'https://the-decoder.com/feed/',                                       source: 'The Decoder'      },
+    { url: 'https://www.technologyreview.com/topic/artificial-intelligence/feed', source: 'MIT Tech Review'  },
+    { url: 'https://openai.com/news/rss.xml',                                     source: 'OpenAI'           },
+    { url: 'https://blog.google/technology/ai/rss/',                              source: 'Google AI'        },
+    { url: 'https://feeds.arstechnica.com/arstechnica/technology-lab',            source: 'Ars Technica'     },
+  ],
   science: [
-    { url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', source: 'BBC Science' },
+    { url: 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml', source: 'BBC Science'   },
     { url: 'https://www.sciencedaily.com/rss/top/science.xml',              source: 'Science Daily' },
   ],
   world: [
-    { url: 'https://feeds.bbci.co.uk/news/world/rss.xml',    source: 'BBC World' },
+    { url: 'https://feeds.bbci.co.uk/news/world/rss.xml',    source: 'BBC World'    },
     { url: 'https://www.theguardian.com/world/rss',          source: 'The Guardian' },
   ],
+}
+
+// Nombre d'articles à retourner par catégorie (défaut : 3)
+const LIMITS = {
+  ai: 5,
 }
 
 function extractTag(xml, tag) {
@@ -85,9 +98,10 @@ export default async function handler(req, res) {
 
   if (allItems.length === 0) return res.status(502).json({ error: 'Aucun flux disponible' })
 
+  const limit = LIMITS[category] ?? 3
   const items = allItems
     .sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt))
-    .slice(0, 3)
+    .slice(0, limit)
 
   res.json({ items })
 }

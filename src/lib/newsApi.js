@@ -29,7 +29,7 @@ function setCache(key, data) {
 }
 
 export function clearNewsCache() {
-  ;['business', 'technology', 'science', 'world'].forEach(c => {
+  ;['business', 'technology', 'science', 'world', 'ai'].forEach(c => {
     sessionStorage.removeItem(`gnews_${c}`)
     sessionStorage.removeItem(`rss_${c}`)
   })

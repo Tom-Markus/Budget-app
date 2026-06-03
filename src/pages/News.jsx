@@ -5,7 +5,7 @@
 import { useState, useEffect, useCallback, useMemo, Component } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { RefreshCw, Star } from 'lucide-react'
-import { BarChart2, Cpu, FlaskConical, Globe2 } from 'lucide-react'
+import { BarChart2, Brain, Cpu, FlaskConical, Globe2 } from 'lucide-react'
 import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '../lib/newsApi'
 import { supabase } from '../lib/supabase'
 
@@ -32,10 +32,11 @@ class ModalBoundary extends Component {
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: 'business',   label: 'Finance',   labelCourt: 'Finance',  Icon: BarChart2    },
-  { id: 'technology', label: 'Tech & IA', labelCourt: 'Tech',     Icon: Cpu          },
-  { id: 'science',    label: 'Sciences',  labelCourt: 'Sciences', Icon: FlaskConical },
-  { id: 'world',      label: 'Monde',     labelCourt: 'Monde',    Icon: Globe2       },
+  { id: 'business',   label: 'Finance',                  labelCourt: 'Finance',  Icon: BarChart2    },
+  { id: 'technology', label: 'Tech',                     labelCourt: 'Tech',     Icon: Cpu          },
+  { id: 'ai',         label: 'Intelligence Artificielle', labelCourt: 'IA',       Icon: Brain        },
+  { id: 'science',    label: 'Sciences',                 labelCourt: 'Sciences', Icon: FlaskConical },
+  { id: 'world',      label: 'Monde',                    labelCourt: 'Monde',    Icon: Globe2       },
 ]
 
 function fmt(val, dec = 0) {
@@ -342,20 +343,20 @@ export default function News() {
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === 4}
-          onClick={() => setActiveTab(4)}
+          aria-selected={activeTab === CATEGORIES.length}
+          onClick={() => setActiveTab(CATEGORIES.length)}
           className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
             uppercase tracking-wider transition-colors duration-200 relative
-            ${activeTab === 4 ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
+            ${activeTab === CATEGORIES.length ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
         >
           <Star
             size={13}
-            strokeWidth={activeTab === 4 ? 2 : 1.5}
-            fill={activeTab === 4 ? 'currentColor' : 'none'}
+            strokeWidth={activeTab === CATEGORIES.length ? 2 : 1.5}
+            fill={activeTab === CATEGORIES.length ? 'currentColor' : 'none'}
             aria-hidden="true"
           />
           Favoris
-          {activeTab === 4 && (
+          {activeTab === CATEGORIES.length && (
             <motion.span
               layoutId="news-tab"
               className="absolute bottom-0 left-2 right-2 h-px"
@@ -369,9 +370,10 @@ export default function News() {
 
       {/* ── Grille desktop ── */}
       <div className="hidden md:grid grid-cols-2 gap-4 items-start">
-        {CATEGORIES.map(cat => (
+        {CATEGORIES.map((cat, i) => (
           <ColonneNews
             key={cat.id}
+            className={i === CATEGORIES.length - 1 && CATEGORIES.length % 2 !== 0 ? 'col-span-2' : ''}
             category={cat}
             articles={newsData[cat.id] || []}
             loading={!!newsLoading[cat.id]}
@@ -399,7 +401,7 @@ export default function News() {
             exit={{ opacity: 0, x: -14 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           >
-            {activeTab === 4 ? (
+            {activeTab === CATEGORIES.length ? (
               savedArticles.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
                   <Star size={32} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
