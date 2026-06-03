@@ -39,6 +39,10 @@ const CATEGORIES = [
   { id: 'ai',         label: 'Intelligence Artificielle', labelCourt: 'IA',       Icon: Brain        },
 ]
 
+// Ordre des onglets sur mobile : IA juste après Tech
+const CATEGORIES_MOBILE = ['business', 'technology', 'ai', 'science', 'world']
+  .map(id => CATEGORIES.find(c => c.id === id))
+
 function fmt(val, dec = 0) {
   if (val == null) return null
   return val.toLocaleString('fr-BE', { minimumFractionDigits: dec, maximumFractionDigits: dec })
@@ -311,7 +315,7 @@ export default function News() {
         style={{ borderColor: 'var(--border-doux)' }}
         role="tablist"
       >
-        {CATEGORIES.map((cat, i) => {
+        {CATEGORIES_MOBILE.map((cat, i) => {
           const { Icon } = cat
           const active = activeTab === i
           return (
@@ -343,20 +347,20 @@ export default function News() {
         <button
           type="button"
           role="tab"
-          aria-selected={activeTab === CATEGORIES.length}
-          onClick={() => setActiveTab(CATEGORIES.length)}
+          aria-selected={activeTab === CATEGORIES_MOBILE.length}
+          onClick={() => setActiveTab(CATEGORIES_MOBILE.length)}
           className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
             uppercase tracking-wider transition-colors duration-200 relative
-            ${activeTab === CATEGORIES.length ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
+            ${activeTab === CATEGORIES_MOBILE.length ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
         >
           <Star
             size={13}
-            strokeWidth={activeTab === CATEGORIES.length ? 2 : 1.5}
-            fill={activeTab === CATEGORIES.length ? 'currentColor' : 'none'}
+            strokeWidth={activeTab === CATEGORIES_MOBILE.length ? 2 : 1.5}
+            fill={activeTab === CATEGORIES_MOBILE.length ? 'currentColor' : 'none'}
             aria-hidden="true"
           />
           Favoris
-          {activeTab === CATEGORIES.length && (
+          {activeTab === CATEGORIES_MOBILE.length && (
             <motion.span
               layoutId="news-tab"
               className="absolute bottom-0 left-2 right-2 h-px"
@@ -401,7 +405,7 @@ export default function News() {
             exit={{ opacity: 0, x: -14 }}
             transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
           >
-            {activeTab === CATEGORIES.length ? (
+            {activeTab === CATEGORIES_MOBILE.length ? (
               savedArticles.length === 0 ? (
                 <div className="flex flex-col items-center gap-3 py-16 text-center">
                   <Star size={32} strokeWidth={1.5} className="text-or/30" aria-hidden="true" />
@@ -415,10 +419,10 @@ export default function News() {
               )
             ) : (
               <ColonneNews
-                category={CATEGORIES[activeTab]}
-                articles={newsData[CATEGORIES[activeTab].id] || []}
-                loading={!!newsLoading[CATEGORIES[activeTab].id]}
-                error={newsError[CATEGORIES[activeTab].id] || null}
+                category={CATEGORIES_MOBILE[activeTab]}
+                articles={newsData[CATEGORIES_MOBILE[activeTab].id] || []}
+                loading={!!newsLoading[CATEGORIES_MOBILE[activeTab].id]}
+                error={newsError[CATEGORIES_MOBILE[activeTab].id] || null}
                 savedUrls={savedUrls}
                 onToggleSave={toggleSave}
               />
