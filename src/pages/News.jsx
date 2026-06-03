@@ -32,11 +32,11 @@ class ModalBoundary extends Component {
 // ── Constantes ────────────────────────────────────────────────────────────────
 
 const CATEGORIES = [
-  { id: 'business',   label: 'Finance',                  labelCourt: 'Finance',  Icon: BarChart2    },
-  { id: 'technology', label: 'Tech',                     labelCourt: 'Tech',     Icon: Cpu          },
+  { id: 'business',   label: 'Finance',                   labelCourt: 'Finance',  Icon: BarChart2    },
+  { id: 'technology', label: 'Tech',                      labelCourt: 'Tech',     Icon: Cpu          },
+  { id: 'science',    label: 'Sciences',                  labelCourt: 'Sciences', Icon: FlaskConical },
+  { id: 'world',      label: 'Monde',                     labelCourt: 'Monde',    Icon: Globe2       },
   { id: 'ai',         label: 'Intelligence Artificielle', labelCourt: 'IA',       Icon: Brain        },
-  { id: 'science',    label: 'Sciences',                 labelCourt: 'Sciences', Icon: FlaskConical },
-  { id: 'world',      label: 'Monde',                    labelCourt: 'Monde',    Icon: Globe2       },
 ]
 
 function fmt(val, dec = 0) {
