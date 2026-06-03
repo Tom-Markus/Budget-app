@@ -41,7 +41,10 @@ function extractTag(xml, tag) {
   return plain ? plain[1].trim() : null
 }
 
-// Entité connue + verbe fort → critical ; événement majeur seul → high
+// Précompilé au chargement du module — word boundary pour les termes ambigus
+// \bwar\b évite "star wars" ; \bbanned\b évite "unbanned" ; etc.
+const MAJOR_WORD_RE = /\b(war|crisis|collapse|recession|emergency|banned|leaked|hacked)\b/i
+
 function scoreImportance(title, source) {
   const t = ' ' + title.toLowerCase() + ' '
 
@@ -49,42 +52,65 @@ function scoreImportance(title, source) {
     // Labs IA & modèles
     'openai', 'anthropic', ' deepmind', 'mistral', ' xai ', 'meta ai',
     'chatgpt', ' claude ', ' gemini', 'gpt-', 'llama', 'deepseek', 'copilot', 'sora',
-    'hugging face',
-    // Big tech & figures clés
+    'hugging face', 'perplexity', 'midjourney', 'stability ai',
+    // Big tech & hardware IA
     'nvidia', 'microsoft', ' apple ', 'samsung', 'tesla', ' google ', 'spacex',
-    ' amazon ', ' meta ', 'elon musk', 'sam altman', 'trump',
+    ' amazon ', ' meta ', ' intel ', ' amd ',
+    // Crypto (marchés + IA)
+    'bitcoin', 'ethereum',
+    // Figures clés & institutions financières
+    'elon musk', 'sam altman', 'trump',
+    'federal reserve', ' the fed ', ' ecb ',
   ]
 
   const strongActions = [
-    'releases ', 'released ', 'launches ', 'launched ',
-    'announces ', 'announced ', 'unveils ', 'unveiled ',
-    'open-sources ', 'introduces ', 'introduced ',
-    'shuts down', 'shut down', 'acquired',
-    'drops ', 'debuts ', 'open-weight', 'open weight',
-    'raises ', 'fires ', 'fined ',
+    // Annonces / lancements
+    'releases ', 'released ',
+    'launches ', 'launched ', ' launch ',
+    'announces ', 'announced ',
+    'unveils ', 'unveiled ',
+    'introduces ', 'introduced ',
+    'reveals ', 'revealed ',
+    // Tech / IA
+    'open-sources ', 'open-weight', 'open weight',
+    ' drops ', 'debuts ', 'crashes ',
+    // Business / Corporate
+    'acquired', 'acquires ',
+    'raises ', 'raised ',
+    'sues ', 'sued ',
+    'bans ',
+    ' fires ', ' fired ', ' cuts ',
+    'recalls ', 'merges ',
+    'surpasses ', 'partners with',
+    // Sécurité
+    'leaked ', 'hacked ',
+    ' fined ',
+    // Fermetures
+    'shuts down', 'shut down',
   ]
 
   // Phrases non-ambiguës : substring suffit
   const majorPhrases = [
-    'acquisition', 'bankrupt', ' agi ', 'superintelligence',
-    'regulation', 'executive order', ' billion', ' trillion',
+    'acquisition', 'merger', 'ipo',
+    'bankrupt', 'layoff',
+    ' agi ', 'superintelligence',
+    'regulation', 'executive order', 'antitrust',
+    ' billion', ' trillion',
     'ceasefire', 'sanctions',
+    'data breach', 'market crash', 'crypto crash',
   ]
 
-  // Mots ambigus (war→star wars, crisis→midlife crisis…) : word boundary obligatoire
-  const majorWords = ['war', 'crisis', 'collapse', 'recession', 'emergency', 'banned']
-
-  // Montants financiers abrégés : $1.75tn, $10bn
-  const hasFinancialScale  = /\$[\d.,]+\s*[bt]n\b/i.test(title)
-  const hasMajorPhrase     = majorPhrases.some(p => t.includes(p))
-  const hasMajorWord       = majorWords.some(w => new RegExp(`\\b${w}\\b`, 'i').test(title))
-  const hasMajor           = hasMajorPhrase || hasMajorWord || hasFinancialScale
+  // $1.75tn / $10bn / €2bn / £5tn — montants financiers abrégés
+  const hasFinancialScale = /[$€£][\d.,]+\s*[bt]n\b/i.test(title)
+  const hasMajorPhrase    = majorPhrases.some(p => t.includes(p))
+  const hasMajorWord      = MAJOR_WORD_RE.test(title)
+  const hasMajor          = hasMajorPhrase || hasMajorWord || hasFinancialScale
 
   const hasEntity = entities.some(e => t.includes(e))
   const hasAction = strongActions.some(a => t.includes(a))
   const isPrimary = ['OpenAI', 'Google AI'].includes(source)
-  // Sources 100% IA : entité OU action déjà suffisante pour être notable
-  const isAISrc   = ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI'].includes(source)
+  // Sources 100% IA : entité OU action suffit pour être notable
+  const isAISrc   = ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI', 'MIT Tech Review'].includes(source)
 
   if ((hasEntity && hasAction) || (hasMajor && hasEntity) || (isPrimary && hasAction)) return 'critical'
   if (hasMajor || (isAISrc && (hasEntity || hasAction))) return 'high'
