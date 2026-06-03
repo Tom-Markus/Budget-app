@@ -76,7 +76,7 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span
-                className="shrink-0 w-1.5 h-1.5 rounded-full"
+                className="shrink-0 w-2.5 h-2.5 rounded-full"
                 style={{
                   background: article.importance === 'critical'
                     ? 'var(--violet)'
@@ -84,9 +84,9 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
                       ? 'var(--bordeaux-clair)'
                       : 'var(--or)',
                   boxShadow: article.importance === 'critical'
-                    ? '0 0 5px var(--violet)'
+                    ? '0 0 6px var(--violet)'
                     : article.importance === 'high'
-                      ? '0 0 5px var(--bordeaux-clair)'
+                      ? '0 0 6px var(--bordeaux-clair)'
                       : 'none',
                 }}
                 aria-label={

@@ -54,29 +54,36 @@ function scoreImportance(title, source) {
     'nvidia', 'microsoft', ' apple ', 'samsung', 'tesla', ' google ', 'spacex',
     ' amazon ', ' meta ', 'elon musk', 'sam altman', 'trump',
   ]
+
   const strongActions = [
     'releases ', 'released ', 'launches ', 'launched ',
     'announces ', 'announced ', 'unveils ', 'unveiled ',
     'open-sources ', 'introduces ', 'introduced ',
     'shuts down', 'shut down', 'acquired',
-    // Jargon tech/IA
     'drops ', 'debuts ', 'open-weight', 'open weight',
-  ]
-  const majorEvents = [
-    'acquisition', 'bankrupt', 'collapse', 'banned',
-    ' agi ', 'superintelligence', 'regulation', 'executive order',
-    ' billion', ' trillion', 'emergency', 'recession', 'crisis',
-    ' war', 'ceasefire', 'sanctions', 'deal with',
+    'raises ', 'fires ', 'fined ',
   ]
 
-  // Capture "$1.75tn" / "$10bn" (billion/trillion abrégés sans espace)
-  const hasFinancialScale = /\$[\d.,]+\s*[bt]n\b/i.test(title)
+  // Phrases non-ambiguës : substring suffit
+  const majorPhrases = [
+    'acquisition', 'bankrupt', ' agi ', 'superintelligence',
+    'regulation', 'executive order', ' billion', ' trillion',
+    'ceasefire', 'sanctions',
+  ]
+
+  // Mots ambigus (war→star wars, crisis→midlife crisis…) : word boundary obligatoire
+  const majorWords = ['war', 'crisis', 'collapse', 'recession', 'emergency', 'banned']
+
+  // Montants financiers abrégés : $1.75tn, $10bn
+  const hasFinancialScale  = /\$[\d.,]+\s*[bt]n\b/i.test(title)
+  const hasMajorPhrase     = majorPhrases.some(p => t.includes(p))
+  const hasMajorWord       = majorWords.some(w => new RegExp(`\\b${w}\\b`, 'i').test(title))
+  const hasMajor           = hasMajorPhrase || hasMajorWord || hasFinancialScale
 
   const hasEntity = entities.some(e => t.includes(e))
   const hasAction = strongActions.some(a => t.includes(a))
-  const hasMajor  = majorEvents.some(m => t.includes(m)) || hasFinancialScale
   const isPrimary = ['OpenAI', 'Google AI'].includes(source)
-  // Sources 100% IA : leurs articles avec entité ou action sont déjà notables
+  // Sources 100% IA : entité OU action déjà suffisante pour être notable
   const isAISrc   = ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI'].includes(source)
 
   if ((hasEntity && hasAction) || (hasMajor && hasEntity) || (isPrimary && hasAction)) return 'critical'
