@@ -75,18 +75,26 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
 
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
-              {article.importance && (
-                <span
-                  className="shrink-0 w-1.5 h-1.5 rounded-full"
-                  style={{
-                    background:  article.importance === 'critical' ? 'var(--bordeaux)' : 'var(--or)',
-                    boxShadow:   article.importance === 'critical'
-                      ? '0 0 5px var(--bordeaux)'
-                      : '0 0 5px var(--or)',
-                  }}
-                  aria-label={article.importance === 'critical' ? 'Actualité majeure' : 'Actualité notable'}
-                />
-              )}
+              <span
+                className="shrink-0 w-1.5 h-1.5 rounded-full"
+                style={{
+                  background: article.importance === 'critical'
+                    ? 'var(--violet)'
+                    : article.importance === 'high'
+                      ? 'var(--bordeaux-clair)'
+                      : 'var(--or)',
+                  boxShadow: article.importance === 'critical'
+                    ? '0 0 5px var(--violet)'
+                    : article.importance === 'high'
+                      ? '0 0 5px var(--bordeaux-clair)'
+                      : 'none',
+                }}
+                aria-label={
+                  article.importance === 'critical' ? 'Actualité critique' :
+                  article.importance === 'high'     ? 'Actualité importante' :
+                  'Actualité'
+                }
+              />
               <span className="text-[12px] text-encre-tertiaire font-sans font-medium truncate">
                 {article.source}
               </span>
