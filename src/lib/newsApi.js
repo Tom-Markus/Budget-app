@@ -63,6 +63,7 @@ export async function fetchNewsCategory(category) {
     url:         a.url,
     source:      a.source || 'Source',
     publishedAt: a.publishedAt,
+    importance:  a.importance ?? null,
   }))
 
   setCache(cacheKey, articles)

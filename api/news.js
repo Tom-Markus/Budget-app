@@ -41,6 +41,37 @@ function extractTag(xml, tag) {
   return plain ? plain[1].trim() : null
 }
 
+// Entité connue + verbe fort → critical ; événement majeur seul → high
+function scoreImportance(title, source) {
+  const t = ' ' + title.toLowerCase() + ' '
+
+  const entities = [
+    'openai', 'anthropic', 'deepmind', 'mistral', ' xai ', 'meta ai',
+    'chatgpt', ' claude ', 'gemini', 'gpt-', 'llama', 'deepseek', 'copilot', 'sora',
+    'nvidia', 'microsoft', ' apple ', 'samsung', 'tesla', 'google ai', 'hugging face',
+  ]
+  const strongActions = [
+    'releases ', 'released ', 'launches ', 'launched ',
+    'announces ', 'announced ', 'unveils ', 'unveiled ',
+    'open-sources ', 'introduces ', 'introduced ',
+    'shuts down', 'shut down', 'acquired',
+  ]
+  const majorEvents = [
+    'acquisition', 'bankrupt', 'collapse', 'banned',
+    ' agi ', 'superintelligence', 'regulation',
+    ' billion', 'emergency', 'recession', 'crisis', 'ceasefire',
+  ]
+
+  const hasEntity = entities.some(e => t.includes(e))
+  const hasAction = strongActions.some(a => t.includes(a))
+  const hasMajor  = majorEvents.some(m => t.includes(m))
+  const isPrimary = ['OpenAI', 'Google AI'].includes(source)
+
+  if ((hasEntity && hasAction) || (hasMajor && hasEntity) || (isPrimary && hasAction)) return 'critical'
+  if (hasMajor) return 'high'
+  return null
+}
+
 function decodeEntities(str) {
   return str
     .replace(/&amp;/g, '&')
@@ -72,11 +103,13 @@ async function parseFeed({ url, source }) {
       (/<link[^>]+href="([^"]+)"/i.exec(chunk) || [])[1]?.trim()
     const pubDate = extractTag(chunk, 'pubDate')
     if (title && link) {
+      const cleanTitle = decodeEntities(title)
       items.push({
-        title:       decodeEntities(title),
+        title:       cleanTitle,
         url:         link,
         source,
         publishedAt: pubDate || new Date().toISOString(),
+        importance:  scoreImportance(cleanTitle, source),
       })
     }
   }
