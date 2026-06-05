@@ -385,9 +385,12 @@ export default function Reglages() {
             <p className="t-body-secondaire mt-4">
               Budget personnel par enveloppes. Version 1.0.1.
             </p>
-            <p className="t-body-secondaire mt-2">
-              made by Tom-Markus
-            </p>
+            <div className="mt-5">
+              <div className="h-px w-full" style={{ background: 'var(--gradient-signature-fin)' }} />
+              <p className="t-label-noble mt-3 text-center" style={{ color: 'var(--or)' }}>
+                Made by Tom-Markus
+              </p>
+            </div>
 
             {/* Bouton installer PWA — n'apparaît que si le navigateur le propose */}
             {(pwaPrompt || pwaInstalled) && (
