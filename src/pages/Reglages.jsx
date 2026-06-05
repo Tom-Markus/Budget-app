@@ -385,6 +385,9 @@ export default function Reglages() {
             <p className="t-body-secondaire mt-4">
               Budget personnel par enveloppes. Version 1.0.1.
             </p>
+            <p className="t-body-secondaire mt-2">
+              made by Tom-Markus
+            </p>
 
             {/* Bouton installer PWA — n'apparaît que si le navigateur le propose */}
             {(pwaPrompt || pwaInstalled) && (
