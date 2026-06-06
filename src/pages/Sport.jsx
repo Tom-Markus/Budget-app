@@ -255,27 +255,6 @@ export default function Sport() {
         </div>
       </section>
 
-      {/* Progression 12 mois */}
-      <section className="surface-velin p-4 md:p-6">
-        <p className="t-label mb-3">Progression montagne</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {PROGRESSION.map((p, i) => (
-            <div key={i} className="flex flex-col items-center text-center gap-2 px-3 py-4 rounded-xl"
-              style={{ background: 'rgba(31,24,16,0.03)' }}>
-              <span className="text-2xl leading-none">{p.icone}</span>
-              <span className="font-sans text-[10px] uppercase tracking-wider font-semibold"
-                style={{ color: 'var(--or)' }}>
-                {p.periode}
-              </span>
-              <p className="font-sans text-xs leading-snug whitespace-pre-line"
-                style={{ color: 'var(--encre-secondaire)' }}>
-                {p.objectif}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
     </div>
   )
 }
