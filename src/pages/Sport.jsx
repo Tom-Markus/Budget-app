@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X } from 'lucide-react'
+import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -204,17 +204,245 @@ function slugify(name) {
     .replace(/^_|_$/g, '')
 }
 
-function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave }) {
+const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const JOURS_ABREV = ['L','M','M','J','V','S','D']
+
+function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
+  const [open, setOpen] = useState(false)
+  const [view, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
+  const [yearMode, setYearMode] = useState(false)
+  const [yearStart, setYearStart] = useState(() => {
+    const y = value ? new Date(value + 'T00:00:00').getFullYear() : new Date().getFullYear()
+    return y - 7
+  })
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+
+  useEffect(() => {
+    if (value) setView(new Date(value + 'T00:00:00'))
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+    const fn = (e) => { if (!triggerRef.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', fn)
+    document.addEventListener('touchstart', fn, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', fn)
+      document.removeEventListener('touchstart', fn)
+    }
+  }, [open])
+
+  function handleOpen() {
+    const r = triggerRef.current.getBoundingClientRect()
+    const CAL_H = 320, CAL_W = Math.max(r.width, 260)
+    const top = r.bottom + 6 + CAL_H > window.innerHeight ? r.top - CAL_H - 6 : r.bottom + 6
+    const left = Math.min(r.left, window.innerWidth - CAL_W - 8)
+    setPos({ top, left, width: CAL_W })
+    setYearMode(false)
+    setYearStart(view.getFullYear() - 7)
+    setOpen(true)
+  }
+
+  const selected = value ? new Date(value + 'T00:00:00') : null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const year = view.getFullYear(), month = view.getMonth()
+
+  const days = []
+  let startDow = new Date(year, month, 1).getDay() - 1
+  if (startDow < 0) startDow = 6
+  for (let i = startDow - 1; i >= 0; i--) days.push({ d: new Date(year, month, -i), other: true })
+  for (let i = 1; i <= new Date(year, month + 1, 0).getDate(); i++) days.push({ d: new Date(year, month, i), other: false })
+  let nextDay = 1
+  while (days.length < 42) days.push({ d: new Date(year, month + 1, nextDay++), other: true })
+
+  const display = selected
+    ? new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(selected)
+    : ''
+  const years = Array.from({ length: 16 }, (_, i) => yearStart + i)
+
+  return (
+    <div ref={triggerRef}>
+      <button
+        type="button"
+        onClick={handleOpen}
+        className="w-full flex items-center justify-between gap-2 cursor-pointer font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+        style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: display ? 'var(--encre)' : 'var(--encre-tertiaire)' }}
+      >
+        <span>{display || placeholder}</span>
+        <Calendar size={13} strokeWidth={1.75} style={{ color: 'var(--encre-tertiaire)', flexShrink: 0 }} />
+      </button>
+
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+              className="surface-velin p-3"
+              onMouseDown={e => e.stopPropagation()}
+              onTouchStart={e => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between mb-3 px-1">
+                <button type="button"
+                  onClick={() => yearMode ? setYearStart(s => s - 16) : setView(new Date(year, month - 1, 1))}
+                  className="h-9 w-9 flex items-center justify-center rounded-sm transition-colors duration-150"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  <ChevronLeft size={14} strokeWidth={2} />
+                </button>
+                <button type="button"
+                  onClick={() => setYearMode(m => !m)}
+                  className="font-serif italic text-sm px-2 py-1 rounded-sm transition-colors duration-150"
+                  style={{ color: 'var(--encre)' }}>
+                  {yearMode ? `${yearStart} – ${yearStart + 15}` : `${MOIS_LABELS[month]} ${year}`}
+                </button>
+                <button type="button"
+                  onClick={() => yearMode ? setYearStart(s => s + 16) : setView(new Date(year, month + 1, 1))}
+                  className="h-9 w-9 flex items-center justify-center rounded-sm transition-colors duration-150"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  <ChevronRight size={14} strokeWidth={2} />
+                </button>
+              </div>
+
+              {yearMode ? (
+                <div className="grid grid-cols-4 gap-1">
+                  {years.map(y => (
+                    <button key={y} type="button"
+                      onClick={() => { setView(new Date(y, month, 1)); setYearMode(false) }}
+                      className="h-9 rounded-sm text-xs font-sans transition-colors duration-100"
+                      style={{
+                        background: y === year ? 'var(--bordeaux)' : 'transparent',
+                        color: y === year ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
+                        fontWeight: y === year ? '600' : 'normal',
+                      }}>
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-7 mb-1">
+                    {JOURS_ABREV.map((j, i) => (
+                      <div key={i} className="text-center font-sans py-1 font-medium"
+                        style={{ fontSize: '0.6rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--encre-tertiaire)' }}>
+                        {j}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-px">
+                    {days.map(({ d, other }, i) => {
+                      const isSel = selected && d.toDateString() === selected.toDateString()
+                      const isToday = d.toDateString() === today.toDateString()
+                      return (
+                        <button key={i} type="button" onClick={() => { d.toLocaleDateString && onChange(d.toLocaleDateString('fr-CA')); setOpen(false) }}
+                          className="h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center"
+                          style={{
+                            color: other ? 'rgba(31,24,16,0.25)' : isSel ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
+                            background: isSel ? 'var(--bordeaux)' : isToday ? 'rgba(184,149,74,0.20)' : 'transparent',
+                            fontWeight: isSel || isToday ? '600' : 'normal',
+                          }}>
+                          {d.getDate()}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+function CartePerfHisto({ perf, couleur }) {
+  const date = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: '2-digit' })
+    .format(new Date(perf.date + 'T00:00:00'))
+  return (
+    <div className="px-2.5 py-2 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)' }}>
+      <div className="flex items-baseline justify-between gap-1">
+        <span className="font-sans font-semibold text-sm tabular-nums" style={{ color: couleur }}>
+          {perf.poids} kg
+        </span>
+        <span className="font-sans tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--encre-tertiaire)' }}>
+          {date}
+        </span>
+      </div>
+      <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-secondaire)' }}>
+        {perf.type === 'serie' ? `${perf.series} × ${perf.reps} reps` : `${perf.reps} reps`}
+      </p>
+    </div>
+  )
+}
+
+function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave, isPPL, user }) {
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+  const [perfType, setPerfType] = useState(null)
+  const [perfForm, setPerfForm] = useState({ poids: '', reps: '', series: '', date: '' })
+  const [savingPerf, setSavingPerf] = useState(false)
+  const [perfHistory, setPerfHistory] = useState([])
+  const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Sync draft si l'exercice change (ex: on ouvre un autre exo)
   useEffect(() => {
     setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
     setEditing(false)
+    setPerfType(null)
+    setPerfForm({ poids: '', reps: '', series: '', date: '' })
   }, [nomCle]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isPPL || !user) return
+    let cancelled = false
+    setLoadingHistory(true)
+    supabase
+      .from('sport_performances')
+      .select('id, type, poids, reps, series, date')
+      .eq('user_id', user.id)
+      .eq('exercise_name', nomCle)
+      .order('date', { ascending: false })
+      .then(({ data }) => {
+        if (!cancelled) { setPerfHistory(data || []); setLoadingHistory(false) }
+      })
+    return () => { cancelled = true }
+  }, [nomCle, isPPL, user]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const perfValide = !!perfType &&
+    Number(perfForm.poids) > 0 &&
+    Number(perfForm.reps) > 0 &&
+    !!perfForm.date &&
+    (perfType === 'pr' || Number(perfForm.series) > 0)
+
+  async function handleSavePerf() {
+    if (!perfValide || !user) return
+    setSavingPerf(true)
+    const { data, error } = await supabase
+      .from('sport_performances')
+      .insert({
+        user_id: user.id,
+        exercise_name: nomCle,
+        type: perfType,
+        poids: Number(perfForm.poids),
+        reps: Number(perfForm.reps),
+        series: perfType === 'serie' ? Number(perfForm.series) : null,
+        date: perfForm.date,
+      })
+      .select('id, type, poids, reps, series, date')
+      .single()
+    if (!error && data) {
+      setPerfHistory(prev => [data, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+      setPerfType(null)
+      setPerfForm({ poids: '', reps: '', series: '', date: '' })
+    }
+    setSavingPerf(false)
+  }
 
   function handleFileChange(e) {
     const file = e.target.files?.[0]
@@ -419,6 +647,163 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 </p>
               )}
             </div>
+
+            {/* Performances — Push / Pull / Legs uniquement */}
+            {!editing && isPPL && (
+              <div className="mb-6">
+                <div className="h-px w-full mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+                <p className="font-sans font-semibold mb-3"
+                  style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+                  Performances
+                </p>
+
+                {perfType === null ? (
+                  <div className="rounded-2xl p-3.5" style={{ background: 'rgba(31,24,16,0.04)' }}>
+                    <p className="font-sans font-medium mb-2.5"
+                      style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                      Type
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
+                        <button key={id}
+                          onClick={() => setPerfType(id)}
+                          className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97]"
+                          style={{ background: 'transparent', color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-2xl p-3.5 space-y-3" style={{ background: 'rgba(31,24,16,0.04)' }}>
+                    <div className="flex items-center justify-between">
+                      <span className="font-sans text-xs font-bold" style={{ color: couleur }}>
+                        {perfType === 'pr' ? 'PR' : 'Série'}
+                      </span>
+                      <button
+                        onClick={() => { setPerfType(null); setPerfForm({ poids: '', reps: '', series: '', date: '' }) }}
+                        className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                        style={{ background: 'rgba(31,24,16,0.08)', color: 'var(--encre-tertiaire)' }}>
+                        <X size={11} strokeWidth={2} />
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <p className="font-sans font-medium mb-1"
+                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                          Poids (kg)
+                        </p>
+                        <input
+                          type="number" step="0.5" min="0"
+                          value={perfForm.poids}
+                          onChange={e => setPerfForm(f => ({ ...f, poids: e.target.value }))}
+                          placeholder="ex: 80"
+                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
+                        />
+                      </div>
+                      <div>
+                        <p className="font-sans font-medium mb-1"
+                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                          Reps
+                        </p>
+                        <input
+                          type="number" min="1"
+                          value={perfForm.reps}
+                          onChange={e => setPerfForm(f => ({ ...f, reps: e.target.value }))}
+                          placeholder="ex: 8"
+                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
+                        />
+                      </div>
+                    </div>
+
+                    {perfType === 'serie' && (
+                      <div>
+                        <p className="font-sans font-medium mb-1"
+                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                          Séries
+                        </p>
+                        <input
+                          type="number" min="1"
+                          value={perfForm.series}
+                          onChange={e => setPerfForm(f => ({ ...f, series: e.target.value }))}
+                          placeholder="ex: 4"
+                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <p className="font-sans font-medium mb-1"
+                        style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                        Date
+                      </p>
+                      <DatePickerSport value={perfForm.date} onChange={v => setPerfForm(f => ({ ...f, date: v }))} />
+                    </div>
+
+                    <button
+                      onClick={handleSavePerf}
+                      disabled={!perfValide || savingPerf}
+                      className="w-full h-9 rounded-xl text-xs font-semibold font-sans transition-all duration-150 active:scale-[0.98]"
+                      style={{
+                        background: perfValide ? couleur : 'rgba(31,24,16,0.06)',
+                        color: perfValide ? '#fff' : 'var(--encre-tertiaire)',
+                        cursor: perfValide && !savingPerf ? 'pointer' : 'default',
+                      }}>
+                      {savingPerf ? 'Enregistrement…' : 'Valider'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Historique 2 colonnes */}
+                {(perfHistory.length > 0 || loadingHistory) && (
+                  <div className="mt-4">
+                    <p className="font-sans font-semibold mb-2.5"
+                      style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+                      Historique
+                    </p>
+                    {loadingHistory ? (
+                      <div className="flex justify-center py-4">
+                        <span className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
+                          style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+                      </div>
+                    ) : (
+                      <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="space-y-1.5">
+                            <p className="font-sans font-semibold text-center"
+                              style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                              PR
+                            </p>
+                            {perfHistory.filter(h => h.type === 'pr').length === 0
+                              ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                              : perfHistory.filter(h => h.type === 'pr').map(h => (
+                                  <CartePerfHisto key={h.id} perf={h} couleur={couleur} />
+                                ))
+                            }
+                          </div>
+                          <div className="space-y-1.5">
+                            <p className="font-sans font-semibold text-center"
+                              style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                              Séries
+                            </p>
+                            {perfHistory.filter(h => h.type === 'serie').length === 0
+                              ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                              : perfHistory.filter(h => h.type === 'serie').map(h => (
+                                  <CartePerfHisto key={h.id} perf={h} couleur={couleur} />
+                                ))
+                            }
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Bouton photo — masqué en mode édition */}
             {!editing && (
@@ -654,6 +1039,8 @@ export default function Sport() {
             isUploading={uploading === modal.ex.nom}
             onUpload={handleUpload}
             onSave={(changes) => saveCustomExo(modal.ex.nom, changes)}
+            isPPL={['push', 'pull', 'legs'].includes(modal.session)}
+            user={user}
           />
         )}
       </AnimatePresence>
@@ -716,7 +1103,7 @@ export default function Sport() {
                   couleur={session.couleur}
                   isChecked={isChecked}
                   onCheck={() => toggleExo(jourActifId, originalEx.nom)}
-                  onInfo={() => setModal({ ex: originalEx, couleur: session.couleur })}
+                  onInfo={() => setModal({ ex: originalEx, couleur: session.couleur, session: jourActif.session })}
                 />
               )
             })}
