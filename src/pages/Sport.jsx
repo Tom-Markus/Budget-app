@@ -808,21 +808,21 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           ) : (
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
-                <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                  <p className="font-sans font-semibold"
-                    style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                <div className="flex items-center justify-center gap-2 mb-0.5">
+                  <p className="font-sans font-bold"
+                    style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-secondaire)' }}>
                     PR
                   </p>
                   <button
                     onClick={() => setChartOpen(prev => prev === 'pr' ? null : 'pr')}
-                    className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
                     style={{
                       background: chartOpen === 'pr' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
                       color: chartOpen === 'pr' ? couleur : 'var(--encre-tertiaire)',
                     }}
                     title="Voir l'évolution"
                   >
-                    <TrendingUp size={8} strokeWidth={2.5} />
+                    <TrendingUp size={12} strokeWidth={2} />
                   </button>
                 </div>
                 {perfHistory.filter(h => h.type === 'pr').length === 0
@@ -831,21 +831,21 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 }
               </div>
               <div className="space-y-1.5">
-                <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                  <p className="font-sans font-semibold"
-                    style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                <div className="flex items-center justify-center gap-2 mb-0.5">
+                  <p className="font-sans font-bold"
+                    style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-secondaire)' }}>
                     Séries
                   </p>
                   <button
                     onClick={() => setChartOpen(prev => prev === 'serie' ? null : 'serie')}
-                    className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                    className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
                     style={{
                       background: chartOpen === 'serie' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
                       color: chartOpen === 'serie' ? couleur : 'var(--encre-tertiaire)',
                     }}
                     title="Voir l'évolution"
                   >
-                    <TrendingUp size={8} strokeWidth={2.5} />
+                    <TrendingUp size={12} strokeWidth={2} />
                   </button>
                 </div>
                 {perfHistory.filter(h => h.type === 'serie').length === 0
