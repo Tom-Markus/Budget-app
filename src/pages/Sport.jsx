@@ -1,235 +1,254 @@
-const SEMAINE = [
-  { jour: 'Lundi',    label: 'Repos',  style: 'text-encre-tertiaire' },
-  { jour: 'Mardi',    label: 'Home',   style: 'text-nuit' },
-  { jour: 'Mercredi', label: 'Push',   style: 'font-semibold', color: 'var(--or)' },
-  { jour: 'Jeudi',    label: 'Home',   style: 'text-nuit' },
-  { jour: 'Vendredi', label: 'Legs',   style: 'font-semibold', color: 'var(--vert)' },
-  { jour: 'Samedi',   label: 'Marche', style: 'text-encre-secondaire' },
-  { jour: 'Dimanche', label: 'Pull',   style: 'font-semibold', color: 'var(--bordeaux-clair)' },
+import { useState } from 'react'
+
+function getTodayIndex() {
+  const map = { 0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5 }
+  return map[new Date().getDay()]
+}
+
+const JOURS = [
+  { id: 'lundi',    court: 'Lun', label: 'Repos',  session: null,   bg: 'rgba(31,24,16,0.07)',    border: 'rgba(31,24,16,0.20)',   text: 'var(--encre)' },
+  { id: 'mardi',    court: 'Mar', label: 'Home',   session: 'home', bg: 'rgba(26,45,82,0.10)',    border: 'rgba(26,45,82,0.35)',   text: 'var(--nuit-clair)' },
+  { id: 'mercredi', court: 'Mer', label: 'Push',   session: 'push', bg: 'rgba(184,149,74,0.12)',  border: 'rgba(184,149,74,0.45)', text: 'var(--or)' },
+  { id: 'jeudi',    court: 'Jeu', label: 'Home',   session: 'home', bg: 'rgba(26,45,82,0.10)',    border: 'rgba(26,45,82,0.35)',   text: 'var(--nuit-clair)' },
+  { id: 'vendredi', court: 'Ven', label: 'Legs',   session: 'legs', bg: 'rgba(14,163,113,0.10)',  border: 'rgba(14,163,113,0.45)', text: 'var(--vert)' },
+  { id: 'samedi',   court: 'Sam', label: 'Marche', session: null,   bg: 'rgba(31,24,16,0.05)',    border: 'rgba(31,24,16,0.15)',   text: 'var(--encre-secondaire)' },
+  { id: 'dimanche', court: 'Dim', label: 'Pull',   session: 'pull', bg: 'rgba(122,38,50,0.10)',   border: 'rgba(122,38,50,0.40)',  text: 'var(--bordeaux-clair)' },
 ]
 
-const PUSH = [
-  { exercice: 'Échauffement',                series: '5 min',        notes: 'Cercles épaules + poignets + dead hang 30 sec' },
-  { exercice: 'Incline Bench Press',          series: '4 × 8–10',    notes: 'Haut des pecs en priorité, quand tu es frais' },
-  { exercice: 'Chest Press (machine)',        series: '3 × 10–12',   notes: 'Charge progressive chaque semaine' },
-  { exercice: 'Shoulder Press (machine)',     series: '3 × 10–12',   notes: 'Pas de blocage des coudes en haut' },
-  { exercice: 'Élévations latérales machine', series: '3 × 15',      notes: 'Descente lente, pas de balancement' },
-  { exercice: 'Triceps Pushdown (corde)',     series: '3 × 12–15',   notes: 'Coudes fixes contre le corps, extension complète' },
-]
-
-const LEGS = [
-  { exercice: 'Échauffement',               series: '5 min',         notes: 'Cercles hanches + genoux + chevilles + 2 min tapis incliné' },
-  { exercice: 'Goblet Squat (haltère)',      series: '3 × 10–12',    notes: 'Descends profond, dos droit', montagne: true },
-  { exercice: 'Leg Press (pieds hauts)',     series: '4 × 8–12',     notes: 'Pieds hauts = fessiers et ischios — muscles de la montée', montagne: true },
-  { exercice: 'Fentes marchées (haltères)',  series: '3 × 10/jambe', notes: 'Stabilité cheville sur terrain accidenté', montagne: true },
-  { exercice: 'Seated Leg Curl',             series: '3 × 12–15',    notes: 'Freins en descente — protège les genoux', montagne: true },
-  { exercice: 'Calf Raise',                  series: '3 × 15–20',    notes: 'Stabilité cheville sur sentier. Single leg si trop facile', montagne: true },
-  { exercice: 'Machine abdos',               series: '3 × 15–20',    notes: 'Core = stabilité avec sac à dos', optionnel: true },
-]
-
-const PULL = [
-  { exercice: 'Échauffement',                      series: '5 min',       notes: 'Cercles épaules + dead hang 30 sec' },
-  { exercice: 'Tractions (barres)',                 series: '3 séries',    notes: '2 séries mi-échec + 1 série full échec' },
-  { exercice: 'Lat Pulldown (prise large)',          series: '4 × 8–12',   notes: 'Tire vers le menton, coudes vers les hanches' },
-  { exercice: 'Seated Row',                         series: '3 × 10–12',  notes: 'Serre les omoplates en fin de mouvement' },
-  { exercice: 'Reverse Pec Deck',                   series: '3 × 15',     notes: 'Face au dossier, retour contrôlé' },
-  { exercice: 'Incline Biceps Curl',                series: '3 × 8–10',   notes: 'Full amplitude, pas de triche' },
-  { exercice: 'Hammer Curl poulie basse (corde)',   series: '3 × 12–15',  notes: 'Brachial et épaisseur du bras' },
-]
-
-const HOME = [
-  { exercice: 'Planche frontale',               volume: '4 × 40 sec',      notes: 'Corps droit, hanches pas en l\'air' },
-  { exercice: 'Planche latérale',               volume: '3 × 30 sec/côté', notes: 'Stabilité latérale' },
-  { exercice: 'Handstand au mur',               volume: '5–8 tentatives',  notes: 'S1–4 : 20 sec · S5–8 : 30 sec · S9+ : réduire contact mur' },
-  { exercice: 'Mobilité hanches + épaules',     volume: '~10 min',         notes: 'Hip flexor 60 sec/côté + rotation épaule au sol' },
-  { exercice: 'Mollets debout (sur une marche)', volume: '3 × 20',          notes: 'Single leg si trop facile' },
-]
+const SESSIONS = {
+  push: {
+    titre: 'Push',
+    emoji: '💪',
+    sousTitre: 'Pecs · Épaules · Triceps',
+    info: '16 séries · ~55 min',
+    couleur: 'var(--or)',
+    exercices: [
+      { nom: 'Échauffement',                  warmup: true,  series: '5 min',       notes: 'Cercles épaules + poignets + dead hang 30 sec' },
+      { nom: 'Incline Bench Press',                          series: '4 × 8–10',    notes: 'Haut des pecs en priorité' },
+      { nom: 'Chest Press (machine)',                        series: '3 × 10–12',   notes: 'Charge progressive chaque semaine' },
+      { nom: 'Shoulder Press (machine)',                     series: '3 × 10–12',   notes: 'Pas de blocage des coudes en haut' },
+      { nom: 'Élévations latérales machine',                 series: '3 × 15',      notes: 'Descente lente, pas de balancement' },
+      { nom: 'Triceps Pushdown (corde)',                     series: '3 × 12–15',   notes: 'Coudes fixes, extension complète' },
+    ],
+    note: 'Si tu termines tôt, le pec deck est le seul optionnel à rajouter.',
+  },
+  legs: {
+    titre: 'Legs',
+    emoji: '🦵',
+    sousTitre: 'Fessiers · Ischios · Quads · Mollets',
+    info: '16 séries · ~55 min',
+    couleur: 'var(--vert)',
+    exercices: [
+      { nom: 'Échauffement',              warmup: true,    series: '5 min',         notes: 'Cercles hanches + genoux + chevilles + 2 min tapis incliné' },
+      { nom: 'Goblet Squat (haltère)',    montagne: true,  series: '3 × 10–12',     notes: 'Descends profond, dos droit' },
+      { nom: 'Leg Press (pieds hauts)',   montagne: true,  series: '4 × 8–12',      notes: 'Pieds hauts = fessiers et ischios' },
+      { nom: 'Fentes marchées',           montagne: true,  series: '3 × 10/jambe',  notes: 'Stabilité cheville sur terrain accidenté' },
+      { nom: 'Seated Leg Curl',           montagne: true,  series: '3 × 12–15',     notes: 'Freins en descente — protège les genoux' },
+      { nom: 'Calf Raise',                montagne: true,  series: '3 × 15–20',     notes: 'Single leg si trop facile' },
+      { nom: 'Machine abdos',             optionnel: true, series: '3 × 15–20',     notes: 'Core = stabilité avec sac à dos' },
+    ],
+    note: 'Abdos sacrifiables si tu dépasses 55 min.',
+  },
+  pull: {
+    titre: 'Pull',
+    emoji: '🏋️',
+    sousTitre: 'Dos · Biceps · Arrière épaules',
+    info: '16 séries · ~55 min',
+    couleur: 'var(--bordeaux-clair)',
+    exercices: [
+      { nom: 'Échauffement',                    warmup: true,  series: '5 min',      notes: 'Cercles épaules + dead hang 30 sec' },
+      { nom: 'Tractions (barres)',                             series: '3 séries',   notes: '2 mi-échec + 1 full échec' },
+      { nom: 'Lat Pulldown (prise large)',                     series: '4 × 8–12',   notes: 'Tire vers le menton, coudes vers les hanches' },
+      { nom: 'Seated Row',                                     series: '3 × 10–12',  notes: 'Serre les omoplates en fin de mouvement' },
+      { nom: 'Reverse Pec Deck',                               series: '3 × 15',     notes: 'Face au dossier, retour contrôlé' },
+      { nom: 'Incline Biceps Curl',                            series: '3 × 8–10',   notes: 'Full amplitude, pas de triche' },
+      { nom: 'Hammer Curl poulie basse',                       series: '3 × 12–15',  notes: 'Brachial et épaisseur du bras' },
+    ],
+  },
+  home: {
+    titre: 'Séance Home',
+    emoji: '🏠',
+    sousTitre: 'Core · Équilibre · Mobilité',
+    info: '~30 min',
+    couleur: 'var(--nuit-clair)',
+    exercices: [
+      { nom: 'Planche frontale',                series: '4 × 40 sec',      notes: 'Corps droit, hanches pas en l\'air' },
+      { nom: 'Planche latérale',                series: '3 × 30 sec/côté', notes: 'Stabilité latérale' },
+      { nom: 'Handstand au mur',                series: '5–8 tentatives',  notes: 'S1–4 : 20 sec · S9+ : réduire contact mur' },
+      { nom: 'Mobilité hanches + épaules',      series: '~10 min',         notes: 'Hip flexor 60 sec/côté + rotation épaule au sol' },
+      { nom: 'Mollets (sur une marche)', montagne: true, series: '3 × 20', notes: 'Single leg si trop facile' },
+    ],
+  },
+}
 
 const CONSEILS = [
-  {
-    titre: 'Surcharge progressive',
-    corps: '12 reps propres → augmente le poids la semaine suivante (+2,5 kg). Moins de 8 reps propres → réduis. Note tes charges à chaque séance — sans ça, zéro progression mesurable.',
-  },
-  {
-    titre: 'Temps de repos',
-    corps: 'Polyarticulaires (squat, bench, row, fentes) : 2 min minimum. Isolation (curls, pushdown, élévations) : 90 sec. Tu dépasses 1h → saute les abdos machine, c\'est le seul sacrifiable.',
-  },
-  {
-    titre: 'Alignement des machines',
-    corps: 'Aligne l\'axe de rotation de la machine avec ton articulation : genoux alignés avec le point rouge sur le leg extension, épaule alignée sur le pec deck.',
-  },
+  { emoji: '📈', titre: 'Surcharge progressive', corps: '12 reps propres → +2,5 kg la semaine suivante. Note tes charges — sans ça, zéro progression.' },
+  { emoji: '⏱️', titre: 'Temps de repos', corps: 'Polyarticulaires : 2 min. Isolation : 90 sec. Dépasse 1h → saute les abdos.' },
+  { emoji: '🎯', titre: 'Alignement des machines', corps: 'Aligne l\'axe de rotation de la machine avec ton articulation à chaque exercice.' },
 ]
 
 const PROGRESSION = [
-  { periode: 'Mois 1–3',   objectif: 'Bases salle : maîtriser goblet squat, fentes, leg press avec charge progressive' },
-  { periode: 'Mois 4–6',   objectif: 'Marches du samedi avec sac léger 5–8 kg, terrains variés' },
-  { periode: 'Mois 7–9',   objectif: 'Premières randos avec dénivelé modéré : 300–500m D+' },
-  { periode: 'Mois 10–12', objectif: 'Randos longues : 700–1000m D+ — le corps est prêt' },
+  { icone: '🏋️', periode: 'Mois 1–3',   objectif: 'Bases salle\nGoblet squat, fentes, leg press' },
+  { icone: '🎒', periode: 'Mois 4–6',   objectif: 'Marches\nSac 5–8 kg, terrains variés' },
+  { icone: '⛰️', periode: 'Mois 7–9',   objectif: 'Randos modérées\n300–500m D+' },
+  { icone: '🏔️', periode: 'Mois 10–12', objectif: 'Randos longues\n700–1000m D+' },
 ]
 
-function TableExercices({ rows }) {
+function CarteExercice({ ex, couleur }) {
+  if (ex.warmup) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
+        style={{ background: 'rgba(31,24,16,0.03)' }}>
+        <span className="text-base leading-none">🔥</span>
+        <p className="flex-1 font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
+          {ex.nom} <span style={{ color: 'var(--encre-tertiaire)' }}>· {ex.notes}</span>
+        </p>
+        <span className="font-sans text-xs tabular-nums" style={{ color: 'var(--encre-tertiaire)' }}>
+          {ex.series}
+        </span>
+      </div>
+    )
+  }
+
   return (
-    <div className="mt-5 overflow-x-auto -mx-6 md:-mx-8 px-6 md:px-8">
-      <table className="w-full text-sm min-w-[480px]">
-        <thead>
-          <tr className="border-b border-[rgba(31,24,16,0.10)]">
-            <th className="t-label text-left pb-2 pr-6">Exercice</th>
-            <th className="t-label text-left pb-2 pr-6 whitespace-nowrap">Séries</th>
-            <th className="t-label text-left pb-2">Notes</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, i) => (
-            <tr key={i} className="border-b border-[rgba(31,24,16,0.05)] last:border-0">
-              <td className="py-3 pr-6 font-sans font-medium leading-snug" style={{ color: 'var(--encre)' }}>
-                {row.exercice}
-              </td>
-              <td className="py-3 pr-6 font-sans tabular-nums whitespace-nowrap" style={{ color: 'var(--encre-secondaire)' }}>
-                {row.series || row.volume}
-              </td>
-              <td className="py-3 font-sans" style={{ color: 'var(--encre-tertiaire)' }}>
-                {row.notes}
-                {row.montagne && <span className="ml-1">🏔️</span>}
-                {row.optionnel && (
-                  <span
-                    className="ml-2 text-xs px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(31,24,16,0.05)', color: 'var(--encre-tertiaire)' }}
-                  >
-                    si temps restant
-                  </span>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+      style={{ background: 'rgba(31,24,16,0.035)' }}>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
+            {ex.nom}
+          </p>
+          {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
+          {ex.optionnel && (
+            <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+              style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+              optionnel
+            </span>
+          )}
+        </div>
+        {ex.notes && (
+          <p className="font-sans text-xs mt-0.5 leading-snug" style={{ color: 'var(--encre-tertiaire)' }}>
+            {ex.notes}
+          </p>
+        )}
+      </div>
+      <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap pt-0.5"
+        style={{ color: couleur }}>
+        {ex.series}
+      </span>
     </div>
   )
 }
 
 export default function Sport() {
+  const [jourActifId, setJourActifId] = useState(JOURS[getTodayIndex()].id)
+
+  const jourActif = JOURS.find(j => j.id === jourActifId)
+  const session = jourActif?.session ? SESSIONS[jourActif.session] : null
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-2xl mx-auto space-y-4">
 
-      {/* En-tête + semaine */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Programme sport</p>
-        <h1 className="t-h1 mt-2">Tomi v3</h1>
-        <p className="t-body-secondaire mt-2">
-          Split PPL · calibré 1h de salle · 16 séries max par séance · orienté montagne
-        </p>
-
-        <div className="mt-6">
-          <div className="h-px w-full" style={{ background: 'var(--gradient-signature-fin)' }} />
-        </div>
-
-        <div className="mt-5 grid grid-cols-7 gap-1 sm:gap-3 text-center">
-          {SEMAINE.map(({ jour, label, style, color }) => (
-            <div key={jour} className="flex flex-col items-center gap-1.5">
-              <span className="t-label hidden sm:block">{jour}</span>
-              <span className="t-label sm:hidden">{jour.slice(0, 3)}</span>
-              <span
-                className={`font-sans text-xs sm:text-sm leading-snug ${style}`}
-                style={color ? { color } : undefined}
+      {/* Sélecteur semaine */}
+      <section className="surface-velin p-4 md:p-6">
+        <p className="t-label mb-3">Cette semaine</p>
+        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+          {JOURS.map((jour) => {
+            const isActive = jour.id === jourActifId
+            return (
+              <button
+                key={jour.id}
+                onClick={() => setJourActifId(jour.id)}
+                className="flex-shrink-0 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-200 min-w-[52px]"
+                style={{
+                  background: isActive ? jour.bg : 'rgba(31,24,16,0.03)',
+                  outline: isActive ? `1.5px solid ${jour.border}` : '1.5px solid transparent',
+                }}
               >
-                {label}
-              </span>
+                <span className="font-sans text-[10px] uppercase tracking-wider font-medium"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  {jour.court}
+                </span>
+                <span className="font-sans text-xs font-semibold"
+                  style={{ color: isActive ? jour.text : 'var(--encre-tertiaire)' }}>
+                  {jour.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      </section>
+
+      {/* Contenu du jour sélectionné */}
+      {session ? (
+        <section className="surface-velin overflow-hidden">
+          <div className="px-5 pt-5 pb-4 md:px-6 md:pt-6"
+            style={{ borderBottom: '1px solid rgba(31,24,16,0.07)' }}>
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl leading-none">{session.emoji}</span>
+                <div>
+                  <h2 className="t-h2" style={{ color: session.couleur }}>{session.titre}</h2>
+                  <p className="t-body-secondaire mt-0.5">{session.sousTitre}</p>
+                </div>
+              </div>
+              <span className="t-label whitespace-nowrap flex-shrink-0 mt-1">{session.info}</span>
             </div>
-          ))}
-        </div>
-      </section>
+          </div>
 
-      {/* Push */}
-      <section className="surface-velin p-6 md:p-8">
-        <div className="flex items-center gap-3">
-          <p className="t-label">Mercredi</p>
-          <span className="h-px flex-1" style={{ background: 'var(--border-doux)' }} />
-          <p className="t-label">16 séries · ~55 min</p>
-        </div>
-        <h2 className="t-h2 mt-2" style={{ color: 'var(--or)' }}>Push</h2>
-        <p className="t-body-secondaire mt-1">Pecs · Épaules · Triceps</p>
-        <p className="t-meta mt-3">
-          Descente 2 sec, poussée explosive. Repos 90 sec isolation — 2 min polyarticulaires.
-        </p>
-        <TableExercices rows={PUSH} />
-        <p className="t-meta mt-5 pt-4 border-t border-[rgba(31,24,16,0.08)]">
-          <strong>Optionnel :</strong> si tu es rapide, le pec deck est le seul exercice que tu peux rajouter.
-        </p>
-      </section>
+          <div className="px-5 py-4 md:px-6 space-y-2">
+            {session.exercices.map((ex, i) => (
+              <CarteExercice key={i} ex={ex} couleur={session.couleur} />
+            ))}
+          </div>
 
-      {/* Legs */}
-      <section className="surface-velin p-6 md:p-8">
-        <div className="flex items-center gap-3">
-          <p className="t-label">Vendredi</p>
-          <span className="h-px flex-1" style={{ background: 'var(--border-doux)' }} />
-          <p className="t-label">16 séries · ~55 min</p>
-        </div>
-        <h2 className="t-h2 mt-2" style={{ color: 'var(--vert)' }}>Legs & Abs</h2>
-        <p className="t-body-secondaire mt-1">Orienté montagne — abdos si temps restant 🏔️</p>
-        <p className="t-meta mt-3">
-          Les fentes marchées comptent double en temps. Abdos uniquement si tu termines avant 55 min.
-        </p>
-        <TableExercices rows={LEGS} />
-        <p className="t-meta mt-5 pt-4 border-t border-[rgba(31,24,16,0.08)]">
-          <strong>Logique montagne :</strong> goblet squat + leg press pieds hauts + fentes = triple attaque fessiers/ischios/quads. Le leg curl protège les genoux en descente. Les calf raise stabilisent les chevilles.
-        </p>
-      </section>
-
-      {/* Pull */}
-      <section className="surface-velin p-6 md:p-8">
-        <div className="flex items-center gap-3">
-          <p className="t-label">Dimanche</p>
-          <span className="h-px flex-1" style={{ background: 'var(--border-doux)' }} />
-          <p className="t-label">16 séries · ~55 min</p>
-        </div>
-        <h2 className="t-h2 mt-2" style={{ color: 'var(--bordeaux-clair)' }}>Pull</h2>
-        <p className="t-body-secondaire mt-1">Dos · Biceps · Arrière épaules</p>
-        <p className="t-meta mt-3">
-          Tractions en ouverture pour la force brute. Biceps isolés en fin de séance.
-        </p>
-        <TableExercices rows={PULL} />
-      </section>
-
-      {/* Home + Marche */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <section className="surface-velin p-6 md:p-8">
-          <p className="t-label">Mardi & Jeudi</p>
-          <h2 className="t-h2 mt-2" style={{ color: 'var(--nuit-clair)' }}>Séances Home</h2>
-          <p className="t-body-secondaire mt-1">~30 min</p>
-          <TableExercices rows={HOME} />
+          {session.note && (
+            <div className="px-5 pb-5 md:px-6 md:pb-6">
+              <p className="font-sans text-xs px-4 py-3 rounded-xl"
+                style={{
+                  background: 'rgba(31,24,16,0.03)',
+                  borderLeft: `2px solid ${session.couleur}`,
+                  color: 'var(--encre-tertiaire)',
+                }}>
+                {session.note}
+              </p>
+            </div>
+          )}
         </section>
-
-        <section className="surface-velin p-6 md:p-8">
-          <p className="t-label">Samedi</p>
-          <h2 className="t-h2 mt-2">Marche</h2>
-          <p className="t-body mt-4">
-            30–60 min à ton rythme. Récupération active.
+      ) : jourActif?.id === 'lundi' ? (
+        <section className="surface-velin p-6 text-center">
+          <p className="text-4xl mb-3">😴</p>
+          <p className="t-h3">Repos</p>
+          <p className="t-body-secondaire mt-2">Récupération, étirements libres.</p>
+        </section>
+      ) : (
+        <section className="surface-velin p-6 text-center">
+          <p className="text-4xl mb-3">🚶</p>
+          <p className="t-h3">Marche</p>
+          <p className="t-body-secondaire mt-2">
+            30–60 min à ton rythme.
           </p>
-          <p className="t-body-secondaire mt-3">
-            À partir du mois 4, fais-la avec un sac à dos de{' '}
-            <strong style={{ color: 'var(--encre)' }}>5–8 kg</strong> sur des terrains variés.
+          <p className="t-meta mt-2">
+            À partir du mois 4 : sac à dos <strong>5–8 kg</strong> sur des terrains variés.
           </p>
         </section>
-      </div>
+      )}
 
-      {/* Conseils */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Conseils clés</p>
-        <h2 className="t-h2 mt-2">Exécution</h2>
-        <div className="mt-5 space-y-5">
+      {/* Règles d'or */}
+      <section className="surface-velin p-4 md:p-6">
+        <p className="t-label mb-3">Règles d'or</p>
+        <div className="space-y-2.5">
           {CONSEILS.map((c, i) => (
-            <div key={i} className="flex gap-4">
-              <span
-                className="font-serif italic font-medium text-xl leading-none flex-shrink-0 mt-0.5"
-                style={{ color: 'var(--or)' }}
-              >
-                —
-              </span>
+            <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+              style={{ background: 'rgba(31,24,16,0.03)' }}>
+              <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
               <div>
                 <p className="font-sans font-semibold text-sm" style={{ color: 'var(--encre)' }}>
                   {c.titre}
                 </p>
-                <p className="t-body-secondaire mt-1">{c.corps}</p>
+                <p className="font-sans text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--encre-tertiaire)' }}>
+                  {c.corps}
+                </p>
               </div>
             </div>
           ))}
@@ -237,37 +256,23 @@ export default function Sport() {
       </section>
 
       {/* Progression 12 mois */}
-      <section className="surface-velin p-6 md:p-8">
-        <p className="t-label">Progression vers la rando</p>
-        <h2 className="t-h2 mt-2">12 mois 🏔️</h2>
-        <div className="mt-6 space-y-0">
+      <section className="surface-velin p-4 md:p-6">
+        <p className="t-label mb-3">Progression montagne</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {PROGRESSION.map((p, i) => (
-            <div key={i} className="flex gap-4">
-              <div className="flex flex-col items-center flex-shrink-0">
-                <span
-                  className="w-2.5 h-2.5 rounded-full mt-1 flex-shrink-0"
-                  style={{ background: 'var(--or)' }}
-                />
-                {i < PROGRESSION.length - 1 && (
-                  <span
-                    className="w-px flex-1 my-1"
-                    style={{ background: 'var(--border-doux)', minHeight: '28px' }}
-                  />
-                )}
-              </div>
-              <div className="pb-5 last:pb-0">
-                <p className="t-label-noble" style={{ color: 'var(--or)' }}>{p.periode}</p>
-                <p className="t-body-secondaire mt-1">{p.objectif}</p>
-              </div>
+            <div key={i} className="flex flex-col items-center text-center gap-2 px-3 py-4 rounded-xl"
+              style={{ background: 'rgba(31,24,16,0.03)' }}>
+              <span className="text-2xl leading-none">{p.icone}</span>
+              <span className="font-sans text-[10px] uppercase tracking-wider font-semibold"
+                style={{ color: 'var(--or)' }}>
+                {p.periode}
+              </span>
+              <p className="font-sans text-xs leading-snug whitespace-pre-line"
+                style={{ color: 'var(--encre-secondaire)' }}>
+                {p.objectif}
+              </p>
             </div>
           ))}
-        </div>
-
-        <div className="mt-6">
-          <div className="h-px w-full" style={{ background: 'var(--gradient-signature-fin)' }} />
-          <p className="t-label-noble mt-3 text-center" style={{ color: 'var(--encre-tertiaire)' }}>
-            Programme v3 · calibré 1h · juin 2026
-          </p>
         </div>
       </section>
 
