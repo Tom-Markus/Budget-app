@@ -1335,7 +1335,7 @@ export default function Sport() {
               <button
                 key={jour.id}
                 onClick={() => setJourActifId(jour.id)}
-                className="relative flex-1 flex flex-col items-center py-2.5 rounded-xl group"
+                className="relative flex-1 flex flex-col items-center justify-center py-2.5 rounded-xl group"
                 style={{ isolation: 'isolate', gap: '2px' }}
               >
                 {/* Carte active glissante */}
