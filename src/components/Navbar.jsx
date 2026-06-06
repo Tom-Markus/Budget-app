@@ -18,7 +18,7 @@
  * ----------------------------------------------------------------------------
  */
 import { motion } from 'framer-motion';
-import { Home, Newspaper, PieChart, Settings, TrendingUp } from 'lucide-react';
+import { Dumbbell, Home, Newspaper, PieChart, Settings, TrendingUp } from 'lucide-react';
 import { useMemo } from 'react';
 
 const PAGES = [
@@ -26,6 +26,7 @@ const PAGES = [
   { id: 'graphes', label: 'Graphes & Dettes', icon: PieChart },
   { id: 'news', label: 'News & Markets', icon: Newspaper },
   { id: 'investments', label: 'Investments', icon: TrendingUp },
+  { id: 'sport', label: 'Sport', icon: Dumbbell },
   { id: 'reglages', label: 'Réglages', icon: Settings },
 ];
 

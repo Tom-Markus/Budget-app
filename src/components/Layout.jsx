@@ -21,6 +21,7 @@ const PAGE_TO_URL = {
   graphes: '/graphes-dettes',
   news: '/news',
   investments: '/investments',
+  sport: '/sport',
   reglages: '/reglages',
 }
 const URL_TO_PAGE = Object.fromEntries(
