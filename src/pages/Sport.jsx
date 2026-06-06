@@ -217,71 +217,74 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-sm md:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden"
-        style={{ background: 'var(--velin)', maxHeight: '90dvh' }}
+        className="relative w-full sm:max-w-sm md:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col md:flex-row"
+        style={{ background: 'var(--velin)', maxHeight: '92dvh' }}
         onClick={e => e.stopPropagation()}
       >
         {/* Bouton fermer */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-          style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+          style={{ background: 'rgba(31,24,16,0.12)', color: 'var(--encre-secondaire)' }}
           aria-label="Fermer"
         >
           ✕
         </button>
 
-        {/* Image personnalisée */}
+        {/* Image — bandeau en haut sur mobile, colonne gauche sur PC */}
         {customImage && (
-          <div className="w-full bg-black" style={{ aspectRatio: '16/9' }}>
+          <div className="w-full h-52 md:w-2/5 md:h-auto flex-shrink-0 bg-encre">
             <img
               src={customImage}
               alt={ex.nom}
-              className="w-full h-full object-contain"
+              className="w-full h-full object-cover"
             />
           </div>
         )}
 
-        {/* Contenu scrollable */}
-        <div className="overflow-y-auto" style={{ maxHeight: customImage ? '55dvh' : '80dvh' }}>
-          <div className="px-5 pt-4 pb-6">
-            {/* En-tête */}
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <div className="flex-1 min-w-0">
-                <h3 className="font-sans font-bold text-base leading-snug pr-8"
-                  style={{ color: 'var(--encre)' }}>
-                  {ex.nom}
-                </h3>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
-                  {ex.montagne && (
-                    <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-                      style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
-                      🏔️ montagne
-                    </span>
-                  )}
-                  {ex.optionnel && (
-                    <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-                      style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
-                      optionnel
-                    </span>
-                  )}
-                </div>
+        {/* Colonne contenu */}
+        <div className="flex flex-col flex-1 min-h-0">
+          {/* Barre accent couleur */}
+          <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
+
+          {/* Contenu scrollable */}
+          <div className="overflow-y-auto flex-1 px-5 pt-4 pb-6 md:px-6 md:pt-5">
+
+            {/* En-tête : nom + séries */}
+            <div className="pr-8 mb-1">
+              <h3 className="font-sans font-bold text-lg leading-snug"
+                style={{ color: 'var(--encre)' }}>
+                {ex.nom}
+              </h3>
+              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                <span className="font-sans font-bold text-sm tabular-nums"
+                  style={{ color: couleur }}>
+                  {ex.series}
+                </span>
+                {ex.montagne && (
+                  <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+                    style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                    🏔️ montagne
+                  </span>
+                )}
+                {ex.optionnel && (
+                  <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+                    style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                    optionnel
+                  </span>
+                )}
               </div>
-              <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5"
-                style={{ color: couleur }}>
-                {ex.series}
-              </span>
             </div>
 
             {/* Séparateur */}
-            <div className="h-px w-full mb-3" style={{ background: 'rgba(31,24,16,0.08)' }} />
+            <div className="h-px w-full my-3.5" style={{ background: 'rgba(31,24,16,0.08)' }} />
 
             {/* Note courte */}
             {ex.notes && (
-              <div className="flex items-start gap-2 mb-3 px-3 py-2.5 rounded-xl"
+              <div className="flex items-start gap-2.5 mb-4 px-3 py-3 rounded-xl"
                 style={{ background: 'rgba(31,24,16,0.04)' }}>
-                <span className="text-xs leading-none mt-0.5 flex-shrink-0">💡</span>
-                <p className="font-sans text-xs leading-relaxed"
+                <span className="text-base leading-none mt-0.5 flex-shrink-0">💡</span>
+                <p className="font-sans text-sm leading-relaxed"
                   style={{ color: 'var(--encre-secondaire)' }}>
                   {ex.notes}
                 </p>
@@ -290,8 +293,8 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
 
             {/* Description exécution */}
             {ex.description && (
-              <div className="mb-4">
-                <p className="font-sans text-[10px] uppercase tracking-wider font-semibold mb-1.5"
+              <div className="mb-5">
+                <p className="font-sans text-[10px] uppercase tracking-wider font-semibold mb-2"
                   style={{ color: 'var(--encre-tertiaire)' }}>
                   Exécution
                 </p>
@@ -302,7 +305,7 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
               </div>
             )}
 
-            {/* Bouton importer une photo */}
+            {/* Bouton photo */}
             <input
               ref={fileInputRef}
               type="file"
