@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
+import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -497,7 +497,12 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
             Importation…
           </>
-        ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
+        ) : (
+          <>
+            <Camera size={13} strokeWidth={1.75} />
+            {customImage ? 'Changer la photo' : 'Importer une photo'}
+          </>
+        )}
       </button>
     </>
   )
@@ -680,10 +685,10 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 <Pencil size={13} strokeWidth={2} />
               </button>
               <button onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 font-bold text-sm"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
                 style={{ background: 'rgba(10,8,6,0.50)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: '#fff' }}
                 aria-label="Fermer">
-                ✕
+                <X size={14} strokeWidth={2} />
               </button>
             </>
           )}
@@ -1027,7 +1032,7 @@ export default function Sport() {
       </AnimatePresence>
 
       {/* Sélecteur semaine */}
-      <section className="surface-velin px-4 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
+      <section className="surface-velin liserer-signature px-4 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
         <div className="flex items-center gap-1.5 mb-4">
           <Calendar size={12} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2.5} />
           <p className="t-label">Cette semaine</p>
@@ -1080,7 +1085,7 @@ export default function Sport() {
 
       {/* Contenu du jour */}
       {session ? (
-        <section className="surface-velin overflow-hidden">
+        <section className="surface-velin liserer-signature overflow-hidden">
           <div className="px-5 pt-5 pb-4 md:px-6 md:pt-6"
             style={{ borderBottom: '1px solid rgba(31,24,16,0.07)' }}>
             <div className="flex items-start justify-between gap-4">
@@ -1171,20 +1176,23 @@ export default function Sport() {
                     cursor: done > 0 ? 'pointer' : 'default',
                   }}
                 >
-                  ↺ Réinitialiser la séance
+                  <span className="flex items-center justify-center gap-1.5">
+                    <RotateCcw size={11} strokeWidth={2} />
+                    Réinitialiser la séance
+                  </span>
                 </button>
               </div>
             )
           })()}
         </section>
       ) : jourActif?.id === 'lundi' ? (
-        <section className="surface-velin p-6 text-center">
+        <section className="surface-velin liserer-signature p-6 text-center">
           <p className="text-4xl mb-3">😴</p>
           <p className="t-h3">Repos</p>
           <p className="t-body-secondaire mt-2">Récupération, étirements libres.</p>
         </section>
       ) : (
-        <section className="surface-velin p-6 text-center">
+        <section className="surface-velin liserer-signature p-6 text-center">
           <p className="text-4xl mb-3">🚶</p>
           <p className="t-h3">Marche</p>
           <p className="t-body-secondaire mt-2">30–60 min à ton rythme.</p>
@@ -1196,7 +1204,7 @@ export default function Sport() {
 
       {/* Règles d'or — salle uniquement */}
       {['push', 'legs', 'pull'].includes(jourActif?.session) && (
-        <section className="surface-velin p-4 md:p-6">
+        <section className="surface-velin liserer-signature p-4 md:p-6">
           <p className="t-label mb-3">Règles d'or</p>
           <div className="space-y-2.5">
             {CONSEILS.map((c, i) => (
