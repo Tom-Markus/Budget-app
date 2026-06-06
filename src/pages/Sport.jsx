@@ -477,6 +477,160 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     fontFamily: 'inherit',
   }
 
+  const photoBouton = (
+    <>
+      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+      <button
+        onClick={() => !isUploading && fileInputRef.current?.click()}
+        disabled={isUploading}
+        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
+        style={{
+          background: 'rgba(31,24,16,0.06)',
+          color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
+          cursor: isUploading ? 'default' : 'pointer',
+        }}
+      >
+        {isUploading ? (
+          <>
+            <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
+              style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+            Importation…
+          </>
+        ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
+      </button>
+    </>
+  )
+
+  const perfSection = (
+    <>
+      <p className="font-sans font-semibold mb-3"
+        style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+        Performances
+      </p>
+
+      {perfType === null ? (
+        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(31,24,16,0.04)' }}>
+          <p className="font-sans font-medium mb-2.5"
+            style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+            Type
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
+              <button key={id}
+                onClick={() => setPerfType(id)}
+                className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97]"
+                style={{ background: 'transparent', color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-2xl p-3.5 space-y-3" style={{ background: 'rgba(31,24,16,0.04)' }}>
+          <div className="flex items-center justify-between">
+            <span className="font-sans text-xs font-bold" style={{ color: couleur }}>
+              {perfType === 'pr' ? 'PR' : 'Série'}
+            </span>
+            <button
+              onClick={() => { setPerfType(null); setPerfForm({ poids: '', reps: '', series: '', date: '' }) }}
+              className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+              style={{ background: 'rgba(31,24,16,0.08)', color: 'var(--encre-tertiaire)' }}>
+              <X size={11} strokeWidth={2} />
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <p className="font-sans font-medium mb-1"
+                style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                Poids (kg)
+              </p>
+              <input type="number" step="0.5" min="0" value={perfForm.poids}
+                onChange={e => setPerfForm(f => ({ ...f, poids: e.target.value }))} placeholder="ex: 80"
+                className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+            </div>
+            <div>
+              <p className="font-sans font-medium mb-1"
+                style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                Reps
+              </p>
+              <input type="number" min="1" value={perfForm.reps}
+                onChange={e => setPerfForm(f => ({ ...f, reps: e.target.value }))} placeholder="ex: 8"
+                className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+            </div>
+          </div>
+          {perfType === 'serie' && (
+            <div>
+              <p className="font-sans font-medium mb-1"
+                style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                Séries
+              </p>
+              <input type="number" min="1" value={perfForm.series}
+                onChange={e => setPerfForm(f => ({ ...f, series: e.target.value }))} placeholder="ex: 4"
+                className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+            </div>
+          )}
+          <div>
+            <p className="font-sans font-medium mb-1"
+              style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+              Date
+            </p>
+            <DatePickerSport value={perfForm.date} onChange={v => setPerfForm(f => ({ ...f, date: v }))} />
+          </div>
+          <button onClick={handleSavePerf} disabled={!perfValide || savingPerf}
+            className="w-full h-9 rounded-xl text-xs font-semibold font-sans transition-all duration-150 active:scale-[0.98]"
+            style={{
+              background: perfValide ? couleur : 'rgba(31,24,16,0.06)',
+              color: perfValide ? '#fff' : 'var(--encre-tertiaire)',
+              cursor: perfValide && !savingPerf ? 'pointer' : 'default',
+            }}>
+            {savingPerf ? 'Enregistrement…' : 'Valider'}
+          </button>
+        </div>
+      )}
+
+      {(perfHistory.length > 0 || loadingHistory) && (
+        <div className="mt-4">
+          <p className="font-sans font-semibold mb-2.5"
+            style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+            Historique
+          </p>
+          {loadingHistory ? (
+            <div className="flex justify-center py-4">
+              <span className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
+                style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <p className="font-sans font-semibold text-center"
+                  style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                  PR
+                </p>
+                {perfHistory.filter(h => h.type === 'pr').length === 0
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} />)
+                }
+              </div>
+              <div className="space-y-1.5">
+                <p className="font-sans font-semibold text-center"
+                  style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                  Séries
+                </p>
+                {perfHistory.filter(h => h.type === 'serie').length === 0
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} />)
+                }
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </>
+  )
+
   const jsx = (
     <motion.div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
@@ -488,7 +642,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       onClick={editing ? undefined : onClose}
     >
       <motion.div
-        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col"
+        className={`relative w-full rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col ${isPPL && !editing ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}
         style={{ background: 'var(--velin)', maxHeight: '90dvh', boxShadow: '0 24px 64px rgba(10,8,6,0.28)' }}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -496,23 +650,10 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Image */}
-        {customImage && !editing && (
-          <div className="w-full h-56 flex-shrink-0 overflow-hidden relative">
-            {/* Fond flouté — même image scalée, couvre les barres noires */}
-            <img src={customImage} aria-hidden alt=""
-              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
-            {/* Image principale, pas de recadrage */}
-            <img src={customImage} alt={ex.nom}
-              className="relative z-10 w-full h-full object-contain" />
-            {/* Fondu bas */}
-            <div className="absolute inset-x-0 bottom-0 h-14 z-20"
-              style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
-          </div>
-        )}
-        {!customImage && <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />}
+        {/* Barre couleur */}
+        <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
 
-        {/* Boutons header droite */}
+        {/* Boutons header */}
         <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
           {editing ? (
             <>
@@ -547,290 +688,121 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           )}
         </div>
 
-        {/* Contenu scrollable */}
-        <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
-          <div className="px-6 pt-5" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom, 0px))' }}>
+        {isPPL && !editing ? (
+          /* ── LAYOUT 2 COLONNES (PPL, mode lecture) ── */
+          <div className="flex flex-col sm:flex-row flex-1 overflow-hidden" style={{ minHeight: 0 }}>
 
-            {/* Nom + séries */}
-            <div className="flex items-start justify-between gap-4 mb-1 pr-20">
-              {editing ? (
-                <input
-                  ref={titleInputRef}
-                  value={draft.nom}
-                  onChange={e => setDraft(d => ({ ...d, nom: e.target.value }))}
-                  className="font-sans font-bold text-xl leading-tight flex-1 border-b pb-0.5"
-                  style={{ ...inputBase, borderColor: couleur }}
-                />
-              ) : (
-                <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>
-                  {ex.nom}
-                </h3>
-              )}
-              <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5"
-                style={{ color: couleur }}>
-                {ex.series}
-              </span>
-            </div>
-
-            {/* Badges */}
-            {(ex.montagne || ex.optionnel) && (
-              <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
-                {ex.montagne && (
-                  <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
-                    🏔️ montagne
-                  </span>
-                )}
-                {ex.optionnel && (
-                  <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
-                    optionnel
-                  </span>
-                )}
-              </div>
-            )}
-
-            <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
-
-            {/* Note conseil */}
-            <div className="mb-4">
-              {editing ? (
-                <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                  <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2"
-                    style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
-                  <textarea
-                    value={draft.notes}
-                    onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
-                    rows={2}
-                    placeholder="Ajouter un conseil…"
-                    className="font-sans text-sm leading-relaxed"
-                    style={{ ...inputBase, color: 'var(--encre-secondaire)' }}
-                  />
+            {/* Colonne gauche — image + infos */}
+            <div className="sm:w-[52%] flex flex-col overflow-y-auto flex-shrink-0" style={{ minHeight: 0 }}>
+              {customImage && (
+                <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
+                  <img src={customImage} aria-hidden alt=""
+                    className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+                  <img src={customImage} alt={ex.nom}
+                    className="relative z-10 w-full h-full object-contain" />
+                  <div className="absolute inset-x-0 bottom-0 h-14 z-20"
+                    style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
                 </div>
-              ) : ex.notes ? (
-                <div className="px-4 py-3.5 rounded-2xl"
-                  style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                  <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>
-                    {ex.notes}
-                  </p>
-                </div>
-              ) : null}
-            </div>
-
-            {/* Description exécution */}
-            <div className="mb-6">
-              <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5"
-                style={{ color: 'var(--encre-tertiaire)' }}>
-                Exécution
-              </p>
-              {editing ? (
-                <textarea
-                  value={draft.description}
-                  onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
-                  rows={6}
-                  placeholder="Décris l'exécution…"
-                  className="font-sans text-sm leading-relaxed w-full px-3 py-2.5 rounded-xl"
-                  style={{
-                    ...inputBase,
-                    color: 'var(--encre-secondaire)',
-                    background: 'rgba(31,24,16,0.04)',
-                    border: '1px solid rgba(31,24,16,0.10)',
-                  }}
-                />
-              ) : ex.description ? (
-                <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>
-                  {ex.description}
-                </p>
-              ) : (
-                <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
-                  Aucune description — clique sur ✏️ pour en ajouter une.
-                </p>
               )}
+              <div className="px-5 pt-5 pb-6">
+                <div className="flex items-start justify-between gap-4 mb-1 pr-20">
+                  <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
+                  <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5" style={{ color: couleur }}>{ex.series}</span>
+                </div>
+                {(ex.montagne || ex.optionnel) && (
+                  <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
+                    {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
+                    {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
+                  </div>
+                )}
+                <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+                {ex.notes && (
+                  <div className="mb-4 px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                    <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5" style={{ color: 'var(--encre-tertiaire)' }}>Exécution</p>
+                  {ex.description
+                    ? <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>{ex.description}</p>
+                    : <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
+                  }
+                </div>
+              </div>
             </div>
 
-            {/* Performances — Push / Pull / Legs uniquement */}
-            {!editing && isPPL && (
-              <div className="mb-6">
-                <div className="h-px w-full mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
-                <p className="font-sans font-semibold mb-3"
-                  style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
-                  Performances
-                </p>
+            {/* Séparateur vertical */}
+            <div className="hidden sm:block w-px flex-shrink-0 my-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
 
-                {perfType === null ? (
-                  <div className="rounded-2xl p-3.5" style={{ background: 'rgba(31,24,16,0.04)' }}>
-                    <p className="font-sans font-medium mb-2.5"
-                      style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                      Type
-                    </p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
-                        <button key={id}
-                          onClick={() => setPerfType(id)}
-                          className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97]"
-                          style={{ background: 'transparent', color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
-                          {label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="rounded-2xl p-3.5 space-y-3" style={{ background: 'rgba(31,24,16,0.04)' }}>
-                    <div className="flex items-center justify-between">
-                      <span className="font-sans text-xs font-bold" style={{ color: couleur }}>
-                        {perfType === 'pr' ? 'PR' : 'Série'}
-                      </span>
-                      <button
-                        onClick={() => { setPerfType(null); setPerfForm({ poids: '', reps: '', series: '', date: '' }) }}
-                        className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                        style={{ background: 'rgba(31,24,16,0.08)', color: 'var(--encre-tertiaire)' }}>
-                        <X size={11} strokeWidth={2} />
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <p className="font-sans font-medium mb-1"
-                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                          Poids (kg)
-                        </p>
-                        <input
-                          type="number" step="0.5" min="0"
-                          value={perfForm.poids}
-                          onChange={e => setPerfForm(f => ({ ...f, poids: e.target.value }))}
-                          placeholder="ex: 80"
-                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
-                        />
-                      </div>
-                      <div>
-                        <p className="font-sans font-medium mb-1"
-                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                          Reps
-                        </p>
-                        <input
-                          type="number" min="1"
-                          value={perfForm.reps}
-                          onChange={e => setPerfForm(f => ({ ...f, reps: e.target.value }))}
-                          placeholder="ex: 8"
-                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
-                        />
-                      </div>
-                    </div>
-
-                    {perfType === 'serie' && (
-                      <div>
-                        <p className="font-sans font-medium mb-1"
-                          style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                          Séries
-                        </p>
-                        <input
-                          type="number" min="1"
-                          value={perfForm.series}
-                          onChange={e => setPerfForm(f => ({ ...f, series: e.target.value }))}
-                          placeholder="ex: 4"
-                          className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                          style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
-                        />
-                      </div>
-                    )}
-
-                    <div>
-                      <p className="font-sans font-medium mb-1"
-                        style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                        Date
-                      </p>
-                      <DatePickerSport value={perfForm.date} onChange={v => setPerfForm(f => ({ ...f, date: v }))} />
-                    </div>
-
-                    <button
-                      onClick={handleSavePerf}
-                      disabled={!perfValide || savingPerf}
-                      className="w-full h-9 rounded-xl text-xs font-semibold font-sans transition-all duration-150 active:scale-[0.98]"
-                      style={{
-                        background: perfValide ? couleur : 'rgba(31,24,16,0.06)',
-                        color: perfValide ? '#fff' : 'var(--encre-tertiaire)',
-                        cursor: perfValide && !savingPerf ? 'pointer' : 'default',
-                      }}>
-                      {savingPerf ? 'Enregistrement…' : 'Valider'}
-                    </button>
-                  </div>
-                )}
-
-                {/* Historique 2 colonnes */}
-                {(perfHistory.length > 0 || loadingHistory) && (
-                  <div className="mt-4">
-                    <p className="font-sans font-semibold mb-2.5"
-                      style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
-                      Historique
-                    </p>
-                    {loadingHistory ? (
-                      <div className="flex justify-center py-4">
-                        <span className="inline-block w-4 h-4 border-2 rounded-full animate-spin"
-                          style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
-                      </div>
-                    ) : (
-                      <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
-                        <div className="grid grid-cols-2 gap-2">
-                          <div className="space-y-1.5">
-                            <p className="font-sans font-semibold text-center"
-                              style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                              PR
-                            </p>
-                            {perfHistory.filter(h => h.type === 'pr').length === 0
-                              ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                              : perfHistory.filter(h => h.type === 'pr').map(h => (
-                                  <CartePerfHisto key={h.id} perf={h} couleur={couleur} />
-                                ))
-                            }
-                          </div>
-                          <div className="space-y-1.5">
-                            <p className="font-sans font-semibold text-center"
-                              style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                              Séries
-                            </p>
-                            {perfHistory.filter(h => h.type === 'serie').length === 0
-                              ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                              : perfHistory.filter(h => h.type === 'serie').map(h => (
-                                  <CartePerfHisto key={h.id} perf={h} couleur={couleur} />
-                                ))
-                            }
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Bouton photo — masqué en mode édition */}
-            {!editing && (
-              <>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                <button
-                  onClick={() => !isUploading && fileInputRef.current?.click()}
-                  disabled={isUploading}
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
-                  style={{
-                    background: 'rgba(31,24,16,0.06)',
-                    color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
-                    cursor: isUploading ? 'default' : 'pointer',
-                  }}
-                >
-                  {isUploading ? (
-                    <>
-                      <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
-                        style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
-                      Importation…
-                    </>
-                  ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
-                </button>
-              </>
-            )}
+            {/* Colonne droite — performances + photo */}
+            <div className="flex-1 overflow-y-auto px-4 pt-5" style={{ minHeight: 0, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+              {perfSection}
+              <div className="mt-4">{photoBouton}</div>
+            </div>
           </div>
-        </div>
+
+        ) : (
+          /* ── LAYOUT COLONNE UNIQUE (Home, édition) ── */
+          <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+            {customImage && !editing && (
+              <div className="w-full h-56 flex-shrink-0 overflow-hidden relative">
+                <img src={customImage} aria-hidden alt=""
+                  className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+                <img src={customImage} alt={ex.nom}
+                  className="relative z-10 w-full h-full object-contain" />
+                <div className="absolute inset-x-0 bottom-0 h-14 z-20"
+                  style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
+              </div>
+            )}
+            <div className="px-6 pt-5" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom, 0px))' }}>
+              <div className="flex items-start justify-between gap-4 mb-1 pr-20">
+                {editing ? (
+                  <input ref={titleInputRef} value={draft.nom}
+                    onChange={e => setDraft(d => ({ ...d, nom: e.target.value }))}
+                    className="font-sans font-bold text-xl leading-tight flex-1 border-b pb-0.5"
+                    style={{ ...inputBase, borderColor: couleur }} />
+                ) : (
+                  <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
+                )}
+                <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5" style={{ color: couleur }}>{ex.series}</span>
+              </div>
+              {(ex.montagne || ex.optionnel) && (
+                <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
+                  {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
+                  {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
+                </div>
+              )}
+              <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+              <div className="mb-4">
+                {editing ? (
+                  <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
+                      rows={2} placeholder="Ajouter un conseil…" className="font-sans text-sm leading-relaxed"
+                      style={{ ...inputBase, color: 'var(--encre-secondaire)' }} />
+                  </div>
+                ) : ex.notes ? (
+                  <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                    <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                  </div>
+                ) : null}
+              </div>
+              <div className="mb-6">
+                <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5" style={{ color: 'var(--encre-tertiaire)' }}>Exécution</p>
+                {editing ? (
+                  <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
+                    rows={6} placeholder="Décris l'exécution…" className="font-sans text-sm leading-relaxed w-full px-3 py-2.5 rounded-xl"
+                    style={{ ...inputBase, color: 'var(--encre-secondaire)', background: 'rgba(31,24,16,0.04)', border: '1px solid rgba(31,24,16,0.10)' }} />
+                ) : ex.description ? (
+                  <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>{ex.description}</p>
+                ) : (
+                  <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
+                )}
+              </div>
+              {!editing && photoBouton}
+            </div>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   )
