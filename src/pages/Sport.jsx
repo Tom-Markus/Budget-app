@@ -731,8 +731,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
   const perfSection = (
     <>
-      <p className="font-sans font-semibold mb-3"
-        style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+      <p className="font-sans font-bold mb-3"
+        style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--encre-secondaire)' }}>
         Performances
       </p>
 
@@ -746,8 +746,13 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
               <button key={id}
                 onClick={() => setPerfType(id)}
-                className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97] bg-transparent hover:bg-[rgba(31,24,16,0.06)]"
-                style={{ color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
+                className="h-11 rounded-xl text-sm font-bold font-sans transition-all duration-150 active:scale-[0.97] hover:bg-[rgba(31,24,16,0.10)]"
+                style={{
+                  background: 'rgba(31,24,16,0.05)',
+                  border: '1.5px solid rgba(31,24,16,0.18)',
+                  color: 'var(--encre)',
+                  cursor: 'pointer',
+                }}>
                 {label}
               </button>
             ))}
@@ -821,8 +826,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
       {(perfHistory.length > 0 || loadingHistory) && (
         <div className="mt-4">
-          <p className="font-sans font-semibold mb-2.5"
-            style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+          <p className="font-sans font-bold mb-2.5"
+            style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.07em', color: 'var(--encre-secondaire)' }}>
             Historique
           </p>
           {loadingHistory ? (
@@ -973,14 +978,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
                 {ex.notes && (
                   <div className="mb-4">
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
+                    <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
                     <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
                   </div>
                 )}
                 <div>
-                  <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5" style={{ color: 'var(--encre-tertiaire)' }}>Exécution</p>
+                  <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2.5" style={{ color: 'var(--encre-secondaire)' }}>Exécution</p>
                   {ex.description
                     ? <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>{ex.description}</p>
                     : <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
@@ -1035,14 +1040,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <div className="mb-4">
                 {editing ? (
                   <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
+                    <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
                     <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
                       rows={2} placeholder="Ajouter un conseil…" className="font-sans text-sm leading-relaxed"
                       style={{ ...inputBase, color: 'var(--encre-secondaire)' }} />
                   </div>
                 ) : ex.notes ? (
                   <div className="mb-4">
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
+                    <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
                     <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
@@ -1050,7 +1055,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 ) : null}
               </div>
               <div className="mb-6">
-                <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5" style={{ color: 'var(--encre-tertiaire)' }}>Exécution</p>
+                <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2.5" style={{ color: 'var(--encre-secondaire)' }}>Exécution</p>
                 {editing ? (
                   <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                     rows={6} placeholder="Décris l'exécution…" className="font-sans text-sm leading-relaxed w-full px-3 py-2.5 rounded-xl"
