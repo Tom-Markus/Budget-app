@@ -289,14 +289,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           {editing ? (
             <>
               <button onClick={handleCancel}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-tertiaire)' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+                style={{ background: 'rgba(10,8,6,0.50)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: '#fff' }}
                 aria-label="Annuler">
                 <X size={14} strokeWidth={2} />
               </button>
               <button onClick={handleSave}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
-                style={{ background: couleur, color: '#fff' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-90"
+                style={{ background: couleur, color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.20)' }}
                 aria-label="Enregistrer">
                 <Check size={14} strokeWidth={2.5} />
               </button>
@@ -304,14 +304,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           ) : (
             <>
               <button onClick={() => setEditing(true)}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-tertiaire)' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+                style={{ background: 'rgba(10,8,6,0.50)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: '#fff' }}
                 aria-label="Modifier">
                 <Pencil size={13} strokeWidth={2} />
               </button>
               <button onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70 font-bold text-sm"
-                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 font-bold text-sm"
+                style={{ background: 'rgba(10,8,6,0.50)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)', color: '#fff' }}
                 aria-label="Fermer">
                 ✕
               </button>
