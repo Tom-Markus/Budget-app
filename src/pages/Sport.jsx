@@ -453,11 +453,28 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   return createPortal(jsx, document.body)
 }
 
-function CarteExercice({ ex, couleur, onInfo }) {
+function BoutonCoche({ isChecked, couleur, onCheck, label }) {
+  return (
+    <button
+      onClick={onCheck}
+      className="flex-shrink-0 w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90"
+      style={{
+        borderColor: isChecked ? couleur : 'rgba(31,24,16,0.22)',
+        background: isChecked ? couleur : 'transparent',
+      }}
+      aria-label={label}
+    >
+      {isChecked && <Check size={11} strokeWidth={3} color="#fff" />}
+    </button>
+  )
+}
+
+function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
   if (ex.warmup) {
     return (
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
-        style={{ background: 'rgba(31,24,16,0.03)' }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-opacity duration-300"
+        style={{ background: 'rgba(31,24,16,0.03)', opacity: isChecked ? 0.5 : 1 }}>
+        <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label="Cocher échauffement" />
         <span className="text-base leading-none">🔥</span>
         <p className="flex-1 font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
           {ex.nom} <span style={{ color: 'var(--encre-tertiaire)' }}>· {ex.notes}</span>
@@ -470,11 +487,14 @@ function CarteExercice({ ex, couleur, onInfo }) {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
-      style={{ background: 'rgba(31,24,16,0.035)' }}>
-      <div className="flex-1 min-w-0">
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
+      style={{ background: isChecked ? 'rgba(31,24,16,0.02)' : 'rgba(31,24,16,0.035)' }}>
+      <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label={`Cocher ${ex.nom}`} />
+
+      <div className="flex-1 min-w-0 transition-opacity duration-300" style={{ opacity: isChecked ? 0.45 : 1 }}>
         <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
+          <p className="font-sans font-semibold text-sm leading-snug"
+            style={{ color: 'var(--encre)', textDecoration: isChecked ? 'line-through' : 'none' }}>
             {ex.nom}
           </p>
           {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
@@ -520,6 +540,27 @@ export default function Sport() {
     try { return JSON.parse(localStorage.getItem('sport_custom_exos') || '{}') }
     catch { return {} }
   })
+  const [checkedExos, setCheckedExos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sport_checked_exos') || '{}') }
+    catch { return {} }
+  })
+
+  function toggleExo(jourId, nomCle) {
+    setCheckedExos(prev => {
+      const day = prev[jourId] || {}
+      const next = { ...prev, [jourId]: { ...day, [nomCle]: !day[nomCle] } }
+      localStorage.setItem('sport_checked_exos', JSON.stringify(next))
+      return next
+    })
+  }
+
+  function resetDay(jourId) {
+    setCheckedExos(prev => {
+      const next = { ...prev, [jourId]: {} }
+      localStorage.setItem('sport_checked_exos', JSON.stringify(next))
+      return next
+    })
+  }
 
   function saveCustomExo(nomCle, changes) {
     setCustomExos(prev => {
@@ -663,11 +704,14 @@ export default function Sport() {
           <div className="px-5 py-4 md:px-6 space-y-2">
             {session.exercices.map((originalEx, i) => {
               const ex = { ...originalEx, ...(customExos[originalEx.nom] || {}) }
+              const isChecked = !!(checkedExos[jourActifId] || {})[originalEx.nom]
               return (
                 <CarteExercice
                   key={i}
                   ex={ex}
                   couleur={session.couleur}
+                  isChecked={isChecked}
+                  onCheck={() => toggleExo(jourActifId, originalEx.nom)}
                   onInfo={() => setModal({ ex: originalEx, couleur: session.couleur })}
                 />
               )
@@ -675,7 +719,7 @@ export default function Sport() {
           </div>
 
           {session.note && (
-            <div className="px-5 pb-5 md:px-6 md:pb-6">
+            <div className="px-5 md:px-6">
               <p className="font-sans text-xs px-4 py-3 rounded-xl"
                 style={{
                   background: 'rgba(31,24,16,0.03)',
@@ -686,6 +730,58 @@ export default function Sport() {
               </p>
             </div>
           )}
+
+          {/* Barre de progression */}
+          {(() => {
+            const dayChecks = checkedExos[jourActifId] || {}
+            const total = session.exercices.length
+            const done = session.exercices.filter(e => dayChecks[e.nom]).length
+            const pct = total > 0 ? done / total : 0
+            const fini = done === total
+            return (
+              <div className="px-5 md:px-6 pt-4 pb-2">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-sans text-xs" style={{ color: 'var(--encre-tertiaire)' }}>
+                    {fini ? '🎉 Séance terminée !' : `${done} / ${total} exercices`}
+                  </span>
+                  <span className="font-sans text-xs font-semibold tabular-nums"
+                    style={{ color: pct > 0 ? session.couleur : 'var(--encre-tertiaire)' }}>
+                    {Math.round(pct * 100)} %
+                  </span>
+                </div>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)' }}>
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: session.couleur }}
+                    animate={{ width: `${pct * 100}%` }}
+                    transition={{ duration: 0.4, ease: 'easeOut' }}
+                  />
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Bouton réinitialiser */}
+          {(() => {
+            const dayChecks = checkedExos[jourActifId] || {}
+            const done = session.exercices.filter(e => dayChecks[e.nom]).length
+            return (
+              <div className="px-5 md:px-6 pb-5 pt-2">
+                <button
+                  onClick={() => resetDay(jourActifId)}
+                  disabled={done === 0}
+                  className="w-full py-2 rounded-xl font-sans text-xs transition-all duration-200 active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(31,24,16,0.04)',
+                    color: done > 0 ? 'var(--encre-tertiaire)' : 'rgba(31,24,16,0.18)',
+                    cursor: done > 0 ? 'pointer' : 'default',
+                  }}
+                >
+                  ↺ Réinitialiser la séance
+                </button>
+              </div>
+            )
+          })()}
         </section>
       ) : jourActif?.id === 'lundi' ? (
         <section className="surface-velin p-6 text-center">
