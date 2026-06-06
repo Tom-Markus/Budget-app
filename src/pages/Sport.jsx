@@ -364,9 +364,9 @@ function CartePerfHisto({ perf, couleur }) {
   const date = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: '2-digit' })
     .format(new Date(perf.date + 'T00:00:00'))
   return (
-    <div className="px-2.5 py-2 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)' }}>
+    <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `2px solid ${couleur}` }}>
       <div className="flex items-baseline justify-between gap-1">
-        <span className="font-sans font-semibold text-sm tabular-nums" style={{ color: couleur }}>
+        <span className="font-sans font-bold text-sm tabular-nums" style={{ color: couleur }}>
           {perf.poids} kg
         </span>
         <span className="font-sans tabular-nums" style={{ fontSize: '0.65rem', color: 'var(--encre-tertiaire)' }}>
@@ -374,7 +374,7 @@ function CartePerfHisto({ perf, couleur }) {
         </span>
       </div>
       <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-secondaire)' }}>
-        {perf.type === 'serie' ? `${perf.series} × ${perf.reps} reps` : `${perf.reps} reps`}
+        {perf.type === 'serie' ? `${perf.series} × ${perf.reps} reps` : `${perf.reps} rep${Number(perf.reps) > 1 ? 's' : ''}`}
       </p>
     </div>
   )
@@ -483,16 +483,17 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       <button
         onClick={() => !isUploading && fileInputRef.current?.click()}
         disabled={isUploading}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium transition-all hover:opacity-70 active:scale-[0.98]"
         style={{
-          background: 'rgba(31,24,16,0.06)',
-          color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
+          background: 'transparent',
+          border: '1.5px dashed rgba(31,24,16,0.18)',
+          color: 'var(--encre-tertiaire)',
           cursor: isUploading ? 'default' : 'pointer',
         }}
       >
         {isUploading ? (
           <>
-            <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
+            <span className="inline-block w-3 h-3 border-2 rounded-full animate-spin flex-shrink-0"
               style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
             Importation…
           </>
@@ -634,7 +635,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const jsx = (
     <motion.div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
-      style={{ background: 'rgba(10,8,6,0.65)' }}
+      style={{ background: 'rgba(10,8,6,0.60)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -643,7 +644,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     >
       <motion.div
         className={`relative w-full rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col ${isPPL && !editing ? 'sm:max-w-3xl' : 'sm:max-w-md'}`}
-        style={{ background: 'var(--velin)', maxHeight: '90dvh', boxShadow: '0 24px 64px rgba(10,8,6,0.28)' }}
+        style={{ background: 'var(--velin)', maxHeight: '90dvh', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 32px 80px rgba(10,8,6,0.36)' }}
         initial={{ opacity: 0, y: 24, scale: 0.97 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.97 }}
@@ -705,9 +706,10 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 </div>
               )}
               <div className="px-5 pt-5 pb-6">
-                <div className="flex items-start justify-between gap-4 mb-1 pr-20">
-                  <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
-                  <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5" style={{ color: couleur }}>{ex.series}</span>
+                <div className="flex items-start justify-between gap-3 mb-1 pr-20">
+                  <h3 className="font-serif italic text-2xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
+                  <span className="font-sans font-semibold text-xs tabular-nums whitespace-nowrap flex-shrink-0 mt-1 px-2.5 py-1 rounded-full"
+                    style={{ background: `${couleur}1a`, color: couleur }}>{ex.series}</span>
                 </div>
                 {(ex.montagne || ex.optionnel) && (
                   <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
@@ -715,10 +717,13 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                     {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
                   </div>
                 )}
-                <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+                <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
                 {ex.notes && (
-                  <div className="mb-4 px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                    <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                  <div className="mb-4">
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                      <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                    </div>
                   </div>
                 )}
                 <div>
@@ -732,7 +737,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             </div>
 
             {/* Séparateur vertical */}
-            <div className="hidden sm:block w-px flex-shrink-0 my-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+            <div className="hidden sm:block w-px flex-shrink-0 self-stretch" style={{ background: 'linear-gradient(180deg, transparent, rgba(31,24,16,0.10) 15%, rgba(31,24,16,0.10) 85%, transparent)' }} />
 
             {/* Colonne droite — performances + photo */}
             <div className="flex-1 overflow-y-auto px-4 pt-5" style={{ minHeight: 0, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
@@ -755,16 +760,17 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               </div>
             )}
             <div className="px-6 pt-5" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom, 0px))' }}>
-              <div className="flex items-start justify-between gap-4 mb-1 pr-20">
+              <div className="flex items-start justify-between gap-3 mb-1 pr-20">
                 {editing ? (
                   <input ref={titleInputRef} value={draft.nom}
                     onChange={e => setDraft(d => ({ ...d, nom: e.target.value }))}
-                    className="font-sans font-bold text-xl leading-tight flex-1 border-b pb-0.5"
+                    className="font-serif italic text-2xl leading-tight flex-1 border-b pb-0.5"
                     style={{ ...inputBase, borderColor: couleur }} />
                 ) : (
-                  <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
+                  <h3 className="font-serif italic text-2xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
                 )}
-                <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5" style={{ color: couleur }}>{ex.series}</span>
+                <span className="font-sans font-semibold text-xs tabular-nums whitespace-nowrap flex-shrink-0 mt-1 px-2.5 py-1 rounded-full"
+                  style={{ background: `${couleur}1a`, color: couleur }}>{ex.series}</span>
               </div>
               {(ex.montagne || ex.optionnel) && (
                 <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
@@ -772,7 +778,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
                 </div>
               )}
-              <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
+              <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
               <div className="mb-4">
                 {editing ? (
                   <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
@@ -782,8 +788,11 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                       style={{ ...inputBase, color: 'var(--encre-secondaire)' }} />
                   </div>
                 ) : ex.notes ? (
-                  <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                    <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                  <div className="mb-4">
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                      <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
+                    </div>
                   </div>
                 ) : null}
               </div>
