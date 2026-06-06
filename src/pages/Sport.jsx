@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useContext } from 'react'
+import { AnimatePresence, motion } from 'framer-motion'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -211,81 +212,88 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
-      style={{ background: 'rgba(10,8,6,0.72)' }}
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: 'rgba(10,8,6,0.65)' }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
       onClick={onClose}
     >
-      <div
-        className="relative w-full sm:max-w-sm md:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden flex flex-col md:flex-row"
-        style={{ background: 'var(--velin)', maxHeight: '92dvh' }}
+      <motion.div
+        className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col"
+        style={{ background: 'var(--velin)', maxHeight: '90dvh', boxShadow: '0 24px 64px rgba(10,8,6,0.28)' }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.97 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         onClick={e => e.stopPropagation()}
       >
+        {/* Image en haut — hauteur fixe, recadrée proprement */}
+        {customImage ? (
+          <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
+            <img src={customImage} alt={ex.nom} className="w-full h-full object-cover" />
+            {/* Dégradé bas pour fondre avec le fond */}
+            <div className="absolute inset-x-0 bottom-0 h-12"
+              style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
+          </div>
+        ) : (
+          /* Barre accent si pas d'image */
+          <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
+        )}
+
         {/* Bouton fermer */}
         <button
           onClick={onClose}
-          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
-          style={{ background: 'rgba(31,24,16,0.12)', color: 'var(--encre-secondaire)' }}
+          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-opacity hover:opacity-70"
+          style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
           aria-label="Fermer"
         >
           ✕
         </button>
 
-        {/* Image — bandeau en haut sur mobile, colonne gauche sur PC */}
-        {customImage && (
-          <div className="w-full h-52 md:w-2/5 md:h-auto flex-shrink-0 bg-encre">
-            <img
-              src={customImage}
-              alt={ex.nom}
-              className="w-full h-full object-cover"
-            />
-          </div>
-        )}
+        {/* Contenu scrollable */}
+        <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+          <div className="px-6 pt-5 pb-7">
 
-        {/* Colonne contenu */}
-        <div className="flex flex-col flex-1 min-h-0">
-          {/* Barre accent couleur */}
-          <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
-
-          {/* Contenu scrollable */}
-          <div className="overflow-y-auto flex-1 px-5 pt-4 pb-6 md:px-6 md:pt-5">
-
-            {/* En-tête : nom + séries */}
-            <div className="pr-8 mb-1">
-              <h3 className="font-sans font-bold text-lg leading-snug"
-                style={{ color: 'var(--encre)' }}>
+            {/* Nom + séries */}
+            <div className="flex items-start justify-between gap-4 mb-1 pr-8">
+              <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>
                 {ex.nom}
               </h3>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="font-sans font-bold text-sm tabular-nums"
-                  style={{ color: couleur }}>
-                  {ex.series}
-                </span>
+              <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5"
+                style={{ color: couleur }}>
+                {ex.series}
+              </span>
+            </div>
+
+            {/* Badges */}
+            {(ex.montagne || ex.optionnel) && (
+              <div className="flex gap-1.5 mt-2 mb-3 flex-wrap">
                 {ex.montagne && (
-                  <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-                    style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                  <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
                     🏔️ montagne
                   </span>
                 )}
                 {ex.optionnel && (
-                  <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-                    style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                  <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
                     optionnel
                   </span>
                 )}
               </div>
-            </div>
+            )}
 
             {/* Séparateur */}
-            <div className="h-px w-full my-3.5" style={{ background: 'rgba(31,24,16,0.08)' }} />
+            <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
 
-            {/* Note courte */}
+            {/* Note conseil */}
             {ex.notes && (
-              <div className="flex items-start gap-2.5 mb-4 px-3 py-3 rounded-xl"
-                style={{ background: 'rgba(31,24,16,0.04)' }}>
-                <span className="text-base leading-none mt-0.5 flex-shrink-0">💡</span>
-                <p className="font-sans text-sm leading-relaxed"
-                  style={{ color: 'var(--encre-secondaire)' }}>
+              <div className="flex items-start gap-3 mb-4 px-4 py-3.5 rounded-2xl"
+                style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>
                   {ex.notes}
                 </p>
               </div>
@@ -293,35 +301,27 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
 
             {/* Description exécution */}
             {ex.description && (
-              <div className="mb-5">
-                <p className="font-sans text-[10px] uppercase tracking-wider font-semibold mb-2"
+              <div className="mb-6">
+                <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5"
                   style={{ color: 'var(--encre-tertiaire)' }}>
                   Exécution
                 </p>
-                <p className="font-sans text-sm leading-relaxed"
-                  style={{ color: 'var(--encre-secondaire)' }}>
+                <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>
                   {ex.description}
                 </p>
               </div>
             )}
 
             {/* Bouton photo */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileChange}
-            />
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
             <button
               onClick={() => !isUploading && fileInputRef.current?.click()}
               disabled={isUploading}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-opacity active:opacity-60"
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
               style={{
                 background: 'rgba(31,24,16,0.06)',
                 color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
                 cursor: isUploading ? 'default' : 'pointer',
-                opacity: isUploading ? 0.6 : 1,
               }}
             >
               {isUploading ? (
@@ -330,16 +330,12 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
                     style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
                   Importation…
                 </>
-              ) : customImage ? (
-                <>📷 Changer la photo</>
-              ) : (
-                <>📷 Importer une photo</>
-              )}
+              ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
             </button>
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
 
@@ -475,16 +471,19 @@ export default function Sport() {
     <div className="max-w-2xl mx-auto space-y-4">
 
       {/* Modal exercice */}
-      {modal && (
-        <ModalExercice
-          ex={modal.ex}
-          couleur={modal.couleur}
-          onClose={() => setModal(null)}
-          customImage={customImages[modal.ex.nom] ?? null}
-          isUploading={uploading === modal.ex.nom}
-          onUpload={handleUpload}
-        />
-      )}
+      <AnimatePresence>
+        {modal && (
+          <ModalExercice
+            key={modal.ex.nom}
+            ex={modal.ex}
+            couleur={modal.couleur}
+            onClose={() => setModal(null)}
+            customImage={customImages[modal.ex.nom] ?? null}
+            isUploading={uploading === modal.ex.nom}
+            onUpload={handleUpload}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Sélecteur semaine */}
       <section className="surface-velin p-4 md:p-6">
