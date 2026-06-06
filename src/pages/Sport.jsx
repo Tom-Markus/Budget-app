@@ -206,6 +206,7 @@ function slugify(name) {
 
 function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave }) {
   const fileInputRef = useRef(null)
+  const titleInputRef = useRef(null)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
 
@@ -225,6 +226,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     onSave(draft)
     setEditing(false)
   }
+
+  useEffect(() => {
+    if (editing) {
+      // Délai court pour laisser le layout se stabiliser avant d'ouvrir le clavier mobile
+      const t = setTimeout(() => titleInputRef.current?.focus(), 80)
+      return () => clearTimeout(t)
+    }
+  }, [editing])
 
   function handleCancel() {
     setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
@@ -312,17 +321,17 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
         {/* Contenu scrollable */}
         <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
-          <div className="px-6 pt-5 pb-7">
+          <div className="px-6 pt-5" style={{ paddingBottom: 'calc(1.75rem + env(safe-area-inset-bottom, 0px))' }}>
 
             {/* Nom + séries */}
             <div className="flex items-start justify-between gap-4 mb-1 pr-20">
               {editing ? (
                 <input
+                  ref={titleInputRef}
                   value={draft.nom}
                   onChange={e => setDraft(d => ({ ...d, nom: e.target.value }))}
                   className="font-sans font-bold text-xl leading-tight flex-1 border-b pb-0.5"
                   style={{ ...inputBase, borderColor: couleur }}
-                  autoFocus
                 />
               ) : (
                 <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>
