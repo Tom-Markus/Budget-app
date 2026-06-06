@@ -1041,7 +1041,6 @@ export default function Sport() {
           {JOURS.map((jour) => {
             const isActive = jour.id === jourActifId
             const isToday = jour.id === JOURS[getTodayIndex()].id
-            const hasChecked = Object.values(checkedExos[jour.id] || {}).some(Boolean)
             return (
               <button
                 key={jour.id}
@@ -1067,14 +1066,11 @@ export default function Sport() {
                   style={{ color: isActive ? jour.text : 'var(--encre-secondaire)' }}>
                   {jour.label}
                 </span>
-                {/* Indicateurs */}
-                <div className="flex gap-1 items-center h-2 mt-0.5">
+                {/* Indicateur aujourd'hui */}
+                <div className="h-2 mt-0.5 flex items-center">
                   {isToday && (
                     <div className="w-1 h-1 rounded-full transition-colors duration-200"
                       style={{ background: isActive ? jour.text : jour.border }} />
-                  )}
-                  {hasChecked && (
-                    <div className="w-1 h-1 rounded-full" style={{ background: 'var(--vert)' }} />
                   )}
                 </div>
               </button>
