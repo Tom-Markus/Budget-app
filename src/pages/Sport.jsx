@@ -1445,13 +1445,15 @@ export default function Sport() {
                     {Math.round(pct * 100)} %
                   </span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)', boxShadow: fini ? `0 0 10px 3px ${session.couleur}55` : 'none', transition: 'box-shadow 0.6s ease' }}>
-                  <motion.div
-                    className="h-full rounded-full"
-                    style={{ background: session.couleur }}
-                    animate={{ width: `${pct * 100}%` }}
-                    transition={{ duration: 0.4, ease: 'easeOut' }}
-                  />
+                <div className="rounded-full" style={{ boxShadow: fini ? `0 0 10px 3px ${session.couleur}66` : 'none', transition: 'box-shadow 0.6s ease' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)' }}>
+                    <motion.div
+                      className="h-full rounded-full"
+                      style={{ background: session.couleur }}
+                      animate={{ width: `${pct * 100}%` }}
+                      transition={{ duration: 0.4, ease: 'easeOut' }}
+                    />
+                  </div>
                 </div>
               </div>
             )
@@ -1504,8 +1506,7 @@ export default function Sport() {
           <p className="t-label mb-3">Règles d'or</p>
           <div className="space-y-2.5">
             {CONSEILS.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl transition-colors duration-200 hover:bg-[rgba(31,24,16,0.07)]"
-                style={{ background: 'rgba(31,24,16,0.03)' }}>
+              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-[rgba(31,24,16,0.03)] hover:bg-[rgba(31,24,16,0.07)] transition-colors duration-200">
                 <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
                 <div>
                   <p className="font-sans font-semibold text-sm" style={{ color: 'var(--encre)' }}>
