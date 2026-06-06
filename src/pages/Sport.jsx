@@ -400,7 +400,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
   const n = sorted.length
 
   const W = 480, H = 200
-  const PAD = { t: 24, r: 20, b: 36, l: 20 }
+  const PAD = { t: 24, r: 20, b: 36, l: 46 }
   const innerW = W - PAD.l - PAD.r
   const innerH = H - PAD.t - PAD.b
   const gradId = `poids-grad-${type}`
@@ -413,10 +413,10 @@ function PoidsChart({ data, couleur, type, onClose }) {
   const evolution = n >= 2 ? sorted[n - 1].poids - sorted[0].poids : 0
   const evolutionLabel = evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
 
-  let pts = [], linePath = '', fillPath = ''
+  let pts = [], linePath = '', fillPath = '', yLabels = [], minW = 0, maxW = 0
   if (n >= 2) {
     const weights = sorted.map(d => d.poids)
-    const minW = Math.min(...weights), maxW = Math.max(...weights)
+    minW = Math.min(...weights); maxW = Math.max(...weights)
     const range = maxW - minW
     const getY = (w) => range === 0 ? PAD.t + innerH / 2 : PAD.t + (1 - (w - minW) / range) * innerH
     pts = sorted.map((d, i) => ({ x: PAD.l + (i / (n - 1)) * innerW, y: getY(d.poids), ...d }))
@@ -426,6 +426,13 @@ function PoidsChart({ data, couleur, type, onClose }) {
       linePath += ` C ${pts[i].x + dx} ${pts[i].y} ${pts[i + 1].x - dx} ${pts[i + 1].y} ${pts[i + 1].x} ${pts[i + 1].y}`
     }
     fillPath = linePath + ` L ${pts[n - 1].x} ${PAD.t + innerH} L ${pts[0].x} ${PAD.t + innerH} Z`
+    yLabels = range === 0
+      ? [{ val: maxW, y: PAD.t + innerH / 2 }]
+      : [
+          { val: maxW, y: getY(maxW) },
+          { val: Math.round((minW + maxW) / 2 * 2) / 2, y: getY((minW + maxW) / 2) },
+          { val: minW, y: getY(minW) },
+        ]
   }
 
   function handleMouseMove(e) {
@@ -522,12 +529,26 @@ function PoidsChart({ data, couleur, type, onClose }) {
                   <stop offset="100%" stopColor={couleur} stopOpacity="0.00" />
                 </linearGradient>
               </defs>
-              {[0, 0.33, 0.66, 1].map((t, i) => (
+
+              {/* Lignes de grille horizontales */}
+              {[0, 0.5, 1].map((t, i) => (
                 <line key={i} x1={PAD.l} y1={PAD.t + t * innerH} x2={PAD.l + innerW} y2={PAD.t + t * innerH}
-                  stroke="rgba(31,24,16,0.06)" strokeWidth="1" />
+                  stroke="rgba(31,24,16,0.07)" strokeWidth="1" />
               ))}
+
+              {/* Axe Y — poids permanents à gauche */}
+              {yLabels.map((l, i) => (
+                <text key={i} x={PAD.l - 7} y={l.y + 3.5} textAnchor="end"
+                  style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.38)', fontWeight: '500' }}>
+                  {l.val} kg
+                </text>
+              ))}
+
+              {/* Courbe */}
               <path d={fillPath} fill={`url(#${gradId})`} />
               <path d={linePath} fill="none" stroke={couleur} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+
+              {/* Points */}
               {pts.map((p, i) => (
                 <circle key={i} cx={p.x} cy={p.y}
                   r={hovered === i ? 6 : 4}
@@ -536,28 +557,32 @@ function PoidsChart({ data, couleur, type, onClose }) {
                   style={{ transition: 'r 0.08s ease, opacity 0.1s ease' }}
                 />
               ))}
+
+              {/* Hover : crosshair + ring */}
               {hp && (
                 <>
                   <line x1={hp.x} y1={PAD.t} x2={hp.x} y2={PAD.t + innerH}
                     stroke={couleur} strokeWidth="1" strokeDasharray="4 3" strokeOpacity="0.35" />
                   <circle cx={hp.x} cy={hp.y} r={12} fill="none" stroke={couleur} strokeWidth="1.5" strokeOpacity="0.20" />
-                  <text x={hp.x} y={H - 10} textAnchor="middle"
-                    style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: couleur, opacity: 0.6 }}>
-                    {fmt(hp.date)}
-                  </text>
                 </>
               )}
-              {!hp && (
-                <>
-                  <text x={pts[0].x} y={H - 10} textAnchor="start"
-                    style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.30)' }}>
-                    {fmt(pts[0].date)}
-                  </text>
-                  <text x={pts[n - 1].x} y={H - 10} textAnchor="end"
-                    style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.30)' }}>
-                    {fmt(pts[n - 1].date)}
-                  </text>
-                </>
+
+              {/* Dates X — toujours affichées */}
+              <text x={pts[0].x} y={H - 10} textAnchor="start"
+                style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
+                {fmt(pts[0].date)}
+              </text>
+              <text x={pts[n - 1].x} y={H - 10} textAnchor="end"
+                style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
+                {fmt(pts[n - 1].date)}
+              </text>
+
+              {/* Date du point survolé (si ce n'est pas le premier ou le dernier) */}
+              {hp && hovered !== 0 && hovered !== n - 1 && (
+                <text x={hp.x} y={H - 10} textAnchor="middle"
+                  style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: couleur, fontWeight: '600' }}>
+                  {fmt(hp.date)}
+                </text>
               )}
             </svg>
           )}
