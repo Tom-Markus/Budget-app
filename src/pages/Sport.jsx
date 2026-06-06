@@ -746,12 +746,27 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
               <button key={id}
                 onClick={() => setPerfType(id)}
-                className="h-11 rounded-xl text-sm font-bold font-sans transition-all duration-150 active:scale-[0.97] hover:bg-[rgba(31,24,16,0.10)]"
+                onMouseEnter={e => {
+                  e.currentTarget.style.background = `${couleur}18`
+                  e.currentTarget.style.borderColor = `${couleur}90`
+                  e.currentTarget.style.color = couleur
+                  e.currentTarget.style.boxShadow = `0 4px 14px ${couleur}28`
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.background = 'rgba(31,24,16,0.05)'
+                  e.currentTarget.style.borderColor = 'rgba(31,24,16,0.13)'
+                  e.currentTarget.style.color = 'var(--encre-secondaire)'
+                  e.currentTarget.style.boxShadow = 'none'
+                }}
+                className="h-11 rounded-2xl font-semibold font-sans active:scale-[0.97]"
                 style={{
                   background: 'rgba(31,24,16,0.05)',
-                  border: '1.5px solid rgba(31,24,16,0.18)',
-                  color: 'var(--encre)',
+                  border: '1.5px solid rgba(31,24,16,0.13)',
+                  color: 'var(--encre-secondaire)',
                   cursor: 'pointer',
+                  transition: 'background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease',
+                  fontSize: '0.875rem',
+                  letterSpacing: '0.02em',
                 }}>
                 {label}
               </button>
