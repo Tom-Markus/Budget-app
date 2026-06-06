@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp } from 'lucide-react'
+import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -1183,7 +1183,7 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
           style={{ color: 'var(--encre-tertiaire)' }}
           aria-label={`Infos ${ex.nom}`}
         >
-          <span className="font-sans text-[11px] font-bold leading-none select-none">i</span>
+          <Info size={11} strokeWidth={2.5} />
         </button>
       </div>
     </div>
@@ -1445,7 +1445,7 @@ export default function Sport() {
                     {Math.round(pct * 100)} %
                   </span>
                 </div>
-                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)' }}>
+                <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)', boxShadow: fini ? `0 0 10px 3px ${session.couleur}55` : 'none', transition: 'box-shadow 0.6s ease' }}>
                   <motion.div
                     className="h-full rounded-full"
                     style={{ background: session.couleur }}
@@ -1504,7 +1504,7 @@ export default function Sport() {
           <p className="t-label mb-3">Règles d'or</p>
           <div className="space-y-2.5">
             {CONSEILS.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl transition-colors duration-200 hover:bg-[rgba(31,24,16,0.07)]"
                 style={{ background: 'rgba(31,24,16,0.03)' }}>
                 <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
                 <div>
