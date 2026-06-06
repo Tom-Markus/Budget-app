@@ -1,4 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef, useContext } from 'react'
+import { supabase } from '../lib/supabase'
+import { AuthContext } from '../contexts/AuthContext'
 
 function getTodayIndex() {
   const map = { 0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5 }
@@ -188,43 +190,25 @@ const CONSEILS = [
   { emoji: '🎯', titre: 'Alignement des machines', corps: 'Aligne l\'axe de rotation de la machine avec ton articulation à chaque exercice.' },
 ]
 
-const PX = (id) =>
-  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&dpr=1`
+const BUCKET = 'exercise-images'
 
-const IMAGE_MAP = {
-  // Push
-  'Incline Bench Press':          PX(15917308), // man lying down lifting dumbbells
-  'Chest Press (machine)':        PX(416754),   // woman on bench press
-  'Shoulder Press (machine)':     PX(7289370),  // man doing dumbbell shoulder press
-  'Élévations latérales machine': PX(6922165),  // man doing shoulder lateral exercise
-  'Triceps Pushdown (corde)':     PX(5327505),  // man on cable crossover machine
-  'Pec Deck':                     PX(29218854), // man exercising on cable machine
-  // Legs
-  'Goblet Squat (haltère)':       PX(4720555),  // man squatting holding gym ball
-  'Leg Press (pieds hauts)':      PX(5327530),  // man doing squats
-  'Fentes marchées':              PX(7500322),  // couple doing runner's lunge
-  'Seated Leg Curl':              PX(10754972), // man working out at gym
-  'Calf Raise':                   PX(17840),    // man exercising (standing, legs)
-  'Machine abdos':                PX(5769127),  // man exercising at gym
-  // Pull
-  'Tractions (barres)':           PX(1865131),  // man doing pull-ups
-  'Lat Pulldown (prise large)':   PX(9644832),  // man doing pull-ups in gym
-  'Seated Row':                   PX(10754974), // shirtless man at gym
-  'Reverse Pec Deck':             PX(9152546),  // man doing pull-ups (back)
-  'Incline Biceps Curl':          PX(3763115),  // man doing dumbbell bicep curls
-  'Hammer Curl poulie basse':     PX(7289367),  // man doing dumbbell exercise
-  // Home
-  'Planche frontale':             PX(3837433),  // man doing plank on kettlebells
-  'Planche latérale':             PX(5149167),  // woman working out
-  'Handstand au mur':             PX(8520197),  // man holding on pull-up bar
-  'Mobilité hanches + épaules':   PX(7500320),  // couple doing mobility/lunge pose
-  'Mollets (sur une marche)':     PX(17840),    // man exercising (standing)
+function slugify(name) {
+  return name
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_|_$/g, '')
 }
 
-function ModalExercice({ ex, couleur, onClose }) {
-  const [imgError, setImgError] = useState(false)
-  const imgUrl = IMAGE_MAP[ex.nom]
-  const showImg = imgUrl && !imgError
+function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUpload }) {
+  const fileInputRef = useRef(null)
+
+  function handleFileChange(e) {
+    const file = e.target.files?.[0]
+    if (file) onUpload(ex.nom, file)
+    e.target.value = ''
+  }
 
   return (
     <div
@@ -247,20 +231,19 @@ function ModalExercice({ ex, couleur, onClose }) {
           ✕
         </button>
 
-        {/* Image illustrée */}
-        {showImg && (
+        {/* Image personnalisée */}
+        {customImage && (
           <div className="w-full bg-black" style={{ aspectRatio: '16/9' }}>
             <img
-              src={imgUrl}
+              src={customImage}
               alt={ex.nom}
               className="w-full h-full object-contain"
-              onError={() => setImgError(true)}
             />
           </div>
         )}
 
         {/* Contenu scrollable */}
-        <div className="overflow-y-auto" style={{ maxHeight: showImg ? '55dvh' : '80dvh' }}>
+        <div className="overflow-y-auto" style={{ maxHeight: customImage ? '55dvh' : '80dvh' }}>
           <div className="px-5 pt-4 pb-6">
             {/* En-tête */}
             <div className="flex items-start justify-between gap-3 mb-3">
@@ -307,7 +290,7 @@ function ModalExercice({ ex, couleur, onClose }) {
 
             {/* Description exécution */}
             {ex.description && (
-              <div>
+              <div className="mb-4">
                 <p className="font-sans text-[10px] uppercase tracking-wider font-semibold mb-1.5"
                   style={{ color: 'var(--encre-tertiaire)' }}>
                   Exécution
@@ -318,6 +301,38 @@ function ModalExercice({ ex, couleur, onClose }) {
                 </p>
               </div>
             )}
+
+            {/* Bouton importer une photo */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <button
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              disabled={isUploading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-opacity active:opacity-60"
+              style={{
+                background: 'rgba(31,24,16,0.06)',
+                color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
+                cursor: isUploading ? 'default' : 'pointer',
+                opacity: isUploading ? 0.6 : 1,
+              }}
+            >
+              {isUploading ? (
+                <>
+                  <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
+                    style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+                  Importation…
+                </>
+              ) : customImage ? (
+                <>📷 Changer la photo</>
+              ) : (
+                <>📷 Importer une photo</>
+              )}
+            </button>
           </div>
         </div>
       </div>
@@ -383,8 +398,72 @@ function CarteExercice({ ex, couleur, onInfo }) {
 }
 
 export default function Sport() {
+  const { user } = useContext(AuthContext)
   const [jourActifId, setJourActifId] = useState(JOURS[getTodayIndex()].id)
   const [modal, setModal] = useState(null)
+  const [customImages, setCustomImages] = useState({})
+  const [uploading, setUploading] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    loadImages()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  async function loadImages() {
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .list(user.id, { limit: 100 })
+    if (error || !data || data.length === 0) return
+
+    // Build slug → exercise name reverse map
+    const slugToName = {}
+    Object.values(SESSIONS).forEach(s => {
+      s.exercices.forEach(ex => {
+        if (!ex.warmup) slugToName[slugify(ex.nom)] = ex.nom
+      })
+    })
+
+    const map = {}
+    data.forEach(file => {
+      const slug = file.name.replace(/\.[^.]+$/, '')
+      const exerciseName = slugToName[slug]
+      if (exerciseName) {
+        const { data: { publicUrl } } = supabase.storage
+          .from(BUCKET)
+          .getPublicUrl(`${user.id}/${file.name}`)
+        // Cache-bust with updated_at so images reload after re-upload
+        const ts = file.updated_at ? new Date(file.updated_at).getTime() : Date.now()
+        map[exerciseName] = `${publicUrl}?t=${ts}`
+      }
+    })
+
+    setCustomImages(map)
+  }
+
+  async function handleUpload(exerciseName, file) {
+    if (!user) return
+    setUploading(exerciseName)
+
+    const ext = file.name.split('.').pop().toLowerCase()
+    const path = `${user.id}/${slugify(exerciseName)}.${ext}`
+
+    const { error } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, file, { upsert: true, contentType: file.type })
+
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage
+        .from(BUCKET)
+        .getPublicUrl(path)
+      setCustomImages(prev => ({
+        ...prev,
+        [exerciseName]: `${publicUrl}?t=${Date.now()}`,
+      }))
+    }
+
+    setUploading(null)
+  }
 
   const jourActif = JOURS.find(j => j.id === jourActifId)
   const session = jourActif?.session ? SESSIONS[jourActif.session] : null
@@ -398,6 +477,9 @@ export default function Sport() {
           ex={modal.ex}
           couleur={modal.couleur}
           onClose={() => setModal(null)}
+          customImage={customImages[modal.ex.nom] ?? null}
+          isUploading={uploading === modal.ex.nom}
+          onUpload={handleUpload}
         />
       )}
 
