@@ -188,31 +188,37 @@ const CONSEILS = [
   { emoji: '🎯', titre: 'Alignement des machines', corps: 'Aligne l\'axe de rotation de la machine avec ton articulation à chaque exercice.' },
 ]
 
-const MW = 'https://musclewiki.com/media/uploads/videos/branded/'
+const PX = (id) =>
+  `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=800&h=500&dpr=1`
 
 const IMAGE_MAP = {
-  'Incline Bench Press':          MW + 'male-dumbbell-incline-bench-press-front.gif',
-  'Chest Press (machine)':        MW + 'male-machine-chest-press-front.gif',
-  'Shoulder Press (machine)':     MW + 'male-machine-shoulder-press-front.gif',
-  'Élévations latérales machine': MW + 'male-machine-lateral-raise-front.gif',
-  'Triceps Pushdown (corde)':     MW + 'male-cable-tricep-rope-pushdown-front.gif',
-  'Pec Deck':                     MW + 'male-machine-pec-deck-fly-front.gif',
-  'Goblet Squat (haltère)':       MW + 'male-dumbbell-goblet-squat-front.gif',
-  'Leg Press (pieds hauts)':      MW + 'male-machine-leg-press-front.gif',
-  'Fentes marchées':              MW + 'male-dumbbell-walking-lunge-front.gif',
-  'Seated Leg Curl':              MW + 'male-machine-seated-leg-curl-front.gif',
-  'Calf Raise':                   MW + 'male-bodyweight-standing-calf-raise-front.gif',
-  'Machine abdos':                MW + 'male-machine-crunch-front.gif',
-  'Tractions (barres)':           MW + 'male-bodyweight-pull-up-front.gif',
-  'Lat Pulldown (prise large)':   MW + 'male-cable-wide-grip-lat-pulldown-front.gif',
-  'Seated Row':                   MW + 'male-cable-seated-row-front.gif',
-  'Reverse Pec Deck':             MW + 'male-machine-reverse-pec-deck-fly-front.gif',
-  'Incline Biceps Curl':          MW + 'male-dumbbell-incline-curl-front.gif',
-  'Hammer Curl poulie basse':     MW + 'male-dumbbell-hammer-curl-front.gif',
-  'Planche frontale':             MW + 'male-bodyweight-plank-front.gif',
-  'Planche latérale':             MW + 'male-bodyweight-side-plank-front.gif',
-  'Handstand au mur':             MW + 'male-bodyweight-handstand-push-up-front.gif',
-  'Mollets (sur une marche)':     MW + 'male-bodyweight-standing-calf-raise-front.gif',
+  // Push
+  'Incline Bench Press':          PX(15917308), // man lying down lifting dumbbells
+  'Chest Press (machine)':        PX(416754),   // woman on bench press
+  'Shoulder Press (machine)':     PX(7289370),  // man doing dumbbell shoulder press
+  'Élévations latérales machine': PX(6922165),  // man doing shoulder lateral exercise
+  'Triceps Pushdown (corde)':     PX(5327505),  // man on cable crossover machine
+  'Pec Deck':                     PX(29218854), // man exercising on cable machine
+  // Legs
+  'Goblet Squat (haltère)':       PX(4720555),  // man squatting holding gym ball
+  'Leg Press (pieds hauts)':      PX(5327530),  // man doing squats
+  'Fentes marchées':              PX(7500322),  // couple doing runner's lunge
+  'Seated Leg Curl':              PX(10754972), // man working out at gym
+  'Calf Raise':                   PX(17840),    // man exercising (standing, legs)
+  'Machine abdos':                PX(5769127),  // man exercising at gym
+  // Pull
+  'Tractions (barres)':           PX(1865131),  // man doing pull-ups
+  'Lat Pulldown (prise large)':   PX(9644832),  // man doing pull-ups in gym
+  'Seated Row':                   PX(10754974), // shirtless man at gym
+  'Reverse Pec Deck':             PX(9152546),  // man doing pull-ups (back)
+  'Incline Biceps Curl':          PX(3763115),  // man doing dumbbell bicep curls
+  'Hammer Curl poulie basse':     PX(7289367),  // man doing dumbbell exercise
+  // Home
+  'Planche frontale':             PX(3837433),  // man doing plank on kettlebells
+  'Planche latérale':             PX(5149167),  // woman working out
+  'Handstand au mur':             PX(8520197),  // man holding on pull-up bar
+  'Mobilité hanches + épaules':   PX(7500320),  // couple doing mobility/lunge pose
+  'Mollets (sur une marche)':     PX(17840),    // man exercising (standing)
 }
 
 function ModalExercice({ ex, couleur, onClose }) {
