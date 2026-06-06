@@ -29,8 +29,8 @@ const SESSIONS = {
       { nom: 'Shoulder Press (machine)',                     series: '3 × 10–12',   notes: 'Pas de blocage des coudes en haut' },
       { nom: 'Élévations latérales machine',                 series: '3 × 15',      notes: 'Descente lente, pas de balancement' },
       { nom: 'Triceps Pushdown (corde)',                     series: '3 × 12–15',   notes: 'Coudes fixes, extension complète' },
+      { nom: 'Pec Deck',                                     series: '3 × 12–15',   notes: 'Contraction maximale en fin de mouvement' },
     ],
-    note: 'Si tu termines tôt, le pec deck est le seul optionnel à rajouter.',
   },
   legs: {
     titre: 'Legs',
