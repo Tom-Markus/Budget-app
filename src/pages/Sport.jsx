@@ -1006,7 +1006,17 @@ export default function Sport() {
     setUploading(exerciseName)
 
     const ext = file.name.split('.').pop().toLowerCase()
-    const path = `${user.id}/${slugify(exerciseName)}.${ext}`
+    const slug = slugify(exerciseName)
+    const path = `${user.id}/${slug}.${ext}`
+
+    // Supprimer les anciennes versions du même exercice (extensions différentes)
+    const { data: existing } = await supabase.storage.from(BUCKET).list(user.id)
+    if (existing) {
+      const toDelete = existing
+        .filter(f => f.name.replace(/\.[^.]+$/, '') === slug && f.name !== `${slug}.${ext}`)
+        .map(f => `${user.id}/${f.name}`)
+      if (toDelete.length > 0) await supabase.storage.from(BUCKET).remove(toDelete)
+    }
 
     const { error } = await supabase.storage
       .from(BUCKET)
