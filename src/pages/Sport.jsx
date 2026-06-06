@@ -744,27 +744,32 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           </p>
           <div className="flex p-1 rounded-2xl" style={{ background: 'rgba(31,24,16,0.07)', gap: '3px' }}>
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
-              <button key={id}
+              <motion.button
+                key={id}
                 onClick={() => setPerfType(id)}
-                onMouseEnter={e => {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.50)'
-                  e.currentTarget.style.color = 'var(--encre-secondaire)'
-                }}
-                onMouseLeave={e => {
-                  e.currentTarget.style.background = 'transparent'
-                  e.currentTarget.style.color = 'var(--encre-tertiaire)'
-                }}
-                className="flex-1 h-10 rounded-xl font-semibold font-sans active:scale-[0.98] flex items-center justify-center"
+                whileHover="hovered"
+                whileTap={{ scale: 0.97 }}
+                initial="idle"
+                className="relative flex-1 h-10 rounded-xl font-semibold font-sans flex items-center justify-center"
                 style={{
                   background: 'transparent',
                   border: 'none',
-                  color: 'var(--encre-tertiaire)',
+                  color: 'var(--encre-secondaire)',
                   cursor: 'pointer',
-                  transition: 'background 0.18s ease, color 0.18s ease',
                   fontSize: '0.875rem',
-                }}>
-                {label}
-              </button>
+                }}
+              >
+                <motion.span
+                  variants={{
+                    idle: { opacity: 0, scale: 0.92 },
+                    hovered: { opacity: 1, scale: 1 },
+                  }}
+                  transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
+                  className="absolute inset-0.5 rounded-[10px] pointer-events-none"
+                  style={{ background: 'rgba(255,255,255,0.58)' }}
+                />
+                <span className="relative z-10">{label}</span>
+              </motion.button>
             ))}
           </div>
         </div>
