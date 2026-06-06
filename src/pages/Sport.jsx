@@ -1324,12 +1324,12 @@ export default function Sport() {
       </AnimatePresence>
 
       {/* Sélecteur semaine */}
-      <section className="surface-velin liserer-signature px-4 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
-        <div className="flex items-center gap-1.5 mb-4">
-          <Calendar size={12} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2.5} />
+      <section className="surface-velin liserer-signature px-4 pt-4 pb-4 md:px-5 md:pt-5 md:pb-5">
+        <div className="flex items-center gap-1.5 mb-3">
+          <Calendar size={11} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2.5} />
           <p className="t-label">Cette semaine</p>
         </div>
-        <div className="grid grid-cols-7 gap-1.5">
+        <div className="flex rounded-2xl p-1" style={{ background: 'rgba(31,24,16,0.07)', gap: '2px' }}>
           {JOURS.map((jour) => {
             const isActive = jour.id === jourActifId
             const isToday = jour.id === JOURS[getTodayIndex()].id
@@ -1337,38 +1337,38 @@ export default function Sport() {
               <button
                 key={jour.id}
                 onClick={() => setJourActifId(jour.id)}
-                className="relative flex flex-col items-center gap-1 pt-3 pb-2.5 rounded-2xl transition-all duration-200 group"
-                style={{
-                  background: isActive ? jour.bg : 'rgba(31,24,16,0.03)',
-                  outline: isActive ? `1.5px solid ${jour.border}` : '1.5px solid transparent',
-                  isolation: 'isolate',
-                }}
+                className="relative flex-1 flex flex-col items-center py-2.5 rounded-xl group"
+                style={{ isolation: 'isolate', gap: '2px' }}
               >
-                {/* Hover tint — visible seulement sur les jours inactifs */}
-                {!isActive && (
-                  <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
-                    style={{ background: jour.bg, zIndex: -1 }} />
+                {/* Carte active glissante */}
+                {isActive && (
+                  <motion.div
+                    layoutId="week-active-card"
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: 'var(--velin)', boxShadow: '0 1px 6px rgba(31,24,16,0.12)' }}
+                    transition={{ type: 'spring', bounce: 0.18, duration: 0.36 }}
+                  />
                 )}
-                {/* Barre colorée en haut */}
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
-                  style={{
-                    width: isActive ? '60%' : '0%',
-                    background: jour.border,
-                  }}
-                />
-                <span className="font-sans text-[9px] uppercase tracking-widest font-medium mt-0.5"
+                {/* Hover tint pour les jours inactifs */}
+                {!isActive && (
+                  <span className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-150 pointer-events-none"
+                    style={{ background: jour.bg }} />
+                )}
+                {/* Abréviation */}
+                <span className="relative z-10 font-sans text-[9px] uppercase tracking-widest font-medium"
                   style={{ color: isActive ? jour.text : 'var(--encre-tertiaire)' }}>
                   {jour.court}
                 </span>
-                <span className="font-sans text-[11px] font-bold leading-tight text-center"
+                {/* Label session */}
+                <span className="relative z-10 font-sans text-[11px] font-bold leading-tight text-center"
                   style={{ color: isActive ? jour.text : 'var(--encre-secondaire)' }}>
                   {jour.label}
                 </span>
-                {/* Indicateur aujourd'hui */}
-                <div className="h-2 mt-0.5 flex items-center">
+                {/* Point aujourd'hui */}
+                <div className="relative z-10 h-1.5 flex items-center">
                   {isToday && (
-                    <div className="w-1 h-1 rounded-full transition-colors duration-200"
-                      style={{ background: isActive ? jour.text : jour.border }} />
+                    <div className="w-1 h-1 rounded-full"
+                      style={{ background: isActive ? jour.border : 'rgba(31,24,16,0.22)' }} />
                   )}
                 </div>
               </button>
