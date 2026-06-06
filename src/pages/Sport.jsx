@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useContext } from 'react'
+import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pencil, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
@@ -239,7 +240,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     fontFamily: 'inherit',
   }
 
-  return (
+  const jsx = (
     <motion.div
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
       style={{ background: 'rgba(10,8,6,0.65)' }}
@@ -439,6 +440,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       </motion.div>
     </motion.div>
   )
+
+  return createPortal(jsx, document.body)
 }
 
 function CarteExercice({ ex, couleur, onInfo }) {
