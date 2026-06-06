@@ -23,13 +23,40 @@ const SESSIONS = {
     info: '16 séries · ~55 min',
     couleur: 'var(--or)',
     exercices: [
-      { nom: 'Échauffement',                  warmup: true,  series: '5 min',       notes: 'Cercles épaules + poignets + dead hang 30 sec' },
-      { nom: 'Incline Bench Press',                          series: '4 × 8–10',    notes: 'Haut des pecs en priorité' },
-      { nom: 'Chest Press (machine)',                        series: '3 × 10–12',   notes: 'Charge progressive chaque semaine' },
-      { nom: 'Shoulder Press (machine)',                     series: '3 × 10–12',   notes: 'Pas de blocage des coudes en haut' },
-      { nom: 'Élévations latérales machine',                 series: '3 × 15',      notes: 'Descente lente, pas de balancement' },
-      { nom: 'Triceps Pushdown (corde)',                     series: '3 × 12–15',   notes: 'Coudes fixes, extension complète' },
-      { nom: 'Pec Deck',                                     series: '3 × 12–15',   notes: 'Contraction maximale en fin de mouvement' },
+      {
+        nom: 'Échauffement', warmup: true, series: '5 min',
+        notes: 'Cercles épaules + poignets + dead hang 30 sec',
+      },
+      {
+        nom: 'Incline Bench Press', series: '4 × 8–10',
+        notes: 'Haut des pecs en priorité',
+        description: 'Allonge-toi sur un banc incliné à 30–45°. Prends les haltères, coudes à environ 70° du corps. Descends lentement jusqu\'à effleurer les pecs, puis pousse vers le haut en ligne droite. Pince les pecs en fin de mouvement sans bloquer les coudes.',
+      },
+      {
+        nom: 'Chest Press (machine)', series: '3 × 10–12',
+        notes: 'Charge progressive chaque semaine',
+        description: 'Règle l\'assise pour que les poignées soient au niveau des pecs. Pousse en ligne droite devant toi en expirant. Reviens lentement sans laisser les poids se reposer entre les reps — tension constante.',
+      },
+      {
+        nom: 'Shoulder Press (machine)', series: '3 × 10–12',
+        notes: 'Pas de blocage des coudes en haut',
+        description: 'Règle le siège pour que les poignées soient à hauteur d\'épaules. Pousse vers le haut sans verrouiller les coudes en fin de mouvement. Garde le dos bien appuyé contre le dossier tout au long de la série.',
+      },
+      {
+        nom: 'Élévations latérales machine', series: '3 × 15',
+        notes: 'Descente lente, pas de balancement',
+        description: 'Assis face à la machine, coudes en appui sur les coussinets. Monte les bras latéralement jusqu\'à hauteur d\'épaule — pas plus. Redescends lentement en 2–3 secondes pour maximiser le travail du deltoïde médian.',
+      },
+      {
+        nom: 'Triceps Pushdown (corde)', series: '3 × 12–15',
+        notes: 'Coudes fixes, extension complète',
+        description: 'Prends la corde en prise neutre, coudes collés aux côtes et fixes. Étends les bras vers le bas en écartant légèrement la corde en fin de mouvement. Reviens lentement — coudes qui remontent = triche.',
+      },
+      {
+        nom: 'Pec Deck', series: '3 × 12–15',
+        notes: 'Contraction maximale en fin de mouvement',
+        description: 'Assis dos au dossier, place les avant-bras sur les coussinets. Ferme les bras devant toi en contractant fort les pecs, maintiens 1 seconde en position fermée. Reviens lentement sans laisser les bras partir derrière la ligne des épaules.',
+      },
     ],
   },
   legs: {
@@ -39,13 +66,40 @@ const SESSIONS = {
     info: '16 séries · ~55 min',
     couleur: 'var(--vert)',
     exercices: [
-      { nom: 'Échauffement',              warmup: true,    series: '5 min',         notes: 'Cercles hanches + genoux + chevilles + 2 min tapis incliné' },
-      { nom: 'Goblet Squat (haltère)',    montagne: true,  series: '3 × 10–12',     notes: 'Descends profond, dos droit' },
-      { nom: 'Leg Press (pieds hauts)',   montagne: true,  series: '4 × 8–12',      notes: 'Pieds hauts = fessiers et ischios' },
-      { nom: 'Fentes marchées',           montagne: true,  series: '3 × 10/jambe',  notes: 'Stabilité cheville sur terrain accidenté' },
-      { nom: 'Seated Leg Curl',           montagne: true,  series: '3 × 12–15',     notes: 'Freins en descente — protège les genoux' },
-      { nom: 'Calf Raise',                montagne: true,  series: '3 × 15–20',     notes: 'Single leg si trop facile' },
-      { nom: 'Machine abdos',             optionnel: true, series: '3 × 15–20',     notes: 'Core = stabilité avec sac à dos' },
+      {
+        nom: 'Échauffement', warmup: true, series: '5 min',
+        notes: 'Cercles hanches + genoux + chevilles + 2 min tapis incliné',
+      },
+      {
+        nom: 'Goblet Squat (haltère)', montagne: true, series: '3 × 10–12',
+        notes: 'Descends profond, dos droit',
+        description: 'Tiens un haltère vertical contre ta poitrine. Pieds à largeur d\'épaules, légèrement tournés vers l\'extérieur. Descends profond (cuisses parallèles au sol ou plus bas) en gardant le dos droit et les talons au sol. Pousse dans le sol pour remonter.',
+      },
+      {
+        nom: 'Leg Press (pieds hauts)', montagne: true, series: '4 × 8–12',
+        notes: 'Pieds hauts = fessiers et ischios',
+        description: 'Positionne les pieds en haut de la plateforme pour cibler fessiers et ischios. Débloque les sécurités, descends lentement en pliant les genoux jusqu\'à 90°, remonte en poussant avec les talons. Genoux dans l\'axe des orteils à tout moment.',
+      },
+      {
+        nom: 'Fentes marchées', montagne: true, series: '3 × 10/jambe',
+        notes: 'Stabilité cheville sur terrain accidenté',
+        description: 'Fais un grand pas en avant, descends le genou arrière près du sol sans le toucher. Remonte en poussant fort avec le pied avant, avance l\'autre jambe. Garde le buste vertical et les abdos engagés pour la stabilité.',
+      },
+      {
+        nom: 'Seated Leg Curl', montagne: true, series: '3 × 12–15',
+        notes: 'Freins en descente — protège les genoux',
+        description: 'Règle la machine pour que l\'axe de rotation soit aligné avec ton genou. Tire les jambes vers toi en contractant les ischios. Reviens très lentement sur 2–3 secondes — c\'est la phase excentrique qui renforce les ischios et protège les genoux en descente.',
+      },
+      {
+        nom: 'Calf Raise', montagne: true, series: '3 × 15–20',
+        notes: 'Single leg si trop facile',
+        description: 'Debout, avant des pieds sur le bord d\'une marche. Descends les talons sous le niveau de la marche pour un étirement complet, puis monte le plus haut possible sur la pointe des pieds. Pause d\'une seconde en haut, descente contrôlée.',
+      },
+      {
+        nom: 'Machine abdos', optionnel: true, series: '3 × 15–20',
+        notes: 'Core = stabilité avec sac à dos',
+        description: 'Assis sur la machine, prends les poignées ou place les mains derrière la tête. Fléchis le buste vers les genoux en contractant les abdos — pas les hanches. Reviens lentement à la position initiale sans laisser le poids te tirer vers l\'arrière.',
+      },
     ],
     note: 'Abdos sacrifiables si tu dépasses 55 min.',
   },
@@ -56,13 +110,40 @@ const SESSIONS = {
     info: '16 séries · ~55 min',
     couleur: 'var(--bordeaux-clair)',
     exercices: [
-      { nom: 'Échauffement',                    warmup: true,  series: '5 min',      notes: 'Cercles épaules + dead hang 30 sec' },
-      { nom: 'Tractions (barres)',                             series: '3 séries',   notes: '2 mi-échec + 1 full échec' },
-      { nom: 'Lat Pulldown (prise large)',                     series: '4 × 8–12',   notes: 'Tire vers le menton, coudes vers les hanches' },
-      { nom: 'Seated Row',                                     series: '3 × 10–12',  notes: 'Serre les omoplates en fin de mouvement' },
-      { nom: 'Reverse Pec Deck',                               series: '3 × 15',     notes: 'Face au dossier, retour contrôlé' },
-      { nom: 'Incline Biceps Curl',                            series: '3 × 8–10',   notes: 'Full amplitude, pas de triche' },
-      { nom: 'Hammer Curl poulie basse',                       series: '3 × 12–15',  notes: 'Brachial et épaisseur du bras' },
+      {
+        nom: 'Échauffement', warmup: true, series: '5 min',
+        notes: 'Cercles épaules + dead hang 30 sec',
+      },
+      {
+        nom: 'Tractions (barres)', series: '3 séries',
+        notes: '2 mi-échec + 1 full échec',
+        description: 'Suspends-toi en prise pronation, mains largeur d\'épaules ou plus large. Tire ta poitrine vers la barre en ramenant les coudes vers les hanches — pas en arrière. Descends jusqu\'à extension complète des bras entre chaque rep.',
+      },
+      {
+        nom: 'Lat Pulldown (prise large)', series: '4 × 8–12',
+        notes: 'Tire vers le menton, coudes vers les hanches',
+        description: 'Prise large au-delà des épaules. Incline légèrement le buste en arrière, tire la barre vers le menton en ramenant les coudes vers les hanches et vers le bas. Ne tire jamais derrière la nuque. Remonte lentement en contrôlant.',
+      },
+      {
+        nom: 'Seated Row', series: '3 × 10–12',
+        notes: 'Serre les omoplates en fin de mouvement',
+        description: 'Dos droit avec une légère cambrure naturelle. Tire la poignée vers ton nombril en serrant les omoplates l\'une contre l\'autre en fin de mouvement. Étends les bras complètement en revenant pour étirer le dos — pas d\'arrondissement.',
+      },
+      {
+        nom: 'Reverse Pec Deck', series: '3 × 15',
+        notes: 'Face au dossier, retour contrôlé',
+        description: 'Assis face au dossier de la machine, prise neutre sur les poignées. Écarte les bras latéralement en contractant les arrières d\'épaules et les rhomboïdes. Reviens lentement sans laisser les bras revenir en avant — contrôle toute la trajectoire.',
+      },
+      {
+        nom: 'Incline Biceps Curl', series: '3 × 8–10',
+        notes: 'Full amplitude, pas de triche',
+        description: 'Allonge-toi sur un banc incliné à 45°, bras pendants naturellement. Curl les haltères jusqu\'à hauteur d\'épaule en gardant les coudes fixes et le dos au dossier. Descends en extension complète — l\'amplitude est le secret de cet exercice.',
+      },
+      {
+        nom: 'Hammer Curl poulie basse', series: '3 × 12–15',
+        notes: 'Brachial et épaisseur du bras',
+        description: 'Debout face à une poulie basse, prise neutre (pouces vers le haut). Fléchis les coudes en alternance en maintenant les coudes proches du corps. Ce mouvement cible le brachial et le brachioradial — donne de l\'épaisseur au bras.',
+      },
     ],
   },
   home: {
@@ -72,11 +153,31 @@ const SESSIONS = {
     info: '~30 min',
     couleur: 'var(--nuit-clair)',
     exercices: [
-      { nom: 'Planche frontale',                series: '4 × 40 sec',      notes: 'Corps droit, hanches pas en l\'air' },
-      { nom: 'Planche latérale',                series: '3 × 30 sec/côté', notes: 'Stabilité latérale' },
-      { nom: 'Handstand au mur',                series: '5–8 tentatives',  notes: 'S1–4 : 20 sec · S9+ : réduire contact mur' },
-      { nom: 'Mobilité hanches + épaules',      series: '~10 min',         notes: 'Hip flexor 60 sec/côté + rotation épaule au sol' },
-      { nom: 'Mollets (sur une marche)', montagne: true, series: '3 × 20', notes: 'Single leg si trop facile' },
+      {
+        nom: 'Planche frontale', series: '4 × 40 sec',
+        notes: 'Corps droit, hanches pas en l\'air',
+        description: 'Appuie-toi sur les avant-bras et la pointe des pieds. Corps en ligne droite de la tête aux talons — hanches ni trop hautes ni trop basses. Contracte abdos, fessiers et jambes simultanément. Respire normalement.',
+      },
+      {
+        nom: 'Planche latérale', series: '3 × 30 sec/côté',
+        notes: 'Stabilité latérale',
+        description: 'Appuie-toi sur un avant-bras et le côté du pied inférieur. Corps en ligne droite de la tête aux talons. Pousse la hanche vers le plafond. Pour progresser, lève la jambe supérieure ou fais des dips latéraux.',
+      },
+      {
+        nom: 'Handstand au mur', series: '5–8 tentatives',
+        notes: 'S1–4 : 20 sec · S9+ : réduire contact mur',
+        description: 'Place les mains à 20 cm du mur, doigts écartés. Monte en kick-up en poussant les talons contre le mur. Aligne le corps : engage fessiers, abdos, pousse dans le sol avec les paumes. Réduis progressivement le contact avec le mur au fil des semaines.',
+      },
+      {
+        nom: 'Mobilité hanches + épaules', series: '~10 min',
+        notes: 'Hip flexor 60 sec/côté + rotation épaule au sol',
+        description: 'Hip flexor : genou à terre, pousse les hanches en avant 60 sec par côté. Épaules : allonge-toi sur le dos, bras à 90°, laisse le bras tourner doucement vers le sol en gardant l\'épaule au sol. Tiens les positions, ne force pas.',
+      },
+      {
+        nom: 'Mollets (sur une marche)', montagne: true, series: '3 × 20',
+        notes: 'Single leg si trop facile',
+        description: 'Debout sur une marche, avant des pieds en appui sur le bord. Descends les talons sous le niveau de la marche pour l\'étirement complet, remonte sur la pointe des pieds, pause 1 sec en haut. Passe en single leg pour progresser.',
+      },
     ],
   },
 }
@@ -87,36 +188,138 @@ const CONSEILS = [
   { emoji: '🎯', titre: 'Alignement des machines', corps: 'Aligne l\'axe de rotation de la machine avec ton articulation à chaque exercice.' },
 ]
 
-const IMG = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/'
+const MW = 'https://musclewiki.com/media/uploads/videos/branded/'
 
 const IMAGE_MAP = {
-  'Incline Bench Press':          IMG + 'Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg',
-  'Chest Press (machine)':        IMG + 'Barbell_Bench_Press_-_Medium_Grip/0.jpg',
-  'Shoulder Press (machine)':     IMG + 'Dumbbell_Shoulder_Press/0.jpg',
-  'Élévations latérales machine': IMG + 'Side_Lateral_Raise/0.jpg',
-  'Triceps Pushdown (corde)':     IMG + 'Triceps_Pushdown/0.jpg',
-  'Pec Deck':                     IMG + 'Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg',
-  'Goblet Squat (haltère)':       IMG + 'Goblet_Squat/0.jpg',
-  'Leg Press (pieds hauts)':      IMG + 'Leg_Press/0.jpg',
-  'Fentes marchées':              IMG + 'Barbell_Walking_Lunge/0.jpg',
-  'Seated Leg Curl':              IMG + 'Seated_Leg_Curl/0.jpg',
-  'Calf Raise':                   IMG + 'Standing_Calf_Raises/0.jpg',
-  'Machine abdos':                IMG + 'Ab_Crunch_Machine/0.jpg',
-  'Tractions (barres)':           IMG + 'Chin-Up/0.jpg',
-  'Lat Pulldown (prise large)':   IMG + 'Wide-Grip_Lat_Pulldown/0.jpg',
-  'Seated Row':                   IMG + 'Seated_Cable_Rows/0.jpg',
-  'Reverse Pec Deck':             IMG + 'Reverse_Flyes/0.jpg',
-  'Incline Biceps Curl':          IMG + 'Alternate_Incline_Dumbbell_Curl/0.jpg',
-  'Hammer Curl poulie basse':     IMG + 'Alternate_Hammer_Curl/0.jpg',
-  'Planche frontale':             IMG + 'Incline_Push-Up/0.jpg',
-  'Mollets (sur une marche)':     IMG + 'Standing_Calf_Raises/0.jpg',
+  'Incline Bench Press':          MW + 'male-dumbbell-incline-bench-press-front.gif',
+  'Chest Press (machine)':        MW + 'male-machine-chest-press-front.gif',
+  'Shoulder Press (machine)':     MW + 'male-machine-shoulder-press-front.gif',
+  'Élévations latérales machine': MW + 'male-machine-lateral-raise-front.gif',
+  'Triceps Pushdown (corde)':     MW + 'male-cable-tricep-rope-pushdown-front.gif',
+  'Pec Deck':                     MW + 'male-machine-pec-deck-fly-front.gif',
+  'Goblet Squat (haltère)':       MW + 'male-dumbbell-goblet-squat-front.gif',
+  'Leg Press (pieds hauts)':      MW + 'male-machine-leg-press-front.gif',
+  'Fentes marchées':              MW + 'male-dumbbell-walking-lunge-front.gif',
+  'Seated Leg Curl':              MW + 'male-machine-seated-leg-curl-front.gif',
+  'Calf Raise':                   MW + 'male-bodyweight-standing-calf-raise-front.gif',
+  'Machine abdos':                MW + 'male-machine-crunch-front.gif',
+  'Tractions (barres)':           MW + 'male-bodyweight-pull-up-front.gif',
+  'Lat Pulldown (prise large)':   MW + 'male-cable-wide-grip-lat-pulldown-front.gif',
+  'Seated Row':                   MW + 'male-cable-seated-row-front.gif',
+  'Reverse Pec Deck':             MW + 'male-machine-reverse-pec-deck-fly-front.gif',
+  'Incline Biceps Curl':          MW + 'male-dumbbell-incline-curl-front.gif',
+  'Hammer Curl poulie basse':     MW + 'male-dumbbell-hammer-curl-front.gif',
+  'Planche frontale':             MW + 'male-bodyweight-plank-front.gif',
+  'Planche latérale':             MW + 'male-bodyweight-side-plank-front.gif',
+  'Handstand au mur':             MW + 'male-bodyweight-handstand-push-up-front.gif',
+  'Mollets (sur une marche)':     MW + 'male-bodyweight-standing-calf-raise-front.gif',
 }
 
-function CarteExercice({ ex, couleur }) {
+function ModalExercice({ ex, couleur, onClose }) {
   const [imgError, setImgError] = useState(false)
   const imgUrl = IMAGE_MAP[ex.nom]
   const showImg = imgUrl && !imgError
 
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ background: 'rgba(10,8,6,0.72)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        style={{ background: 'var(--velin)', maxHeight: '90dvh' }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Bouton fermer */}
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
+          style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
+          aria-label="Fermer"
+        >
+          ✕
+        </button>
+
+        {/* Image illustrée */}
+        {showImg && (
+          <div className="w-full bg-black" style={{ aspectRatio: '16/9' }}>
+            <img
+              src={imgUrl}
+              alt={ex.nom}
+              className="w-full h-full object-contain"
+              onError={() => setImgError(true)}
+            />
+          </div>
+        )}
+
+        {/* Contenu scrollable */}
+        <div className="overflow-y-auto" style={{ maxHeight: showImg ? '55dvh' : '80dvh' }}>
+          <div className="px-5 pt-4 pb-6">
+            {/* En-tête */}
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <h3 className="font-sans font-bold text-base leading-snug pr-8"
+                  style={{ color: 'var(--encre)' }}>
+                  {ex.nom}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                  {ex.montagne && (
+                    <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+                      style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                      🏔️ montagne
+                    </span>
+                  )}
+                  {ex.optionnel && (
+                    <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+                      style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+                      optionnel
+                    </span>
+                  )}
+                </div>
+              </div>
+              <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5"
+                style={{ color: couleur }}>
+                {ex.series}
+              </span>
+            </div>
+
+            {/* Séparateur */}
+            <div className="h-px w-full mb-3" style={{ background: 'rgba(31,24,16,0.08)' }} />
+
+            {/* Note courte */}
+            {ex.notes && (
+              <div className="flex items-start gap-2 mb-3 px-3 py-2.5 rounded-xl"
+                style={{ background: 'rgba(31,24,16,0.04)' }}>
+                <span className="text-xs leading-none mt-0.5 flex-shrink-0">💡</span>
+                <p className="font-sans text-xs leading-relaxed"
+                  style={{ color: 'var(--encre-secondaire)' }}>
+                  {ex.notes}
+                </p>
+              </div>
+            )}
+
+            {/* Description exécution */}
+            {ex.description && (
+              <div>
+                <p className="font-sans text-[10px] uppercase tracking-wider font-semibold mb-1.5"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  Exécution
+                </p>
+                <p className="font-sans text-sm leading-relaxed"
+                  style={{ color: 'var(--encre-secondaire)' }}>
+                  {ex.description}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function CarteExercice({ ex, couleur, onInfo }) {
   if (ex.warmup) {
     return (
       <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
@@ -133,40 +336,41 @@ function CarteExercice({ ex, couleur }) {
   }
 
   return (
-    <div className="flex items-stretch rounded-xl overflow-hidden"
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
       style={{ background: 'rgba(31,24,16,0.035)' }}>
-      {showImg && (
-        <img
-          src={imgUrl}
-          alt={ex.nom}
-          className="w-28 flex-shrink-0 object-cover"
-          onError={() => setImgError(true)}
-        />
-      )}
-      <div className="flex-1 min-w-0 flex items-start justify-between gap-2 px-4 py-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
-              {ex.nom}
-            </p>
-            {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
-            {ex.optionnel && (
-              <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-                style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
-                optionnel
-              </span>
-            )}
-          </div>
-          {ex.notes && (
-            <p className="font-sans text-xs mt-0.5 leading-snug" style={{ color: 'var(--encre-tertiaire)' }}>
-              {ex.notes}
-            </p>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
+            {ex.nom}
+          </p>
+          {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
+          {ex.optionnel && (
+            <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+              style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+              optionnel
+            </span>
           )}
         </div>
+        {ex.notes && (
+          <p className="font-sans text-xs mt-0.5 leading-snug" style={{ color: 'var(--encre-tertiaire)' }}>
+            {ex.notes}
+          </p>
+        )}
+      </div>
+
+      <div className="flex items-center gap-2.5 flex-shrink-0">
         <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap"
           style={{ color: couleur }}>
           {ex.series}
         </span>
+        <button
+          onClick={() => onInfo(ex)}
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity duration-150 active:opacity-60"
+          style={{ background: 'rgba(31,24,16,0.09)', color: 'var(--encre-tertiaire)' }}
+          aria-label={`Infos ${ex.nom}`}
+        >
+          <span className="font-sans text-[11px] font-bold leading-none select-none">i</span>
+        </button>
       </div>
     </div>
   )
@@ -174,12 +378,22 @@ function CarteExercice({ ex, couleur }) {
 
 export default function Sport() {
   const [jourActifId, setJourActifId] = useState(JOURS[getTodayIndex()].id)
+  const [modal, setModal] = useState(null)
 
   const jourActif = JOURS.find(j => j.id === jourActifId)
   const session = jourActif?.session ? SESSIONS[jourActif.session] : null
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
+
+      {/* Modal exercice */}
+      {modal && (
+        <ModalExercice
+          ex={modal.ex}
+          couleur={modal.couleur}
+          onClose={() => setModal(null)}
+        />
+      )}
 
       {/* Sélecteur semaine */}
       <section className="surface-velin p-4 md:p-6">
@@ -211,7 +425,7 @@ export default function Sport() {
         </div>
       </section>
 
-      {/* Contenu du jour sélectionné */}
+      {/* Contenu du jour */}
       {session ? (
         <section className="surface-velin overflow-hidden">
           <div className="px-5 pt-5 pb-4 md:px-6 md:pt-6"
@@ -230,7 +444,12 @@ export default function Sport() {
 
           <div className="px-5 py-4 md:px-6 space-y-2">
             {session.exercices.map((ex, i) => (
-              <CarteExercice key={i} ex={ex} couleur={session.couleur} />
+              <CarteExercice
+                key={i}
+                ex={ex}
+                couleur={session.couleur}
+                onInfo={(ex) => setModal({ ex, couleur: session.couleur })}
+              />
             ))}
           </div>
 
