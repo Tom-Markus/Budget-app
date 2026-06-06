@@ -360,12 +360,12 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
   )
 }
 
-function CartePerfHisto({ perf, couleur }) {
+function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
   const date = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: '2-digit' })
     .format(new Date(perf.date + 'T00:00:00'))
   return (
-    <div className="px-3 py-2.5 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `2px solid ${couleur}` }}>
-      <div className="flex items-baseline justify-between gap-1">
+    <div className="relative group px-3 py-2.5 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `2px solid ${couleur}` }}>
+      <div className="flex items-baseline justify-between gap-1 pr-4">
         <span className="font-sans font-bold text-sm tabular-nums" style={{ color: couleur }}>
           {perf.poids} kg
         </span>
@@ -376,6 +376,18 @@ function CartePerfHisto({ perf, couleur }) {
       <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-secondaire)' }}>
         {perf.type === 'serie' ? `${perf.series} × ${perf.reps} reps` : `${perf.reps} rep${Number(perf.reps) > 1 ? 's' : ''}`}
       </p>
+      <button
+        onClick={() => onDelete(perf.id)}
+        disabled={isDeleting}
+        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 hover:bg-[rgba(31,24,16,0.12)] hover:!translate-y-0"
+        style={{ color: 'var(--encre-tertiaire)' }}
+        aria-label="Supprimer"
+      >
+        {isDeleting
+          ? <span className="inline-block w-2.5 h-2.5 border rounded-full animate-spin" style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+          : <X size={9} strokeWidth={2.5} />
+        }
+      </button>
     </div>
   )
 }
@@ -390,6 +402,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const [savingPerf, setSavingPerf] = useState(false)
   const [perfHistory, setPerfHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
@@ -419,6 +432,13 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     Number(perfForm.reps) > 0 &&
     !!perfForm.date &&
     (perfType === 'pr' || Number(perfForm.series) > 0)
+
+  async function handleDeletePerf(id) {
+    setDeletingId(id)
+    const { error } = await supabase.from('sport_performances').delete().eq('id', id)
+    if (!error) setPerfHistory(prev => prev.filter(h => h.id !== id))
+    setDeletingId(null)
+  }
 
   async function handleSavePerf() {
     if (!perfValide || !user) return
@@ -617,7 +637,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 </p>
                 {perfHistory.filter(h => h.type === 'pr').length === 0
                   ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                  : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} />)
+                  : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
                 }
               </div>
               <div className="space-y-1.5">
@@ -627,7 +647,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 </p>
                 {perfHistory.filter(h => h.type === 'serie').length === 0
                   ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                  : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} />)
+                  : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
                 }
               </div>
             </div>
