@@ -524,8 +524,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
               <button key={id}
                 onClick={() => setPerfType(id)}
-                className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97]"
-                style={{ background: 'transparent', color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
+                className="h-10 rounded-xl text-sm font-semibold font-sans transition-all duration-150 border active:scale-[0.97] bg-transparent hover:bg-[rgba(31,24,16,0.06)]"
+                style={{ color: 'var(--encre-tertiaire)', borderColor: 'rgba(31,24,16,0.10)' }}>
                 {label}
               </button>
             ))}
@@ -847,8 +847,8 @@ function BoutonCoche({ isChecked, couleur, onCheck, label }) {
 function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
   if (ex.warmup) {
     return (
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-opacity duration-300"
-        style={{ background: 'rgba(31,24,16,0.03)', opacity: isChecked ? 0.5 : 1 }}>
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 bg-[rgba(31,24,16,0.03)] hover:bg-[rgba(31,24,16,0.06)]"
+        style={{ opacity: isChecked ? 0.5 : 1 }}>
         <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label="Cocher échauffement" />
         <span className="text-base leading-none">🔥</span>
         <p className="flex-1 font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
@@ -862,8 +862,7 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-300"
-      style={{ background: isChecked ? 'rgba(31,24,16,0.02)' : 'rgba(31,24,16,0.035)' }}>
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isChecked ? 'bg-[rgba(31,24,16,0.02)]' : 'bg-[rgba(31,24,16,0.035)] hover:bg-[rgba(31,24,16,0.07)]'}`}>
       <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label={`Cocher ${ex.nom}`} />
 
       <div className="flex-1 min-w-0 transition-opacity duration-300" style={{ opacity: isChecked ? 0.45 : 1 }}>
@@ -894,8 +893,8 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
         </span>
         <button
           onClick={() => onInfo(ex)}
-          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-opacity duration-150 active:opacity-60"
-          style={{ background: 'rgba(31,24,16,0.09)', color: 'var(--encre-tertiaire)' }}
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 active:opacity-60 bg-[rgba(31,24,16,0.09)] hover:bg-[rgba(31,24,16,0.18)] hover:scale-110"
+          style={{ color: 'var(--encre-tertiaire)' }}
           aria-label={`Infos ${ex.nom}`}
         >
           <span className="font-sans text-[11px] font-bold leading-none select-none">i</span>
@@ -1045,12 +1044,18 @@ export default function Sport() {
               <button
                 key={jour.id}
                 onClick={() => setJourActifId(jour.id)}
-                className="relative flex flex-col items-center gap-1 pt-3 pb-2.5 rounded-2xl transition-all duration-200"
+                className="relative flex flex-col items-center gap-1 pt-3 pb-2.5 rounded-2xl transition-all duration-200 group"
                 style={{
                   background: isActive ? jour.bg : 'rgba(31,24,16,0.03)',
                   outline: isActive ? `1.5px solid ${jour.border}` : '1.5px solid transparent',
+                  isolation: 'isolate',
                 }}
               >
+                {/* Hover tint — visible seulement sur les jours inactifs */}
+                {!isActive && (
+                  <span className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none"
+                    style={{ background: jour.bg, zIndex: -1 }} />
+                )}
                 {/* Barre colorée en haut */}
                 <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
                   style={{
@@ -1165,9 +1170,8 @@ export default function Sport() {
                 <button
                   onClick={() => resetDay(jourActifId)}
                   disabled={done === 0}
-                  className="w-full py-2 rounded-xl font-sans text-xs transition-all duration-200 active:scale-[0.98]"
+                  className={`w-full py-2 rounded-xl font-sans text-xs transition-all duration-200 active:scale-[0.98] bg-[rgba(31,24,16,0.04)] ${done > 0 ? 'hover:bg-[rgba(31,24,16,0.09)]' : ''}`}
                   style={{
-                    background: 'rgba(31,24,16,0.04)',
                     color: done > 0 ? 'var(--encre-tertiaire)' : 'rgba(31,24,16,0.18)',
                     cursor: done > 0 ? 'pointer' : 'default',
                   }}
