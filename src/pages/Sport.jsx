@@ -747,22 +747,20 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <button key={id}
                 onClick={() => setPerfType(id)}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = 'var(--velin)'
-                  e.currentTarget.style.color = couleur
-                  e.currentTarget.style.boxShadow = '0 1px 6px rgba(31,24,16,0.10)'
+                  e.currentTarget.style.background = 'rgba(255,255,255,0.50)'
+                  e.currentTarget.style.color = 'var(--encre-secondaire)'
                 }}
                 onMouseLeave={e => {
                   e.currentTarget.style.background = 'transparent'
                   e.currentTarget.style.color = 'var(--encre-tertiaire)'
-                  e.currentTarget.style.boxShadow = 'none'
                 }}
-                className="flex-1 h-10 rounded-xl font-semibold font-sans active:scale-[0.98]"
+                className="flex-1 h-10 rounded-xl font-semibold font-sans active:scale-[0.98] flex items-center justify-center"
                 style={{
                   background: 'transparent',
                   border: 'none',
                   color: 'var(--encre-tertiaire)',
                   cursor: 'pointer',
-                  transition: 'background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease',
+                  transition: 'background 0.18s ease, color 0.18s ease',
                   fontSize: '0.875rem',
                 }}>
                 {label}
