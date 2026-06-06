@@ -234,8 +234,8 @@ export default function Sport() {
         </section>
       )}
 
-      {/* Règles d'or */}
-      <section className="surface-velin p-4 md:p-6">
+      {/* Règles d'or — salle uniquement */}
+      {['push', 'legs', 'pull'].includes(jourActif?.session) && <section className="surface-velin p-4 md:p-6">
         <p className="t-label mb-3">Règles d'or</p>
         <div className="space-y-2.5">
           {CONSEILS.map((c, i) => (
@@ -253,7 +253,7 @@ export default function Sport() {
             </div>
           ))}
         </div>
-      </section>
+      </section>}
 
     </div>
   )
