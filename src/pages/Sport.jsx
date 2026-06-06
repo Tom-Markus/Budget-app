@@ -1027,29 +1027,51 @@ export default function Sport() {
       </AnimatePresence>
 
       {/* Sélecteur semaine */}
-      <section className="surface-velin p-4 md:p-6">
-        <p className="t-label mb-3">Cette semaine</p>
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-0.5">
+      <section className="surface-velin px-4 pt-4 pb-5 md:px-6 md:pt-5 md:pb-6">
+        <div className="flex items-center gap-1.5 mb-4">
+          <Calendar size={12} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2.5} />
+          <p className="t-label">Cette semaine</p>
+        </div>
+        <div className="grid grid-cols-7 gap-1.5">
           {JOURS.map((jour) => {
             const isActive = jour.id === jourActifId
+            const isToday = jour.id === JOURS[getTodayIndex()].id
+            const hasChecked = Object.values(checkedExos[jour.id] || {}).some(Boolean)
             return (
               <button
                 key={jour.id}
                 onClick={() => setJourActifId(jour.id)}
-                className="flex-shrink-0 flex flex-col items-center gap-1.5 px-3 py-2.5 rounded-xl transition-all duration-200 min-w-[52px]"
+                className="relative flex flex-col items-center gap-1 pt-3 pb-2.5 rounded-2xl transition-all duration-200"
                 style={{
                   background: isActive ? jour.bg : 'rgba(31,24,16,0.03)',
                   outline: isActive ? `1.5px solid ${jour.border}` : '1.5px solid transparent',
                 }}
               >
-                <span className="font-sans text-[10px] uppercase tracking-wider font-medium"
-                  style={{ color: 'var(--encre-tertiaire)' }}>
+                {/* Barre colorée en haut */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 rounded-full transition-all duration-300"
+                  style={{
+                    width: isActive ? '60%' : '0%',
+                    background: jour.border,
+                  }}
+                />
+                <span className="font-sans text-[9px] uppercase tracking-widest font-medium mt-0.5"
+                  style={{ color: isActive ? jour.text : 'var(--encre-tertiaire)' }}>
                   {jour.court}
                 </span>
-                <span className="font-sans text-xs font-semibold"
-                  style={{ color: isActive ? jour.text : 'var(--encre-tertiaire)' }}>
+                <span className="font-sans text-[11px] font-bold leading-tight text-center"
+                  style={{ color: isActive ? jour.text : 'var(--encre-secondaire)' }}>
                   {jour.label}
                 </span>
+                {/* Indicateurs */}
+                <div className="flex gap-1 items-center h-2 mt-0.5">
+                  {isToday && (
+                    <div className="w-1 h-1 rounded-full transition-colors duration-200"
+                      style={{ background: isActive ? jour.text : jour.border }} />
+                  )}
+                  {hasChecked && (
+                    <div className="w-1 h-1 rounded-full" style={{ background: 'var(--vert)' }} />
+                  )}
+                </div>
               </button>
             )
           })}
