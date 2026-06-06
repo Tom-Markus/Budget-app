@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useContext } from 'react'
+import { useState, useEffect, useRef, useContext, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp } from 'lucide-react'
@@ -392,55 +392,36 @@ function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
   )
 }
 
-function PoidsChart({ data, couleur, type }) {
+function PoidsChart({ data, couleur, type, anchorEl, onClose }) {
+  const popupRef = useRef(null)
+  const svgRef = useRef(null)
+  const [hovered, setHovered] = useState(null)
+
   const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date))
+  const n = sorted.length
 
-  if (sorted.length === 0) {
-    return (
-      <div className="rounded-2xl px-4 py-3 text-center" style={{ background: 'rgba(31,24,16,0.04)' }}>
-        <p className="font-sans text-xs" style={{ color: 'rgba(31,24,16,0.25)' }}>Aucune donnée</p>
-      </div>
-    )
-  }
+  const pos = useMemo(() => {
+    if (!anchorEl) return { top: 0, left: 0, above: false }
+    const rect = anchorEl.getBoundingClientRect()
+    const POP_W = 300
+    let left = rect.left - POP_W / 2 + rect.width / 2
+    left = Math.max(8, Math.min(left, window.innerWidth - POP_W - 8))
+    const above = window.innerHeight - rect.bottom - 8 < 240
+    return { top: above ? rect.top - 8 : rect.bottom + 8, left, above }
+  }, [anchorEl])
 
-  if (sorted.length === 1) {
-    return (
-      <div className="rounded-2xl px-4 py-3 text-center" style={{ background: 'rgba(31,24,16,0.04)' }}>
-        <p className="font-sans text-sm font-bold" style={{ color: couleur }}>{sorted[0].poids} kg</p>
-        <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-tertiaire)' }}>Un seul enregistrement</p>
-      </div>
-    )
-  }
+  useEffect(() => {
+    const fn = (e) => {
+      if (popupRef.current && !popupRef.current.contains(e.target) && !anchorEl?.contains(e.target)) onClose()
+    }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [onClose, anchorEl])
 
-  const W = 280, H = 104
-  const PAD = { t: 20, r: 20, b: 24, l: 20 }
+  const W = 272, H = 110
+  const PAD = { t: 16, r: 10, b: 26, l: 10 }
   const innerW = W - PAD.l - PAD.r
   const innerH = H - PAD.t - PAD.b
-
-  const weights = sorted.map(d => d.poids)
-  const minW = Math.min(...weights)
-  const maxW = Math.max(...weights)
-  const range = maxW - minW
-
-  const n = sorted.length
-  const getY = (w) => range === 0
-    ? PAD.t + innerH / 2
-    : PAD.t + (1 - (w - minW) / range) * innerH
-
-  const pts = sorted.map((d, i) => ({
-    x: PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW),
-    y: getY(d.poids),
-    poids: d.poids,
-    date: d.date,
-  }))
-
-  let linePath = `M ${pts[0].x} ${pts[0].y}`
-  for (let i = 0; i < pts.length - 1; i++) {
-    const dx = (pts[i + 1].x - pts[i].x) * 0.4
-    linePath += ` C ${pts[i].x + dx} ${pts[i].y} ${pts[i + 1].x - dx} ${pts[i + 1].y} ${pts[i + 1].x} ${pts[i + 1].y}`
-  }
-  const fillPath = linePath + ` L ${pts[n - 1].x} ${PAD.t + innerH} L ${pts[0].x} ${PAD.t + innerH} Z`
-
   const gradId = `poids-grad-${type}`
 
   const fmt = (dateStr) => {
@@ -448,53 +429,141 @@ function PoidsChart({ data, couleur, type }) {
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`
   }
 
-  const evolution = sorted[n - 1].poids - sorted[0].poids
+  const evolution = n >= 2 ? sorted[n - 1].poids - sorted[0].poids : 0
   const evolutionLabel = evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
 
+  let pts = [], linePath = '', fillPath = ''
+  if (n >= 2) {
+    const weights = sorted.map(d => d.poids)
+    const minW = Math.min(...weights), maxW = Math.max(...weights)
+    const range = maxW - minW
+    const getY = (w) => range === 0 ? PAD.t + innerH / 2 : PAD.t + (1 - (w - minW) / range) * innerH
+    pts = sorted.map((d, i) => ({ x: PAD.l + (i / (n - 1)) * innerW, y: getY(d.poids), ...d }))
+    linePath = `M ${pts[0].x} ${pts[0].y}`
+    for (let i = 0; i < n - 1; i++) {
+      const dx = (pts[i + 1].x - pts[i].x) * 0.4
+      linePath += ` C ${pts[i].x + dx} ${pts[i].y} ${pts[i + 1].x - dx} ${pts[i + 1].y} ${pts[i + 1].x} ${pts[i + 1].y}`
+    }
+    fillPath = linePath + ` L ${pts[n - 1].x} ${PAD.t + innerH} L ${pts[0].x} ${PAD.t + innerH} Z`
+  }
+
+  function handleMouseMove(e) {
+    if (!svgRef.current || n < 2) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((e.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  const hp = hovered !== null ? pts[hovered] : null
+
   return (
-    <div className="rounded-2xl px-3 pt-2.5 pb-2" style={{ background: 'rgba(31,24,16,0.04)' }}>
-      <div className="flex items-center justify-between mb-1 px-0.5">
-        <p className="font-sans" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+    <motion.div
+      ref={popupRef}
+      initial={{ opacity: 0, scale: 0.94, y: pos.above ? 6 : -6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.94, y: pos.above ? 6 : -6 }}
+      transition={{ duration: 0.17, ease: [0.22, 1, 0.36, 1] }}
+      onClick={e => e.stopPropagation()}
+      style={{
+        position: 'fixed',
+        top: pos.above ? undefined : pos.top,
+        bottom: pos.above ? window.innerHeight - pos.top : undefined,
+        left: pos.left,
+        width: 300,
+        zIndex: 10000,
+        background: 'var(--velin)',
+        borderRadius: '14px',
+        boxShadow: '0 0 0 1px rgba(31,24,16,0.10), 0 12px 40px rgba(10,8,6,0.22)',
+        padding: '12px 14px 10px',
+      }}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-sans font-semibold" style={{ fontSize: '0.575rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
           Évolution · {type === 'pr' ? 'PR' : 'Séries'}
         </p>
-        <span className="font-sans text-xs font-bold tabular-nums" style={{ color: evolution >= 0 ? couleur : 'var(--bordeaux-clair)', fontSize: '0.6rem' }}>
-          {evolutionLabel}
-        </span>
+        {n >= 2 && (
+          <span className="font-sans font-bold tabular-nums" style={{ fontSize: '0.575rem', color: evolution >= 0 ? couleur : 'var(--bordeaux-clair)' }}>
+            {evolutionLabel}
+          </span>
+        )}
       </div>
-      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
-        <defs>
-          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={couleur} stopOpacity="0.18" />
-            <stop offset="100%" stopColor={couleur} stopOpacity="0.00" />
-          </linearGradient>
-        </defs>
-        <path d={fillPath} fill={`url(#${gradId})`} />
-        <path d={linePath} fill="none" stroke={couleur} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-        {pts.map((p, i) => {
-          const isFirst = i === 0
-          const isLast = i === n - 1
-          const showLabel = isFirst || isLast
-          const anchor = isFirst ? 'start' : 'end'
-          return (
-            <g key={i}>
-              <circle cx={p.x} cy={p.y} r={showLabel ? 3.5 : 2.5} fill={couleur} />
-              {showLabel && (
-                <>
-                  <text x={p.x} y={p.y - 8} textAnchor={anchor}
-                    style={{ fontSize: '8px', fontFamily: 'sans-serif', fill: couleur, fontWeight: '700' }}>
-                    {p.poids} kg
-                  </text>
-                  <text x={p.x} y={H - 2} textAnchor={anchor}
-                    style={{ fontSize: '6.5px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.35)' }}>
-                    {fmt(p.date)}
-                  </text>
-                </>
-              )}
-            </g>
-          )
-        })}
-      </svg>
-    </div>
+
+      {n >= 2 && (
+        <div className="flex items-baseline gap-2 mb-1.5" style={{ minHeight: '1.4rem' }}>
+          {hp ? (
+            <>
+              <span className="font-sans font-bold text-sm tabular-nums" style={{ color: couleur }}>{hp.poids} kg</span>
+              <span className="font-sans text-xs tabular-nums" style={{ color: 'var(--encre-secondaire)' }}>
+                {hp.type === 'serie' ? `${hp.series}×${hp.reps} reps` : `${hp.reps} rep${Number(hp.reps) > 1 ? 's' : ''}`}
+              </span>
+              <span className="font-sans tabular-nums ml-auto" style={{ fontSize: '0.6rem', color: 'var(--encre-tertiaire)' }}>{fmt(hp.date)}</span>
+            </>
+          ) : (
+            <span className="font-sans text-xs italic" style={{ color: 'rgba(31,24,16,0.22)' }}>Survolez le graphique</span>
+          )}
+        </div>
+      )}
+
+      {n === 0 && <p className="font-sans text-xs text-center py-3" style={{ color: 'rgba(31,24,16,0.25)' }}>Aucune donnée</p>}
+      {n === 1 && (
+        <div className="text-center py-2">
+          <p className="font-sans text-sm font-bold" style={{ color: couleur }}>{sorted[0].poids} kg</p>
+          <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-tertiaire)' }}>Un seul enregistrement</p>
+        </div>
+      )}
+
+      {n >= 2 && (
+        <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`}
+          style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
+          onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}>
+          <defs>
+            <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={couleur} stopOpacity="0.15" />
+              <stop offset="100%" stopColor={couleur} stopOpacity="0.00" />
+            </linearGradient>
+          </defs>
+          {[0, 0.5, 1].map((t, i) => (
+            <line key={i} x1={PAD.l} y1={PAD.t + t * innerH} x2={PAD.l + innerW} y2={PAD.t + t * innerH}
+              stroke="rgba(31,24,16,0.06)" strokeWidth="1" />
+          ))}
+          <path d={fillPath} fill={`url(#${gradId})`} />
+          <path d={linePath} fill="none" stroke={couleur} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          {pts.map((p, i) => (
+            <circle key={i} cx={p.x} cy={p.y}
+              r={hovered === i ? 4.5 : 3}
+              fill={couleur}
+              opacity={hovered !== null && hovered !== i ? 0.3 : 1}
+              style={{ transition: 'r 0.08s ease, opacity 0.1s ease' }}
+            />
+          ))}
+          {hp && (
+            <>
+              <line x1={hp.x} y1={PAD.t} x2={hp.x} y2={PAD.t + innerH}
+                stroke={couleur} strokeWidth="1" strokeDasharray="3 2" strokeOpacity="0.35" />
+              <circle cx={hp.x} cy={hp.y} r={9} fill="none" stroke={couleur} strokeWidth="1.5" strokeOpacity="0.22" />
+              <text x={hp.x} y={H - 8} textAnchor="middle"
+                style={{ fontSize: '6.5px', fontFamily: 'sans-serif', fill: couleur, opacity: 0.55 }}>
+                {fmt(hp.date)}
+              </text>
+            </>
+          )}
+          {!hp && (
+            <>
+              <text x={pts[0].x} y={H - 8} textAnchor="start"
+                style={{ fontSize: '6.5px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.28)' }}>
+                {fmt(pts[0].date)}
+              </text>
+              <text x={pts[n - 1].x} y={H - 8} textAnchor="end"
+                style={{ fontSize: '6.5px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.28)' }}>
+                {fmt(pts[n - 1].date)}
+              </text>
+            </>
+          )}
+        </svg>
+      )}
+    </motion.div>
   )
 }
 
@@ -737,74 +806,54 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
             </div>
           ) : (
-            <>
-              <AnimatePresence>
-                {chartOpen && (
-                  <motion.div
-                    key={chartOpen}
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-                    className="overflow-hidden mb-3"
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                  <p className="font-sans font-semibold"
+                    style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                    PR
+                  </p>
+                  <button
+                    onClick={(e) => setChartOpen(prev => prev?.type === 'pr' ? null : { type: 'pr', el: e.currentTarget })}
+                    className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                    style={{
+                      background: chartOpen?.type === 'pr' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                      color: chartOpen?.type === 'pr' ? couleur : 'var(--encre-tertiaire)',
+                    }}
+                    title="Voir l'évolution"
                   >
-                    <PoidsChart
-                      data={perfHistory.filter(h => h.type === chartOpen)}
-                      couleur={couleur}
-                      type={chartOpen}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                    <p className="font-sans font-semibold"
-                      style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                      PR
-                    </p>
-                    <button
-                      onClick={() => setChartOpen(v => v === 'pr' ? null : 'pr')}
-                      className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
-                      style={{
-                        background: chartOpen === 'pr' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
-                        color: chartOpen === 'pr' ? couleur : 'var(--encre-tertiaire)',
-                      }}
-                      title="Voir l'évolution"
-                    >
-                      <TrendingUp size={8} strokeWidth={2.5} />
-                    </button>
-                  </div>
-                  {perfHistory.filter(h => h.type === 'pr').length === 0
-                    ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                    : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
-                  }
+                    <TrendingUp size={8} strokeWidth={2.5} />
+                  </button>
                 </div>
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
-                    <p className="font-sans font-semibold"
-                      style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                      Séries
-                    </p>
-                    <button
-                      onClick={() => setChartOpen(v => v === 'serie' ? null : 'serie')}
-                      className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
-                      style={{
-                        background: chartOpen === 'serie' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
-                        color: chartOpen === 'serie' ? couleur : 'var(--encre-tertiaire)',
-                      }}
-                      title="Voir l'évolution"
-                    >
-                      <TrendingUp size={8} strokeWidth={2.5} />
-                    </button>
-                  </div>
-                  {perfHistory.filter(h => h.type === 'serie').length === 0
-                    ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                    : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
-                  }
-                </div>
+                {perfHistory.filter(h => h.type === 'pr').length === 0
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
+                }
               </div>
-            </>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                  <p className="font-sans font-semibold"
+                    style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                    Séries
+                  </p>
+                  <button
+                    onClick={(e) => setChartOpen(prev => prev?.type === 'serie' ? null : { type: 'serie', el: e.currentTarget })}
+                    className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                    style={{
+                      background: chartOpen?.type === 'serie' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                      color: chartOpen?.type === 'serie' ? couleur : 'var(--encre-tertiaire)',
+                    }}
+                    title="Voir l'évolution"
+                  >
+                    <TrendingUp size={8} strokeWidth={2.5} />
+                  </button>
+                </div>
+                {perfHistory.filter(h => h.type === 'serie').length === 0
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
+                }
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -995,7 +1044,26 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     </motion.div>
   )
 
-  return createPortal(jsx, document.body)
+  return (
+    <>
+      {createPortal(jsx, document.body)}
+      {createPortal(
+        <AnimatePresence>
+          {chartOpen && (
+            <PoidsChart
+              key={chartOpen.type}
+              data={perfHistory.filter(h => h.type === chartOpen.type)}
+              couleur={couleur}
+              type={chartOpen.type}
+              anchorEl={chartOpen.el}
+              onClose={() => setChartOpen(null)}
+            />
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </>
+  )
 }
 
 function BoutonCoche({ isChecked, couleur, onCheck, label }) {
