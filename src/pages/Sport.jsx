@@ -742,31 +742,28 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
             Type
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="flex p-1 rounded-2xl" style={{ background: 'rgba(31,24,16,0.07)', gap: '3px' }}>
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
               <button key={id}
                 onClick={() => setPerfType(id)}
                 onMouseEnter={e => {
-                  e.currentTarget.style.background = `${couleur}18`
-                  e.currentTarget.style.borderColor = `${couleur}90`
+                  e.currentTarget.style.background = 'var(--velin)'
                   e.currentTarget.style.color = couleur
-                  e.currentTarget.style.boxShadow = `0 4px 14px ${couleur}28`
+                  e.currentTarget.style.boxShadow = '0 1px 6px rgba(31,24,16,0.10)'
                 }}
                 onMouseLeave={e => {
-                  e.currentTarget.style.background = 'rgba(31,24,16,0.05)'
-                  e.currentTarget.style.borderColor = 'rgba(31,24,16,0.13)'
-                  e.currentTarget.style.color = 'var(--encre-secondaire)'
+                  e.currentTarget.style.background = 'transparent'
+                  e.currentTarget.style.color = 'var(--encre-tertiaire)'
                   e.currentTarget.style.boxShadow = 'none'
                 }}
-                className="h-11 rounded-2xl font-semibold font-sans active:scale-[0.97]"
+                className="flex-1 h-10 rounded-xl font-semibold font-sans active:scale-[0.98]"
                 style={{
-                  background: 'rgba(31,24,16,0.05)',
-                  border: '1.5px solid rgba(31,24,16,0.13)',
-                  color: 'var(--encre-secondaire)',
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'var(--encre-tertiaire)',
                   cursor: 'pointer',
-                  transition: 'background 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease',
+                  transition: 'background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease',
                   fontSize: '0.875rem',
-                  letterSpacing: '0.02em',
                 }}>
                 {label}
               </button>
