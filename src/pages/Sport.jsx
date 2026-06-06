@@ -481,17 +481,17 @@ function PoidsChart({ data, couleur, type, onClose }) {
                 Évolution du poids · {type === 'pr' ? 'PR' : 'Séries'}
               </p>
               {n >= 2 && (
-                <div className="flex items-baseline gap-3 mt-2">
-                  {hp ? (
+                <div className="flex items-center gap-3 mt-2" style={{ height: '2rem' }}>
+                  <span className="font-serif italic text-2xl tabular-nums" style={{ color: hp ? couleur : 'rgba(31,24,16,0.18)' }}>
+                    {hp ? `${hp.poids} kg` : '— kg'}
+                  </span>
+                  {hp && (
                     <>
-                      <span className="font-serif italic text-2xl" style={{ color: couleur }}>{hp.poids} kg</span>
                       <span className="font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
                         {hp.type === 'serie' ? `${hp.series}×${hp.reps} reps` : `${hp.reps} rep${Number(hp.reps) > 1 ? 's' : ''}`}
                       </span>
                       <span className="font-sans tabular-nums" style={{ fontSize: '0.75rem', color: 'var(--encre-tertiaire)' }}>{fmt(hp.date)}</span>
                     </>
-                  ) : (
-                    <span className="font-sans text-sm italic" style={{ color: 'rgba(31,24,16,0.28)' }}>Survolez le graphique</span>
                   )}
                 </div>
               )}
