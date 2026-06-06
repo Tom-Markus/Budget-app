@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useContext } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
+import { Pencil, Check, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -202,13 +203,40 @@ function slugify(name) {
     .replace(/^_|_$/g, '')
 }
 
-function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUpload }) {
+function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave }) {
   const fileInputRef = useRef(null)
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+
+  // Sync draft si l'exercice change (ex: on ouvre un autre exo)
+  useEffect(() => {
+    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+    setEditing(false)
+  }, [nomCle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleFileChange(e) {
     const file = e.target.files?.[0]
-    if (file) onUpload(ex.nom, file)
+    if (file) onUpload(nomCle, file)
     e.target.value = ''
+  }
+
+  function handleSave() {
+    onSave(draft)
+    setEditing(false)
+  }
+
+  function handleCancel() {
+    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+    setEditing(false)
+  }
+
+  const inputBase = {
+    background: 'transparent',
+    color: 'var(--encre)',
+    outline: 'none',
+    resize: 'none',
+    width: '100%',
+    fontFamily: 'inherit',
   }
 
   return (
@@ -219,7 +247,7 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
-      onClick={onClose}
+      onClick={editing ? undefined : onClose}
     >
       <motion.div
         className="relative w-full sm:max-w-md rounded-t-3xl sm:rounded-2xl overflow-hidden flex flex-col"
@@ -230,38 +258,70 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Image en haut — hauteur fixe, recadrée proprement */}
-        {customImage ? (
+        {/* Image */}
+        {customImage && !editing && (
           <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
             <img src={customImage} alt={ex.nom} className="w-full h-full object-cover" />
-            {/* Dégradé bas pour fondre avec le fond */}
             <div className="absolute inset-x-0 bottom-0 h-12"
               style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
           </div>
-        ) : (
-          /* Barre accent si pas d'image */
-          <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
         )}
+        {!customImage && <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />}
 
-        {/* Bouton fermer */}
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-opacity hover:opacity-70"
-          style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
-          aria-label="Fermer"
-        >
-          ✕
-        </button>
+        {/* Boutons header droite */}
+        <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
+          {editing ? (
+            <>
+              <button onClick={handleCancel}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-tertiaire)' }}
+                aria-label="Annuler">
+                <X size={14} strokeWidth={2} />
+              </button>
+              <button onClick={handleSave}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-80"
+                style={{ background: couleur, color: '#fff' }}
+                aria-label="Enregistrer">
+                <Check size={14} strokeWidth={2.5} />
+              </button>
+            </>
+          ) : (
+            <>
+              <button onClick={() => setEditing(true)}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-tertiaire)' }}
+                aria-label="Modifier">
+                <Pencil size={13} strokeWidth={2} />
+              </button>
+              <button onClick={onClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70 font-bold text-sm"
+                style={{ background: 'rgba(31,24,16,0.10)', color: 'var(--encre-secondaire)' }}
+                aria-label="Fermer">
+                ✕
+              </button>
+            </>
+          )}
+        </div>
 
         {/* Contenu scrollable */}
         <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
           <div className="px-6 pt-5 pb-7">
 
             {/* Nom + séries */}
-            <div className="flex items-start justify-between gap-4 mb-1 pr-8">
-              <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>
-                {ex.nom}
-              </h3>
+            <div className="flex items-start justify-between gap-4 mb-1 pr-20">
+              {editing ? (
+                <input
+                  value={draft.nom}
+                  onChange={e => setDraft(d => ({ ...d, nom: e.target.value }))}
+                  className="font-sans font-bold text-xl leading-tight flex-1 border-b pb-0.5"
+                  style={{ ...inputBase, borderColor: couleur }}
+                  autoFocus
+                />
+              ) : (
+                <h3 className="font-sans font-bold text-xl leading-tight" style={{ color: 'var(--encre)' }}>
+                  {ex.nom}
+                </h3>
+              )}
               <span className="font-sans font-bold text-base tabular-nums whitespace-nowrap flex-shrink-0 mt-0.5"
                 style={{ color: couleur }}>
                 {ex.series}
@@ -270,7 +330,7 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
 
             {/* Badges */}
             {(ex.montagne || ex.optionnel) && (
-              <div className="flex gap-1.5 mt-2 mb-3 flex-wrap">
+              <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
                 {ex.montagne && (
                   <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full"
                     style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
@@ -286,52 +346,88 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
               </div>
             )}
 
-            {/* Séparateur */}
             <div className="h-px w-full mt-3 mb-4" style={{ background: 'rgba(31,24,16,0.08)' }} />
 
             {/* Note conseil */}
-            {ex.notes && (
-              <div className="flex items-start gap-3 mb-4 px-4 py-3.5 rounded-2xl"
-                style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>
-                  {ex.notes}
-                </p>
-              </div>
-            )}
+            <div className="mb-4">
+              {editing ? (
+                <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                  <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2"
+                    style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                  <textarea
+                    value={draft.notes}
+                    onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
+                    rows={2}
+                    placeholder="Ajouter un conseil…"
+                    className="font-sans text-sm leading-relaxed"
+                    style={{ ...inputBase, color: 'var(--encre-secondaire)' }}
+                  />
+                </div>
+              ) : ex.notes ? (
+                <div className="px-4 py-3.5 rounded-2xl"
+                  style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                  <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>
+                    {ex.notes}
+                  </p>
+                </div>
+              ) : null}
+            </div>
 
             {/* Description exécution */}
-            {ex.description && (
-              <div className="mb-6">
-                <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5"
-                  style={{ color: 'var(--encre-tertiaire)' }}>
-                  Exécution
-                </p>
+            <div className="mb-6">
+              <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2.5"
+                style={{ color: 'var(--encre-tertiaire)' }}>
+                Exécution
+              </p>
+              {editing ? (
+                <textarea
+                  value={draft.description}
+                  onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
+                  rows={6}
+                  placeholder="Décris l'exécution…"
+                  className="font-sans text-sm leading-relaxed w-full px-3 py-2.5 rounded-xl"
+                  style={{
+                    ...inputBase,
+                    color: 'var(--encre-secondaire)',
+                    background: 'rgba(31,24,16,0.04)',
+                    border: '1px solid rgba(31,24,16,0.10)',
+                  }}
+                />
+              ) : ex.description ? (
                 <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>
                   {ex.description}
                 </p>
-              </div>
-            )}
+              ) : (
+                <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
+                  Aucune description — clique sur ✏️ pour en ajouter une.
+                </p>
+              )}
+            </div>
 
-            {/* Bouton photo */}
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-            <button
-              onClick={() => !isUploading && fileInputRef.current?.click()}
-              disabled={isUploading}
-              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
-              style={{
-                background: 'rgba(31,24,16,0.06)',
-                color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
-                cursor: isUploading ? 'default' : 'pointer',
-              }}
-            >
-              {isUploading ? (
-                <>
-                  <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
-                    style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
-                  Importation…
-                </>
-              ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
-            </button>
+            {/* Bouton photo — masqué en mode édition */}
+            {!editing && (
+              <>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
+                <button
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  disabled={isUploading}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-medium transition-all hover:opacity-80 active:scale-[0.98]"
+                  style={{
+                    background: 'rgba(31,24,16,0.06)',
+                    color: isUploading ? 'var(--encre-tertiaire)' : 'var(--encre-secondaire)',
+                    cursor: isUploading ? 'default' : 'pointer',
+                  }}
+                >
+                  {isUploading ? (
+                    <>
+                      <span className="inline-block w-3.5 h-3.5 border-2 rounded-full animate-spin flex-shrink-0"
+                        style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+                      Importation…
+                    </>
+                  ) : customImage ? '📷 Changer la photo' : '📷 Importer une photo'}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </motion.div>
@@ -402,6 +498,18 @@ export default function Sport() {
   const [modal, setModal] = useState(null)
   const [customImages, setCustomImages] = useState({})
   const [uploading, setUploading] = useState(null)
+  const [customExos, setCustomExos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sport_custom_exos') || '{}') }
+    catch { return {} }
+  })
+
+  function saveCustomExo(nomCle, changes) {
+    setCustomExos(prev => {
+      const next = { ...prev, [nomCle]: { ...(prev[nomCle] || {}), ...changes } }
+      localStorage.setItem('sport_custom_exos', JSON.stringify(next))
+      return next
+    })
+  }
 
   useEffect(() => {
     if (!user) return
@@ -475,12 +583,14 @@ export default function Sport() {
         {modal && (
           <ModalExercice
             key={modal.ex.nom}
-            ex={modal.ex}
+            ex={{ ...modal.ex, ...(customExos[modal.ex.nom] || {}) }}
+            nomCle={modal.ex.nom}
             couleur={modal.couleur}
             onClose={() => setModal(null)}
             customImage={customImages[modal.ex.nom] ?? null}
             isUploading={uploading === modal.ex.nom}
             onUpload={handleUpload}
+            onSave={(changes) => saveCustomExo(modal.ex.nom, changes)}
           />
         )}
       </AnimatePresence>
@@ -533,14 +643,17 @@ export default function Sport() {
           </div>
 
           <div className="px-5 py-4 md:px-6 space-y-2">
-            {session.exercices.map((ex, i) => (
-              <CarteExercice
-                key={i}
-                ex={ex}
-                couleur={session.couleur}
-                onInfo={(ex) => setModal({ ex, couleur: session.couleur })}
-              />
-            ))}
+            {session.exercices.map((originalEx, i) => {
+              const ex = { ...originalEx, ...(customExos[originalEx.nom] || {}) }
+              return (
+                <CarteExercice
+                  key={i}
+                  ex={ex}
+                  couleur={session.couleur}
+                  onInfo={() => setModal({ ex: originalEx, couleur: session.couleur })}
+                />
+              )
+            })}
           </div>
 
           {session.note && (
