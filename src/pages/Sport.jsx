@@ -87,14 +87,116 @@ const CONSEILS = [
   { emoji: '🎯', titre: 'Alignement des machines', corps: 'Aligne l\'axe de rotation de la machine avec ton articulation à chaque exercice.' },
 ]
 
-const PROGRESSION = [
-  { icone: '🏋️', periode: 'Mois 1–3',   objectif: 'Bases salle\nGoblet squat, fentes, leg press' },
-  { icone: '🎒', periode: 'Mois 4–6',   objectif: 'Marches\nSac 5–8 kg, terrains variés' },
-  { icone: '⛰️', periode: 'Mois 7–9',   objectif: 'Randos modérées\n300–500m D+' },
-  { icone: '🏔️', periode: 'Mois 10–12', objectif: 'Randos longues\n700–1000m D+' },
-]
+// Muscle groups to highlight for each exercise
+const MUSCLES_MAP = {
+  'Incline Bench Press':          { m: ['chest', 'shoulders'], vue: 'front' },
+  'Chest Press (machine)':        { m: ['chest'], vue: 'front' },
+  'Shoulder Press (machine)':     { m: ['shoulders'], vue: 'front' },
+  'Élévations latérales machine': { m: ['shoulders'], vue: 'front' },
+  'Triceps Pushdown (corde)':     { m: ['triceps'], vue: 'back' },
+  'Pec Deck':                     { m: ['chest'], vue: 'front' },
+  'Goblet Squat (haltère)':       { m: ['quads', 'glutes'], vue: 'back' },
+  'Leg Press (pieds hauts)':      { m: ['quads', 'glutes', 'hamstrings'], vue: 'back' },
+  'Fentes marchées':              { m: ['quads', 'glutes'], vue: 'back' },
+  'Seated Leg Curl':              { m: ['hamstrings'], vue: 'back' },
+  'Calf Raise':                   { m: ['calves'], vue: 'front' },
+  'Machine abdos':                { m: ['abs'], vue: 'front' },
+  'Tractions (barres)':           { m: ['lats', 'biceps'], vue: 'back' },
+  'Lat Pulldown (prise large)':   { m: ['lats'], vue: 'back' },
+  'Seated Row':                   { m: ['lats', 'traps'], vue: 'back' },
+  'Reverse Pec Deck':             { m: ['shoulders', 'traps'], vue: 'back' },
+  'Incline Biceps Curl':          { m: ['biceps'], vue: 'front' },
+  'Hammer Curl poulie basse':     { m: ['biceps'], vue: 'front' },
+  'Planche frontale':             { m: ['abs'], vue: 'front' },
+  'Planche latérale':             { m: ['abs'], vue: 'front' },
+  'Handstand au mur':             { m: ['shoulders', 'traps'], vue: 'back' },
+  'Mobilité hanches + épaules':   { m: [], vue: 'front' },
+  'Mollets (sur une marche)':     { m: ['calves'], vue: 'front' },
+}
+
+function DiagrammeCorps({ muscles, couleur, vue }) {
+  const on  = (id) => muscles.includes(id) ? couleur : 'rgba(31,24,16,0.09)'
+  const bg  = 'rgba(31,24,16,0.07)'
+
+  return (
+    <svg viewBox="0 0 60 108" fill="none" xmlns="http://www.w3.org/2000/svg"
+      className="w-12 flex-shrink-0" style={{ minHeight: '86px' }}>
+      {/* HEAD */}
+      <circle cx="30" cy="8" r="7" fill={bg} />
+
+      {vue === 'front' ? (
+        <>
+          {/* NECK */}
+          <rect x="27" y="14.5" width="6" height="5" rx="2" fill={bg} />
+          {/* SHOULDERS */}
+          <ellipse cx="15" cy="22" rx="8" ry="5" fill={on('shoulders')} />
+          <ellipse cx="45" cy="22" rx="8" ry="5" fill={on('shoulders')} />
+          {/* CHEST */}
+          <ellipse cx="23" cy="28" rx="7" ry="6.5" fill={on('chest')} />
+          <ellipse cx="37" cy="28" rx="7" ry="6.5" fill={on('chest')} />
+          {/* BICEPS */}
+          <ellipse cx="9"  cy="33" rx="4" ry="9" fill={on('biceps')} />
+          <ellipse cx="51" cy="33" rx="4" ry="9" fill={on('biceps')} />
+          {/* FOREARMS */}
+          <ellipse cx="9"  cy="49" rx="3.5" ry="7" fill={bg} />
+          <ellipse cx="51" cy="49" rx="3.5" ry="7" fill={bg} />
+          {/* ABS — 2×3 grid */}
+          <rect x="24" y="36" width="5" height="5.5" rx="1.5" fill={on('abs')} />
+          <rect x="31" y="36" width="5" height="5.5" rx="1.5" fill={on('abs')} />
+          <rect x="24" y="43" width="5" height="5.5" rx="1.5" fill={on('abs')} />
+          <rect x="31" y="43" width="5" height="5.5" rx="1.5" fill={on('abs')} />
+          <rect x="24" y="50" width="5" height="5"   rx="1.5" fill={on('abs')} />
+          <rect x="31" y="50" width="5" height="5"   rx="1.5" fill={on('abs')} />
+          {/* HIPS */}
+          <path d="M 20 57 Q 30 54 40 57 L 40 63 Q 30 66 20 63 Z" fill={bg} />
+          {/* QUADS */}
+          <ellipse cx="23" cy="73" rx="7" ry="11" fill={on('quads')} />
+          <ellipse cx="37" cy="73" rx="7" ry="11" fill={on('quads')} />
+          {/* CALVES */}
+          <ellipse cx="22" cy="91" rx="5.5" ry="8" fill={on('calves')} />
+          <ellipse cx="38" cy="91" rx="5.5" ry="8" fill={on('calves')} />
+          {/* FEET */}
+          <ellipse cx="21" cy="102" rx="7" ry="3" fill={bg} />
+          <ellipse cx="39" cy="102" rx="7" ry="3" fill={bg} />
+        </>
+      ) : (
+        <>
+          {/* TRAPS */}
+          <ellipse cx="30" cy="20" rx="12" ry="6" fill={on('traps')} />
+          {/* SHOULDERS */}
+          <ellipse cx="15" cy="22" rx="8" ry="5" fill={on('shoulders')} />
+          <ellipse cx="45" cy="22" rx="8" ry="5" fill={on('shoulders')} />
+          {/* LATS */}
+          <path d="M 18,25 L 14,28 Q 11,40 13,51 L 21,52 Q 23,41 24,28 Z" fill={on('lats')} />
+          <path d="M 42,25 L 46,28 Q 49,40 47,51 L 39,52 Q 37,41 36,28 Z" fill={on('lats')} />
+          {/* TRICEPS */}
+          <ellipse cx="9"  cy="33" rx="4" ry="9" fill={on('triceps')} />
+          <ellipse cx="51" cy="33" rx="4" ry="9" fill={on('triceps')} />
+          {/* FOREARMS */}
+          <ellipse cx="9"  cy="49" rx="3.5" ry="7" fill={bg} />
+          <ellipse cx="51" cy="49" rx="3.5" ry="7" fill={bg} />
+          {/* LOWER BACK */}
+          <rect x="22" y="36" width="16" height="18" rx="3" fill={bg} />
+          {/* GLUTES */}
+          <ellipse cx="30" cy="57" rx="12" ry="7" fill={on('glutes')} />
+          {/* HAMSTRINGS */}
+          <ellipse cx="23" cy="73" rx="7" ry="11" fill={on('hamstrings')} />
+          <ellipse cx="37" cy="73" rx="7" ry="11" fill={on('hamstrings')} />
+          {/* CALVES */}
+          <ellipse cx="22" cy="91" rx="5.5" ry="8" fill={on('calves')} />
+          <ellipse cx="38" cy="91" rx="5.5" ry="8" fill={on('calves')} />
+          {/* FEET */}
+          <ellipse cx="21" cy="102" rx="7" ry="3" fill={bg} />
+          <ellipse cx="39" cy="102" rx="7" ry="3" fill={bg} />
+        </>
+      )}
+    </svg>
+  )
+}
 
 function CarteExercice({ ex, couleur }) {
+  const muscleDef = MUSCLES_MAP[ex.nom]
+
   if (ex.warmup) {
     return (
       <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl"
@@ -111,31 +213,38 @@ function CarteExercice({ ex, couleur }) {
   }
 
   return (
-    <div className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
       style={{ background: 'rgba(31,24,16,0.035)' }}>
+      {muscleDef && (
+        <DiagrammeCorps muscles={muscleDef.m} couleur={couleur} vue={muscleDef.vue} />
+      )}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
-            {ex.nom}
-          </p>
-          {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
-          {ex.optionnel && (
-            <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-              style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
-              optionnel
-            </span>
-          )}
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className="font-sans font-semibold text-sm leading-snug" style={{ color: 'var(--encre)' }}>
+                {ex.nom}
+              </p>
+              {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
+              {ex.optionnel && (
+                <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
+                  style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+                  optionnel
+                </span>
+              )}
+            </div>
+            {ex.notes && (
+              <p className="font-sans text-xs mt-0.5 leading-snug" style={{ color: 'var(--encre-tertiaire)' }}>
+                {ex.notes}
+              </p>
+            )}
+          </div>
+          <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap"
+            style={{ color: couleur }}>
+            {ex.series}
+          </span>
         </div>
-        {ex.notes && (
-          <p className="font-sans text-xs mt-0.5 leading-snug" style={{ color: 'var(--encre-tertiaire)' }}>
-            {ex.notes}
-          </p>
-        )}
       </div>
-      <span className="font-sans font-bold text-sm tabular-nums whitespace-nowrap pt-0.5"
-        style={{ color: couleur }}>
-        {ex.series}
-      </span>
     </div>
   )
 }
@@ -225,9 +334,7 @@ export default function Sport() {
         <section className="surface-velin p-6 text-center">
           <p className="text-4xl mb-3">🚶</p>
           <p className="t-h3">Marche</p>
-          <p className="t-body-secondaire mt-2">
-            30–60 min à ton rythme.
-          </p>
+          <p className="t-body-secondaire mt-2">30–60 min à ton rythme.</p>
           <p className="t-meta mt-2">
             À partir du mois 4 : sac à dos <strong>5–8 kg</strong> sur des terrains variés.
           </p>
@@ -235,25 +342,27 @@ export default function Sport() {
       )}
 
       {/* Règles d'or — salle uniquement */}
-      {['push', 'legs', 'pull'].includes(jourActif?.session) && <section className="surface-velin p-4 md:p-6">
-        <p className="t-label mb-3">Règles d'or</p>
-        <div className="space-y-2.5">
-          {CONSEILS.map((c, i) => (
-            <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
-              style={{ background: 'rgba(31,24,16,0.03)' }}>
-              <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
-              <div>
-                <p className="font-sans font-semibold text-sm" style={{ color: 'var(--encre)' }}>
-                  {c.titre}
-                </p>
-                <p className="font-sans text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--encre-tertiaire)' }}>
-                  {c.corps}
-                </p>
+      {['push', 'legs', 'pull'].includes(jourActif?.session) && (
+        <section className="surface-velin p-4 md:p-6">
+          <p className="t-label mb-3">Règles d'or</p>
+          <div className="space-y-2.5">
+            {CONSEILS.map((c, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl"
+                style={{ background: 'rgba(31,24,16,0.03)' }}>
+                <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
+                <div>
+                  <p className="font-sans font-semibold text-sm" style={{ color: 'var(--encre)' }}>
+                    {c.titre}
+                  </p>
+                  <p className="font-sans text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--encre-tertiaire)' }}>
+                    {c.corps}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </section>}
+            ))}
+          </div>
+        </section>
+      )}
 
     </div>
   )
