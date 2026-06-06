@@ -260,9 +260,15 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       >
         {/* Image */}
         {customImage && !editing && (
-          <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
-            <img src={customImage} alt={ex.nom} className="w-full h-full object-cover" />
-            <div className="absolute inset-x-0 bottom-0 h-12"
+          <div className="w-full h-56 flex-shrink-0 overflow-hidden relative">
+            {/* Fond flouté — même image scalée, couvre les barres noires */}
+            <img src={customImage} aria-hidden alt=""
+              className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-50 pointer-events-none" />
+            {/* Image principale, pas de recadrage */}
+            <img src={customImage} alt={ex.nom}
+              className="relative z-10 w-full h-full object-contain" />
+            {/* Fondu bas */}
+            <div className="absolute inset-x-0 bottom-0 h-14 z-20"
               style={{ background: 'linear-gradient(to bottom, transparent, var(--velin))' }} />
           </div>
         )}
