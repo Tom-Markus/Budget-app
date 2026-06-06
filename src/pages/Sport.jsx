@@ -720,7 +720,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
                 {ex.notes && (
                   <div className="mb-4">
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
                     <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
@@ -782,14 +782,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <div className="mb-4">
                 {editing ? (
                   <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
                     <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
                       rows={2} placeholder="Ajouter un conseil…" className="font-sans text-sm leading-relaxed"
                       style={{ ...inputBase, color: 'var(--encre-secondaire)' }} />
                   </div>
                 ) : ex.notes ? (
                   <div className="mb-4">
-                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Conseil</p>
+                    <p className="font-sans text-[10px] uppercase tracking-widest font-semibold mb-2" style={{ color: 'var(--encre-tertiaire)' }}>Muscles</p>
                     <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
