@@ -651,7 +651,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
         onClick={e => e.stopPropagation()}
       >
         {/* Barre couleur */}
-        <div className="h-1 w-full flex-shrink-0" style={{ background: couleur }} />
+        <div className="h-1 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg, transparent 0%, ${couleur} 50%, transparent 100%)` }} />
 
         {/* Boutons header */}
         <div className="absolute top-3 right-3 z-20 flex items-center gap-1.5">
