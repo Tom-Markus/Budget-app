@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw } from 'lucide-react'
+import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -392,6 +392,112 @@ function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
   )
 }
 
+function PoidsChart({ data, couleur, type }) {
+  const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date))
+
+  if (sorted.length === 0) {
+    return (
+      <div className="rounded-2xl px-4 py-3 text-center" style={{ background: 'rgba(31,24,16,0.04)' }}>
+        <p className="font-sans text-xs" style={{ color: 'rgba(31,24,16,0.25)' }}>Aucune donnée</p>
+      </div>
+    )
+  }
+
+  if (sorted.length === 1) {
+    return (
+      <div className="rounded-2xl px-4 py-3 text-center" style={{ background: 'rgba(31,24,16,0.04)' }}>
+        <p className="font-sans text-sm font-bold" style={{ color: couleur }}>{sorted[0].poids} kg</p>
+        <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-tertiaire)' }}>Un seul enregistrement</p>
+      </div>
+    )
+  }
+
+  const W = 280, H = 104
+  const PAD = { t: 20, r: 20, b: 24, l: 20 }
+  const innerW = W - PAD.l - PAD.r
+  const innerH = H - PAD.t - PAD.b
+
+  const weights = sorted.map(d => d.poids)
+  const minW = Math.min(...weights)
+  const maxW = Math.max(...weights)
+  const range = maxW - minW
+
+  const n = sorted.length
+  const getY = (w) => range === 0
+    ? PAD.t + innerH / 2
+    : PAD.t + (1 - (w - minW) / range) * innerH
+
+  const pts = sorted.map((d, i) => ({
+    x: PAD.l + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW),
+    y: getY(d.poids),
+    poids: d.poids,
+    date: d.date,
+  }))
+
+  let linePath = `M ${pts[0].x} ${pts[0].y}`
+  for (let i = 0; i < pts.length - 1; i++) {
+    const dx = (pts[i + 1].x - pts[i].x) * 0.4
+    linePath += ` C ${pts[i].x + dx} ${pts[i].y} ${pts[i + 1].x - dx} ${pts[i + 1].y} ${pts[i + 1].x} ${pts[i + 1].y}`
+  }
+  const fillPath = linePath + ` L ${pts[n - 1].x} ${PAD.t + innerH} L ${pts[0].x} ${PAD.t + innerH} Z`
+
+  const gradId = `poids-grad-${type}`
+
+  const fmt = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00')
+    return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`
+  }
+
+  const evolution = sorted[n - 1].poids - sorted[0].poids
+  const evolutionLabel = evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
+
+  return (
+    <div className="rounded-2xl px-3 pt-2.5 pb-2" style={{ background: 'rgba(31,24,16,0.04)' }}>
+      <div className="flex items-center justify-between mb-1 px-0.5">
+        <p className="font-sans" style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--encre-tertiaire)' }}>
+          Évolution · {type === 'pr' ? 'PR' : 'Séries'}
+        </p>
+        <span className="font-sans text-xs font-bold tabular-nums" style={{ color: evolution >= 0 ? couleur : 'var(--bordeaux-clair)', fontSize: '0.6rem' }}>
+          {evolutionLabel}
+        </span>
+      </div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible', display: 'block' }}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={couleur} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={couleur} stopOpacity="0.00" />
+          </linearGradient>
+        </defs>
+        <path d={fillPath} fill={`url(#${gradId})`} />
+        <path d={linePath} fill="none" stroke={couleur} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => {
+          const isFirst = i === 0
+          const isLast = i === n - 1
+          const showLabel = isFirst || isLast
+          const anchor = isFirst ? 'start' : 'end'
+          return (
+            <g key={i}>
+              <circle cx={p.x} cy={p.y} r={showLabel ? 3.5 : 2.5} fill={couleur} />
+              {showLabel && (
+                <>
+                  <text x={p.x} y={p.y - 8} textAnchor={anchor}
+                    style={{ fontSize: '8px', fontFamily: 'sans-serif', fill: couleur, fontWeight: '700' }}>
+                    {p.poids} kg
+                  </text>
+                  <text x={p.x} y={H - 2} textAnchor={anchor}
+                    style={{ fontSize: '6.5px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.35)' }}>
+                    {fmt(p.date)}
+                  </text>
+                </>
+              )}
+            </g>
+          )
+        })}
+      </svg>
+    </div>
+  )
+}
+
 function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave, isPPL, user }) {
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
@@ -403,12 +509,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const [perfHistory, setPerfHistory] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
+  const [chartOpen, setChartOpen] = useState(null)
 
   useEffect(() => {
     setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
     setEditing(false)
     setPerfType(null)
     setPerfForm({ poids: '', reps: '', series: '', date: '' })
+    setChartOpen(null)
   }, [nomCle]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -629,28 +737,74 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <p className="font-sans font-semibold text-center"
-                  style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                  PR
-                </p>
-                {perfHistory.filter(h => h.type === 'pr').length === 0
-                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                  : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
-                }
+            <>
+              <AnimatePresence>
+                {chartOpen && (
+                  <motion.div
+                    key={chartOpen}
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                    className="overflow-hidden mb-3"
+                  >
+                    <PoidsChart
+                      data={perfHistory.filter(h => h.type === chartOpen)}
+                      couleur={couleur}
+                      type={chartOpen}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                    <p className="font-sans font-semibold"
+                      style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                      PR
+                    </p>
+                    <button
+                      onClick={() => setChartOpen(v => v === 'pr' ? null : 'pr')}
+                      className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                      style={{
+                        background: chartOpen === 'pr' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                        color: chartOpen === 'pr' ? couleur : 'var(--encre-tertiaire)',
+                      }}
+                      title="Voir l'évolution"
+                    >
+                      <TrendingUp size={8} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  {perfHistory.filter(h => h.type === 'pr').length === 0
+                    ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                    : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
+                  }
+                </div>
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-center gap-1.5 mb-0.5">
+                    <p className="font-sans font-semibold"
+                      style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
+                      Séries
+                    </p>
+                    <button
+                      onClick={() => setChartOpen(v => v === 'serie' ? null : 'serie')}
+                      className="w-4 h-4 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
+                      style={{
+                        background: chartOpen === 'serie' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                        color: chartOpen === 'serie' ? couleur : 'var(--encre-tertiaire)',
+                      }}
+                      title="Voir l'évolution"
+                    >
+                      <TrendingUp size={8} strokeWidth={2.5} />
+                    </button>
+                  </div>
+                  {perfHistory.filter(h => h.type === 'serie').length === 0
+                    ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                    : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
+                  }
+                </div>
               </div>
-              <div className="space-y-1.5">
-                <p className="font-sans font-semibold text-center"
-                  style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
-                  Séries
-                </p>
-                {perfHistory.filter(h => h.type === 'serie').length === 0
-                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
-                  : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
-                }
-              </div>
-            </div>
+            </>
           )}
         </div>
       )}
