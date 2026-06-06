@@ -217,7 +217,7 @@ function ModalExercice({ ex, couleur, onClose, customImage, isUploading, onUploa
       onClick={onClose}
     >
       <div
-        className="relative w-full sm:max-w-sm rounded-t-2xl sm:rounded-2xl overflow-hidden"
+        className="relative w-full sm:max-w-sm md:max-w-2xl rounded-t-2xl sm:rounded-2xl overflow-hidden"
         style={{ background: 'var(--velin)', maxHeight: '90dvh' }}
         onClick={e => e.stopPropagation()}
       >
