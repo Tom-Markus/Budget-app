@@ -379,7 +379,7 @@ function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
       <button
         onClick={() => onDelete(perf.id)}
         disabled={isDeleting}
-        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-150 hover:bg-[rgba(31,24,16,0.12)] hover:!translate-y-0"
+        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-30 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 hover:bg-[rgba(31,24,16,0.12)] hover:!translate-y-0"
         style={{ color: 'var(--encre-tertiaire)' }}
         aria-label="Supprimer"
       >
@@ -439,6 +439,17 @@ function PoidsChart({ data, couleur, type, onClose }) {
     if (!svgRef.current || n < 2) return
     const rect = svgRef.current.getBoundingClientRect()
     const svgX = ((e.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  function handleTouchMove(e) {
+    if (!svgRef.current || n < 2) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((touch.clientX - rect.left) / rect.width) * W
     let minDist = Infinity, minIdx = 0
     pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < minDist) { minDist = d; minIdx = i } })
     setHovered(minIdx)
@@ -521,8 +532,9 @@ function PoidsChart({ data, couleur, type, onClose }) {
           )}
           {n >= 2 && (
             <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`}
-              style={{ display: 'block', overflow: 'visible', cursor: 'crosshair' }}
-              onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}>
+              style={{ display: 'block', overflow: 'visible', cursor: 'crosshair', touchAction: 'none' }}
+              onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
+              onTouchMove={handleTouchMove} onTouchEnd={() => setHovered(null)}>
               <defs>
                 <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={couleur} stopOpacity="0.18" />
@@ -964,10 +976,10 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
         {isPPL && !editing ? (
           /* ── LAYOUT 2 COLONNES (PPL, mode lecture) ── */
-          <div className="flex flex-col sm:flex-row flex-1 overflow-hidden" style={{ minHeight: 0 }}>
+          <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden" style={{ minHeight: 0 }}>
 
             {/* Colonne gauche — image + infos */}
-            <div className="sm:w-[52%] flex flex-col overflow-y-auto flex-shrink-0" style={{ minHeight: 0 }}>
+            <div className="sm:w-[52%] flex flex-col sm:overflow-y-auto sm:flex-shrink-0" style={{ minHeight: 0 }}>
               {customImage && (
                 <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
                   <img src={customImage} aria-hidden alt=""
@@ -1013,7 +1025,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             <div className="hidden sm:block w-px flex-shrink-0 self-stretch" style={{ background: 'linear-gradient(180deg, transparent, rgba(31,24,16,0.10) 15%, rgba(31,24,16,0.10) 85%, transparent)' }} />
 
             {/* Colonne droite — performances + photo */}
-            <div className="flex-1 overflow-y-auto px-4 pt-5" style={{ minHeight: 0, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+            <div className="sm:flex-1 sm:overflow-y-auto px-4 pt-5" style={{ minHeight: 0, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
               {perfSection}
               <div className="mt-4">{photoBouton}</div>
             </div>
@@ -1363,7 +1375,7 @@ export default function Sport() {
                   {jour.court}
                 </span>
                 {/* Label session */}
-                <span className="relative z-10 font-sans text-[11px] font-bold leading-tight text-center"
+                <span className="relative z-10 font-sans text-[11px] font-bold leading-tight text-center w-full truncate px-0.5"
                   style={{ color: isActive ? jour.text : 'var(--encre-secondaire)' }}>
                   {jour.label}
                 </span>
