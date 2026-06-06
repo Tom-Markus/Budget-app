@@ -460,11 +460,15 @@ function BoutonCoche({ isChecked, couleur, onCheck, label }) {
       className="flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90"
       style={{
         borderColor: couleur,
-        background: isChecked ? couleur : 'transparent',
+        background: isChecked ? couleur : 'rgba(31,24,16,0.07)',
       }}
       aria-label={label}
     >
-      {isChecked && <Check size={13} strokeWidth={3} color="#fff" />}
+      <Check
+        size={13}
+        strokeWidth={3}
+        color={isChecked ? '#fff' : 'rgba(31,24,16,0.25)'}
+      />
     </button>
   )
 }
