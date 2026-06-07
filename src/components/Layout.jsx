@@ -22,7 +22,6 @@ const PAGE_TO_URL = {
   news: '/news',
   investments: '/investments',
   sport: '/sport',
-  sante: '/sante',
   reglages: '/reglages',
 }
 const URL_TO_PAGE = Object.fromEntries(
