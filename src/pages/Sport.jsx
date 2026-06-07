@@ -608,7 +608,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+  const [draft, setDraft] = useState({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '', series: ex.series || '' })
   const [perfType, setPerfType] = useState(null)
   const [perfForm, setPerfForm] = useState({ poids: '', reps: '', series: '', date: '' })
   const [savingPerf, setSavingPerf] = useState(false)
@@ -618,7 +618,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const [chartOpen, setChartOpen] = useState(null)
 
   useEffect(() => {
-    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '', series: ex.series || '' })
     setEditing(false)
     setPerfType(null)
     setPerfForm({ poids: '', reps: '', series: '', date: '' })
@@ -698,7 +698,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   }, [editing])
 
   function handleCancel() {
-    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '' })
+    setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '', series: ex.series || '' })
     setEditing(false)
   }
 
@@ -1054,8 +1054,18 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 ) : (
                   <h3 className="font-serif italic text-2xl leading-tight" style={{ color: 'var(--encre)' }}>{ex.nom}</h3>
                 )}
-                <span className="font-sans font-semibold text-xs tabular-nums whitespace-nowrap flex-shrink-0 mt-1 px-2.5 py-1 rounded-full"
-                  style={{ background: `${couleur}1a`, color: couleur }}>{ex.series}</span>
+                {editing ? (
+                  <input
+                    value={draft.series}
+                    onChange={e => setDraft(d => ({ ...d, series: e.target.value }))}
+                    className="font-sans font-semibold text-xs tabular-nums whitespace-nowrap flex-shrink-0 mt-1 px-2.5 py-1 rounded-full text-center"
+                    style={{ background: `${couleur}1a`, color: couleur, border: `1px solid ${couleur}55`, outline: 'none', width: '88px' }}
+                    placeholder="ex: 3 × 10"
+                  />
+                ) : (
+                  <span className="font-sans font-semibold text-xs tabular-nums whitespace-nowrap flex-shrink-0 mt-1 px-2.5 py-1 rounded-full"
+                    style={{ background: `${couleur}1a`, color: couleur }}>{ex.series}</span>
+                )}
               </div>
               {(ex.montagne || ex.optionnel) && (
                 <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
