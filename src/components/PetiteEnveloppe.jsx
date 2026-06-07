@@ -31,7 +31,7 @@
  * Props complètes — voir la signature de la fonction.
  * ----------------------------------------------------------------------------
  */
-import { memo } from 'react';
+import { memo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -49,6 +49,15 @@ import {
   Trash2,
   Check,
 } from 'lucide-react';
+import {
+  DndContext, closestCenter,
+  MouseSensor, TouchSensor, useSensor, useSensors,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy,
+  useSortable, arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import OdometerCounter from './OdometerCounter.jsx';
 import BoutonAction from './BoutonAction.jsx';
 import ChampSaisie from './ChampSaisie.jsx';
@@ -166,9 +175,38 @@ function PetiteEnveloppe({
   onCancelInput,
   sousEnveloppes = [],
   isDescriptionOpen = false,
+  onReorderSousEnveloppes = null,
 }) {
   const isMini = niveauHierarchique === 'mini';
   const hasChildren = sousEnveloppes.length > 0;
+
+  // Ordre local des sous-enveloppes pour le DnD (optimistic)
+  const [ordreEnfants, setOrdreEnfants] = useState(() => sousEnveloppes.map(s => s.id));
+
+  // Sync si un enfant est ajouté ou supprimé
+  useEffect(() => {
+    const extIds = sousEnveloppes.map(s => s.id);
+    setOrdreEnfants(prev => {
+      const prevSet = new Set(prev);
+      if (prev.length === extIds.length && extIds.every(id => prevSet.has(id))) return prev;
+      return extIds;
+    });
+  }, [sousEnveloppes]);
+
+  const sousSensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 500, tolerance: 8 } }),
+  );
+
+  const handleSousDragEnd = useCallback(({ active, over }) => {
+    if (!over || active.id === over.id) return;
+    const oldIdx = ordreEnfants.indexOf(active.id);
+    const newIdx = ordreEnfants.indexOf(over.id);
+    if (oldIdx === -1 || newIdx === -1) return;
+    const next = arrayMove(ordreEnfants, oldIdx, newIdx);
+    setOrdreEnfants(next);
+    onReorderSousEnveloppes?.(next);
+  }, [ordreEnfants, onReorderSousEnveloppes]);
 
   const couleurCompteur = montant > 0 ? 'positif' : 'zero';
   const couleurMvt =
@@ -559,20 +597,56 @@ function PetiteEnveloppe({
           </button>
         </div>
 
-        {/* ============ Sous-enveloppes imbriquées ============ */}
+        {/* ============ Sous-enveloppes imbriquées (drag & drop) ============ */}
         {sousEnveloppes.length > 0 && (
-          <div className="mt-4 border-2 border-or/20 rounded-xl flex flex-col gap-3 p-3">
-            {sousEnveloppes.map((sous, i) => (
-              <PetiteEnveloppe
-                key={sous.id || i}
-                {...sous}
-                niveauHierarchique="mini"
-                niveau={(niveau || 2) + 1}
-              />
-            ))}
-          </div>
+          <DndContext
+            sensors={sousSensors}
+            collisionDetection={closestCenter}
+            onDragStart={() => { if (navigator.vibrate) navigator.vibrate(10); }}
+            onDragEnd={handleSousDragEnd}
+          >
+            <SortableContext items={ordreEnfants} strategy={verticalListSortingStrategy}>
+              <div className="mt-4 border-2 border-or/20 rounded-xl flex flex-col gap-3 p-3">
+                {ordreEnfants
+                  .map(id => sousEnveloppes.find(s => s.id === id))
+                  .filter(Boolean)
+                  .map(sous => (
+                    <SousEnveloppeSortable
+                      key={sous.id}
+                      sous={sous}
+                      niveauParent={niveau}
+                    />
+                  ))}
+              </div>
+            </SortableContext>
+          </DndContext>
         )}
       </motion.article>
+  );
+}
+
+function SousEnveloppeSortable({ sous, niveauParent }) {
+  const {
+    attributes, listeners, setNodeRef, transform, transition, isDragging,
+  } = useSortable({ id: sous.id, disabled: sous.modeEdition });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition: [transition, 'filter 0.2s ease'].filter(Boolean).join(', '),
+    position: 'relative',
+    zIndex: isDragging ? 10 : 'auto',
+    filter: isDragging ? 'drop-shadow(0 8px 16px rgba(31,24,16,0.15))' : undefined,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style}>
+      <PetiteEnveloppe
+        {...sous}
+        niveauHierarchique="mini"
+        niveau={(niveauParent || 2) + 1}
+        dragHandleProps={{ ...attributes, ...listeners }}
+      />
+    </div>
   );
 }
 

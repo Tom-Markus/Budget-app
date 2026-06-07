@@ -319,6 +319,7 @@ export default function Accueil() {
       onDelete: () => ouvrirSuppression(env),
       onValidateInput: onValidateInputFor(env.id),
       onCancelInput: () => setInputActif(s => ({ ...s, [env.id]: null })),
+      onReorderSousEnveloppes: (ids) => actions.reordonner(ids),
     }
   }, [
     envelopes, mouvements, modeEdition, inputActif, descOuverte,
