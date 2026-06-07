@@ -1231,13 +1231,11 @@ export default function Sport() {
     })
   }
 
-  function saveCustomExo(nomCle, changes) {
-    setCustomExos(prev => {
-      const merged = { ...(prev[nomCle] || {}), ...changes }
-      supabase.from('sport_custom_exos')
-        .upsert({ user_id: user.id, nom: nomCle, changes: merged }, { onConflict: 'user_id,nom' })
-      return { ...prev, [nomCle]: merged }
-    })
+  async function saveCustomExo(nomCle, changes) {
+    const merged = { ...(customExos[nomCle] || {}), ...changes }
+    setCustomExos(prev => ({ ...prev, [nomCle]: merged }))
+    await supabase.from('sport_custom_exos')
+      .upsert({ user_id: user.id, nom: nomCle, changes: merged }, { onConflict: 'user_id,nom' })
   }
 
   useEffect(() => {
