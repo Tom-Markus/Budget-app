@@ -41,29 +41,49 @@ function extractTag(xml, tag) {
   return plain ? plain[1].trim() : null
 }
 
-// Précompilé au chargement du module — word boundary pour les termes ambigus
-// \bwar\b évite "star wars" ; \bbanned\b évite "unbanned" ; etc.
-const MAJOR_WORD_RE = /\b(war|crisis|collapse|recession|emergency|banned|leaked|hacked)\b/i
+// collapses? couvre le verbe "collapses" + substantif "collapse"
+const MAJOR_WORD_RE = /\b(war|crisis|collapses?|recession|emergency|banned|leaked|hacked)\b/i
+
+// Promotions commerciales récurrentes : jamais de pastille
+const PROMO_RE = /\b(prime\s+day|black\s+friday)\b/i
 
 function scoreImportance(title, source, isAICategory = false) {
+  if (PROMO_RE.test(title)) return null
+
   // Strip possessives ('s) avant matching — évite que "Apple's" rate le match ' apple '
-  const t = ' ' + title.toLowerCase().replace(/'s\b/g, '') + ' '
+  const t  = ' ' + title.toLowerCase().replace(/'s\b/g, '') + ' '
+  // Version normalisée pour les entités : les tirets → espaces
+  // couvre "Ukraine-Russia", "China-Taiwan", etc. sans casser les actions comme "open-weight"
+  const tn = t.replace(/-/g, ' ')
 
   const entities = [
     // Labs IA & modèles
     'openai', 'anthropic', ' deepmind', 'mistral', ' xai ', 'meta ai',
-    'chatgpt', ' claude ', ' gemini', 'gpt-', 'deepseek',
+    'chatgpt', ' claude ', ' gemini', 'gpt', 'deepseek',
     'hugging face', 'perplexity', 'midjourney', 'stability ai',
     // Big tech & hardware IA
     'nvidia', 'microsoft', ' apple ', 'samsung', 'tesla', ' google ', 'spacex',
     ' amazon ', ' meta ', ' amd ',
     // Marchés financiers
-    'bitcoin', 'ethereum', 'stock market', 'interest rate',
-    // Figures clés & institutions
+    'bitcoin', 'ethereum', 'stock market', 'interest rate', ' crypto ', 'cryptocurrency',
+    // Figures clés & institutions financières
     'elon musk', 'sam altman', 'trump',
-    'federal reserve', ' the fed ', ' ecb ', 'european central bank', 'bank of england', 'european union',
+    'federal reserve', ' the fed ', ' ecb ', 'european central bank', 'bank of england',
+    'european union', ' eu ',
     // Géopolitique & holdings
     ' nato ', 'alphabet',
+    // Pays & acteurs géopolitiques
+    ' china ', ' russia ', ' iran ', ' ukraine ', ' taiwan ',
+    ' israel ', 'hamas', 'hezbollah', 'taliban', 'islamic state',
+    ' japan ', ' india ', ' france ', ' germany ', ' britain ',
+    ' north korea ',
+    // Dirigeants mondiaux
+    'vladimir putin', 'xi jinping', 'kim jong', 'zelensky',
+    // Institutions internationales
+    'world health organization', ' imf ', ' opec ',
+    ' pentagon ', 'white house', ' nasa ', 'ipcc',
+    // Spatial
+    ' mars ',
   ]
 
   // Actions fortes : événement concret et immédiat (lancement effectif, sanction, acquisition…)
@@ -84,6 +104,19 @@ function scoreImportance(title, source, isAICategory = false) {
     'surpasses ',
     ' fined ',
     'shuts down', 'shut down',
+    // Militaires & géopolitiques
+    'invades ', 'invaded ',
+    'declares ', 'declared ',
+    ' strikes ',
+    ' hits ',
+    ' buys ',
+    'plunges ', 'plunge ',
+    ' soars ',
+    'surges ', 'surged ',
+    'collapses ',
+    ' escalates ',
+    'seizes ',
+    'expels ',
   ]
 
   // Actions douces : annonce ou révélation (peut être futur ou spéculatif)
@@ -91,6 +124,10 @@ function scoreImportance(title, source, isAICategory = false) {
     'announces ', 'announced ', 'announcing ',
     'reveals ', 'revealed ',
     'partners with',
+    ' warns ', ' warned ',
+    ' meets ',
+    'discovers ', 'discover ',
+    'confirms ', 'confirmed ',
   ]
 
   // Phrases non-ambiguës : substring suffit
@@ -102,6 +139,25 @@ function scoreImportance(title, source, isAICategory = false) {
     ' billion', ' trillion',
     'ceasefire', 'sanctions',
     'data breach', 'market crash', 'crypto crash',
+    // Catastrophes naturelles & sanitaires
+    'earthquake', 'tsunami', 'hurricane',
+    'pandemic', 'outbreak',
+    ' nuclear ',
+    // Crises politiques & sécurité
+    'invasion',
+    'assassination',
+    'mass shooting',
+    'military coup',
+    'impeachment',
+    'terror attack', 'terrorist attack',
+    'war crimes',
+    'state of emergency',
+    'famine',
+    // Économie & science
+    'oil prices',
+    ' covid',
+    'climate crisis', 'climate change',
+    'breakthrough',
   ]
 
   // $1.75tn / $10bn / €2bn / £5tn — montants financiers abrégés
@@ -110,18 +166,26 @@ function scoreImportance(title, source, isAICategory = false) {
   const hasMajorWord      = MAJOR_WORD_RE.test(title)
   const hasMajor          = hasMajorPhrase || hasMajorWord || hasFinancialScale
 
-  const hasEntity  = entities.some(e => t.includes(e))
+  // tn pour les entités : normalise "Ukraine-Russia" → "Ukraine Russia" etc.
+  const hasEntity  = entities.some(e => tn.includes(e))
   const hasStrong  = strongActions.some(a => t.includes(a))
   const hasSoft    = softActions.some(a => t.includes(a))
 
   const isPrimary = ['OpenAI', 'Google AI'].includes(source)
-  // Sources 100% IA : entité OU action forte suffit — seulement dans le contexte catégorie IA
+  // Sources 100% IA : seulement dans le contexte catégorie IA
   const isAISrc   = isAICategory && ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI', 'MIT Tech Review'].includes(source)
 
-  // critical  = événement fort confirmé OU majeur + entité OU source primaire qui publie quoi que ce soit
+  // critical = événement fort confirmé OU majeur + entité OU source primaire qui agit
   if ((hasEntity && hasStrong) || (hasMajor && hasEntity) || (isPrimary && (hasStrong || hasSoft))) return 'critical'
-  // high      = entité + annonce douce OU signal majeur seul OU source IA spécialisée + entité/action forte
-  if ((hasEntity && hasSoft) || hasMajor || (isAISrc && (hasEntity || hasStrong))) return 'high'
+  // high = entité + annonce douce OU phrase/signal financier seul OU mot-choc + signal supplémentaire
+  //        hasMajorWord seul (sans entité ni action) exclu pour éviter les FP lifestyle ("War and Peace", etc.)
+  if (
+    (hasEntity && hasSoft) ||
+    hasMajorPhrase ||
+    hasFinancialScale ||
+    (hasMajorWord && (hasEntity || hasStrong || hasSoft)) ||
+    (isAISrc && hasStrong)
+  ) return 'high'
   return null
 }
 
