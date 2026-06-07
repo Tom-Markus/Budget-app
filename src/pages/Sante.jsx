@@ -890,10 +890,10 @@ export default function Sante() {
   const evolutionColor = evolution === null ? null : evolution > 0 ? 'var(--bordeaux-clair)' : evolution < 0 ? COULEUR : 'var(--encre-tertiaire)'
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
 
       {/* Poids corporel */}
-      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7 flex flex-col">
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
@@ -943,23 +943,25 @@ export default function Sante() {
         {/* Graphique */}
         {!loading && <PoidsLineChart data={entries} />}
 
-        {/* Séparateur */}
-        <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+        <div className="mt-auto">
+          {/* Séparateur */}
+          <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
 
-        {/* Bouton ajouter */}
-        <motion.button
-          onClick={() => setShowModal(true)}
-          whileHover={{ opacity: 0.85 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
-          style={{ background: COULEUR, color: '#fff', cursor: 'pointer' }}>
-          <Plus size={15} strokeWidth={2.5} />
-          Ajouter une pesée
-        </motion.button>
+          {/* Bouton ajouter */}
+          <motion.button
+            onClick={() => setShowModal(true)}
+            whileHover={{ opacity: 0.85 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
+            style={{ background: COULEUR, color: '#fff', cursor: 'pointer' }}>
+            <Plus size={15} strokeWidth={2.5} />
+            Ajouter une pesée
+          </motion.button>
+        </div>
       </section>
 
       {/* Sommeil */}
-      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7 flex flex-col">
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
@@ -1014,19 +1016,21 @@ export default function Sante() {
         {/* Graphique */}
         {!loadingSommeil && <SommeilBarChart data={entriesSommeil} />}
 
-        {/* Séparateur */}
-        <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+        <div className="mt-auto">
+          {/* Séparateur */}
+          <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
 
-        {/* Bouton ajouter */}
-        <motion.button
-          onClick={() => setShowModalSommeil(true)}
-          whileHover={{ opacity: 0.85 }}
-          whileTap={{ scale: 0.97 }}
-          className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
-          style={{ background: COULEUR_SOMMEIL, color: '#fff', cursor: 'pointer' }}>
-          <Plus size={15} strokeWidth={2.5} />
-          Ajouter une nuit
-        </motion.button>
+          {/* Bouton ajouter */}
+          <motion.button
+            onClick={() => setShowModalSommeil(true)}
+            whileHover={{ opacity: 0.85 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
+            style={{ background: COULEUR_SOMMEIL, color: '#fff', cursor: 'pointer' }}>
+            <Plus size={15} strokeWidth={2.5} />
+            Ajouter une nuit
+          </motion.button>
+        </div>
       </section>
 
       {/* Modal historique sommeil */}
