@@ -2,11 +2,12 @@
 
 Application web de **budget personnel par enveloppes**, esprit banque privée
 suisse éditoriale. L'utilisateur répartit son patrimoine dans des enveloppes,
-suit ses dépenses, gère des créances (sommes qu'on lui doit), et visualise le
-tout avec des graphiques.
+suit ses dépenses, gère des créances (sommes qu'on lui doit), visualise le tout
+avec des graphiques, suit son portefeuille d'investissements et son programme
+sportif.
 
 Application **web installable** (PWA), synchronisée en temps réel entre
-appareils, avec authentification Google et database.
+appareils, avec authentification Google et base de données.
 
 ---
 
@@ -15,16 +16,17 @@ appareils, avec authentification Google et database.
 | Brique | Rôle |
 |---|---|
 | **React 19 + Vite** | Interface et serveur de développement |
+| **React Router DOM** | Routage SPA (6 pages) |
 | **Supabase** | Base de données PostgreSQL, authentification Google, synchronisation temps réel |
 | **Tailwind CSS** | Styles utilitaires (couleurs/ombres branchées sur les tokens du design system) |
 | **Framer Motion** | Animations |
 | **Lucide React** | Icônes |
-| **Recharts** | Graphiques (courbe d'évolution, camembert) |
-| **dnd-kit** | Glisser-déposer tactile et souris |
+| **Recharts** | Graphiques (courbe d'évolution, camembert, chandelier) |
+| **dnd-kit** | Glisser-déposer tactile et souris (enveloppes racines, sous-enveloppes, créances) |
 | **jsPDF** | Export PDF |
 | **vite-plugin-pwa** | Manifest + service worker (installation de l'app) |
 | **Alpha Vantage** | Taux de change Forex (EUR/USD) pour la page Salon & marchés |
-| **CoinGecko** | Cours crypto BTC, ETH, Or (PAXG) — sans clé |
+| **CoinGecko** | Cours crypto BTC, ETH, etc. — sans clé |
 | **Yahoo Finance** | Indices boursiers via proxy Vercel — sans clé |
 | **RSS / rss2json** | Actualités financières — sans clé (10 k req/jour) |
 
@@ -81,10 +83,16 @@ VITE_TWELVE_DATA_KEY=                 # twelvedata.com — réservé usage futur
 
 ## 4. Base de données Supabase
 
-Le schéma initial est dans `migrations/001_initial.sql`. Il se lance une fois,
-dans le **SQL Editor** de Supabase.
+Les migrations se trouvent dans `migrations/` et se lancent dans l'ordre dans le **SQL Editor** de Supabase.
 
-Deux tables :
+| Fichier | Contenu |
+|---|---|
+| `001_initial.sql` | Tables `envelopes` et `movements`, trigger Patrimoine, politiques RLS, Realtime |
+| `002_investments.sql` | Table `investments` (portefeuille d'investissements) |
+| `003_exercise_images_storage.sql` | Bucket Supabase Storage pour les photos d'exercices |
+| `004_sport_custom_exos.sql` | Table `sport_custom_exercises` (exercices personnalisés) |
+
+### Tables principales
 
 - **`envelopes`** — les enveloppes. Champs : `id`, `user_id`, `parent_id`
   (hiérarchie), `type` (`total` / `normal` / `creance`), `title`,
@@ -94,14 +102,17 @@ Deux tables :
   (`income` / `spend` / `allocate` / `unallocate` / `creance_add` /
   `creance_repaid`), `linked_movement_id` (lie un remboursement de créance à
   l'entrée d'argent correspondante), `note`, `is_undone`, `created_at`.
+- **`investments`** — le portefeuille. Champs : `id`, `user_id`, `ticker`,
+  `type` (`action` / `etf` / `crypto` / `or`), `quantity`, `buy_price`,
+  `buy_date`, `closed_at`, `close_price`.
+- **`sport_custom_exercises`** — exercices créés par l'utilisateur en dehors
+  du programme prédéfini.
 
-La migration crée aussi :
-- un **trigger** qui crée automatiquement l'enveloppe « Patrimoine » à
+La migration `001` crée aussi :
+- un **trigger** qui initialise automatiquement l'enveloppe « Patrimoine » à
   l'inscription de chaque utilisateur ;
 - les **politiques RLS** (voir section 7) ;
-- l'activation de **Realtime** sur les deux tables.
-
-Toute évolution future du schéma = un nouveau fichier `migrations/00X_xxx.sql`.
+- l'activation de **Realtime** sur les tables `envelopes` et `movements`.
 
 ---
 
@@ -113,11 +124,15 @@ budget-app/
 │   └── icons/                  Icônes PWA (favicons, icônes 192/512, maskable)
 │
 ├── migrations/
-│   └── 001_initial.sql         Schéma SQL initial : tables, RLS, trigger, Realtime
+│   ├── 001_initial.sql         Schéma initial : envelopes, movements, RLS, trigger, Realtime
+│   ├── 002_investments.sql     Table investments (portefeuille)
+│   ├── 003_exercise_images_storage.sql   Bucket Storage pour photos d'exercices
+│   └── 004_sport_custom_exos.sql         Table exercices personnalisés
 │
 ├── src/
 │   ├── main.jsx                Point d'entrée : monte React dans la page
-│   ├── App.jsx                 Arbre des providers + routes de l'application
+│   ├── App.jsx                 Arbre des providers + routes (/, /graphes-dettes,
+│   │                           /news, /investments, /sport, /reglages)
 │   ├── index.css               Importe les styles du design system + Tailwind
 │   │
 │   ├── styles/
@@ -128,11 +143,13 @@ budget-app/
 │   ├── contexts/
 │   │   ├── AuthContext.jsx     État de session Supabase + actions login/logout
 │   │   ├── ToastContext.jsx    Notifications globales en bas d'écran
+│   │   ├── ThemeContext.jsx    Thème clair / sombre (persisté dans localStorage)
 │   │   └── AppContext.jsx      État global : enveloppes, mouvements, soldes, actions
 │   │
 │   ├── hooks/
 │   │   ├── useAuth.js          Accès au contexte d'authentification
 │   │   ├── useToast.js         Déclenche une notification depuis n'importe où
+│   │   ├── useTheme.js         Lit et bascule le thème clair/sombre
 │   │   └── useApp.js           Accès à l'état global de l'application
 │   │
 │   ├── lib/
@@ -140,7 +157,8 @@ budget-app/
 │   │   ├── formatters.js       Format européen des montants + dates
 │   │   ├── calculs.js          Calcul des soldes côté client + reconstruction d'historique
 │   │   ├── mutations.js        Fonctions qui écrivent dans la base (créer, dépenser, etc.)
-│   │   ├── newsApi.js          Fetch marchés : Forex, crypto, indices, actualités RSS
+│   │   ├── investmentsMutations.js  CRUD du portefeuille d'investissements
+│   │   ├── newsApi.js          Fetch marchés : Forex, crypto, indices, actions, actualités RSS
 │   │   ├── exportJson.js       Génère et télécharge une sauvegarde JSON
 │   │   ├── exportPdf.js        Génère et télécharge un rapport PDF
 │   │   └── importJson.js       Lit, valide et restaure une sauvegarde JSON
@@ -149,7 +167,7 @@ budget-app/
 │   │   ├── Navbar.jsx              Barre de navigation (haut PC / bas mobile)
 │   │   ├── EcranConnexion.jsx      Écran de connexion Google
 │   │   ├── GrandeEnveloppe.jsx     Enveloppe « Patrimoine » + ligne « à répartir »
-│   │   ├── PetiteEnveloppe.jsx     Enveloppe normale + ses sous-catégories
+│   │   ├── PetiteEnveloppe.jsx     Enveloppe normale + ses sous-catégories (avec DnD)
 │   │   ├── EnveloppeCreance.jsx    Créance + animation parchemin de l'historique
 │   │   ├── BoutonAction.jsx        Bouton d'action avec ses différents états
 │   │   ├── BoutonNouvelleEnveloppe.jsx  Cadre pointillé de création
@@ -165,7 +183,7 @@ budget-app/
 │   │   ├── MetaballFond.jsx        Fond animé metaball (canvas WebGL)
 │   │   └── news/                   Composants de la page Salon & marchés
 │   │       ├── BarreMarches.jsx        Bandeau défilant cours BTC/ETH/Or/indices
-│   │       ├── ColonneNews.jsx         Colonne d'actualités RSS
+│   │       ├── ColonneNews.jsx         Colonne d'actualités RSS + favoris
 │   │       ├── GrapheModal.jsx         Modal graphique chandelier crypto/indices
 │   │       ├── WidgetBceFed.jsx        Calendrier des décisions BCE / Fed
 │   │       ├── WidgetFearGreed.jsx     Indicateur Fear & Greed
@@ -175,9 +193,11 @@ budget-app/
 │   │
 │   └── pages/
 │       ├── Accueil.jsx             Patrimoine + enveloppes + créations + suppressions
-│       ├── GraphesEtDettes.jsx     Camembert + courbe Patrimoine + créances
+│       ├── GraphesEtDettes.jsx     Camembert + courbe Patrimoine + créances (avec DnD)
 │       ├── News.jsx                Salon & marchés : actualités + widgets + graphes
-│       └── Reglages.jsx            Déconnexion + export/import des données
+│       ├── Investments.jsx         Portefeuille (actions, ETF, crypto, or) + prix temps réel
+│       ├── Sport.jsx               Programme d'entraînement hebdomadaire + séries/reps
+│       └── Reglages.jsx            Compte + thème + stats + export/import + remise à zéro
 │
 ├── .env.example                Modèle des variables d'environnement
 ├── .gitignore                  Fichiers exclus de Git (dont .env.local)
@@ -209,12 +229,16 @@ d'échec serveur : rollback automatique + toast d'erreur.
 automatiquement l'entrée d'argent liée sur le Patrimoine
 (`linked_movement_id`).
 
+**Portals pour les overlays.** Les modales et toasts sont montés via
+`createPortal(document.body)` pour éviter que les transformées CSS de Framer
+Motion ne cassent le positionnement `fixed`.
+
 ---
 
 ## 7. Sécurité (RLS)
 
 Les quatre opérations (lecture, insertion, mise à jour, suppression) sont
-filtrées sur les deux tables par `user_id = auth.uid()`. Conséquences :
+filtrées sur toutes les tables par `user_id = auth.uid()`. Conséquences :
 - chaque utilisateur ne voit et ne modifie que ses propres données ;
 - l'enveloppe « Patrimoine » (`type = 'total'`) ne peut pas être supprimée ;
 - les contraintes métier (note obligatoire sur les créances, objectif réservé
@@ -264,33 +288,36 @@ dans la barre d'adresse, ou simplement mettre la page en favori.
    même compte ; une action sur l'un apparaît sur l'autre en moins d'une
    seconde.
 8. **Sous-catégories** — en mode édition, créer une sous-catégorie ; le solde
-   de la parente devient la somme de ses enfants.
+   de la parente devient la somme de ses enfants ; réordonner les
+   sous-catégories par glisser-déposer et vérifier que l'ordre persiste.
 9. **Créances** — créer une créance, augmenter la dette (note obligatoire),
    enregistrer un remboursement (l'argent rejoint le Patrimoine).
-10. **Glisser-déposer** — réordonner les enveloppes racines et les créances ;
-    l'ordre est conservé après rechargement.
+10. **Glisser-déposer** — réordonner les enveloppes racines, les sous-enveloppes
+    et les créances ; l'ordre est conservé après rechargement.
 11. **Mode édition et objectif** — modifier titre/description, activer un
     objectif et vérifier la barre de progression.
 12. **Graphiques** — courbe d'évolution d'une enveloppe, camembert de
     répartition, courbe du Patrimoine avec les différentes périodes.
 13. **Export / import** — exporter en JSON et en PDF, puis réimporter le JSON
     et vérifier que l'état est restauré à l'identique.
-14. **PWA** — installer l'application sur un téléphone et vérifier qu'elle
+14. **Portefeuille (Investments)** — ajouter une position (action, ETF, crypto,
+    or), vérifier l'affichage du prix en temps réel, clôturer une position.
+15. **Sport** — vérifier l'affichage du programme hebdomadaire, modifier le
+    nombre de séries/répétitions d'un exercice, naviguer entre les jours.
+16. **Thème sombre** — basculer en mode sombre depuis Réglages et vérifier la
+    cohérence des couleurs sur toutes les pages.
+17. **PWA** — installer l'application sur un téléphone et vérifier qu'elle
     s'ouvre en plein écran.
 
 ---
 
-## 10. Limites connues (v1) et pistes pour la v2
+## 10. Limites connues et pistes pour la suite
 
-- **Réorganisation des sous-catégories** : le glisser-déposer fonctionne sur
-  les enveloppes racines et les créances, mais pas sur les sous-catégories
-  (niveau 3). Le réordonnancement des niveaux profonds demanderait de
-  retravailler le composant `PetiteEnveloppe`.
 - **Import non transactionnel** : la restauration d'une sauvegarde supprime
   puis réinsère les données. Le fichier est validé avant toute écriture, mais
   une coupure réseau en plein import pourrait laisser un état partiel — il faut
   donc **conserver le fichier JSON**. Une version atomique (fonction
-  PostgreSQL) est possible en v2.
+  PostgreSQL) est possible.
 - **Polices du PDF** : le rapport PDF utilise les polices standard de jsPDF
   (proches du design, mais pas EB Garamond exactement).
 - **Calcul des soldes** : effectué côté client. Si le nombre de mouvements
@@ -299,6 +326,9 @@ dans la barre d'adresse, ou simplement mettre la page en favori.
   alternée sur les deux champs, une modification peut être perdue (limite du
   composant `PetiteEnveloppe`).
 - **Limite** : 100 enveloppes maximum par utilisateur.
+- **Cours Investments** : les prix en temps réel dépendent de la disponibilité
+  des API publiques (CoinGecko, Yahoo Finance proxy) ; un quota dépassé peut
+  afficher des prix en cache ou indisponibles.
 
 ---
 
@@ -314,9 +344,10 @@ pour cette étape :
 - ajouter cette même URL dans Google Cloud Console
   (**Credentials → OAuth client → Authorized redirect URIs**, via l'URL de
   callback Supabase) ;
-- vérifier que les routes profondes (`/reglages`, `/graphes-dettes`) renvoient
-  bien vers `index.html` au rechargement (comportement « SPA »).
+- vérifier que les routes profondes (`/graphes-dettes`, `/news`, `/investments`,
+  `/sport`, `/reglages`) renvoient bien vers `index.html` au rechargement
+  (comportement « SPA »).
 
 ---
 
-*Tom's Cabinet — version 1.0.1*
+*Tom's Cabinet — version 1.1.0*
