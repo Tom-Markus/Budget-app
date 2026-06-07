@@ -27,6 +27,7 @@ import GraphesEtDettes from './pages/GraphesEtDettes'
 import News from './pages/News'
 import Investments from './pages/Investments'
 import Sport from './pages/Sport'
+import Sante from './pages/Sante'
 import Reglages from './pages/Reglages'
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
                   <Route path="/news" element={<News />} />
                   <Route path="/investments" element={<Investments />} />
                   <Route path="/sport" element={<Sport />} />
+                  <Route path="/sante" element={<Sante />} />
                   <Route path="/reglages" element={<Reglages />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>

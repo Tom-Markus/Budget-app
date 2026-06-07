@@ -1,0 +1,566 @@
+import { useState, useEffect, useContext, useRef } from 'react'
+import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
+import { ChevronLeft, ChevronRight, Calendar, Plus, X, Trash2, Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { AuthContext } from '../contexts/AuthContext'
+
+const COULEUR = 'var(--vert)'
+const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+const JOURS_ABREV = ['L','M','M','J','V','S','D']
+
+function fmt(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${String(d.getFullYear()).slice(2)}`
+}
+
+function DatePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const [view, setView] = useState(() => value ? new Date(value + 'T00:00:00') : new Date())
+  const [yearMode, setYearMode] = useState(false)
+  const [yearStart, setYearStart] = useState(() => {
+    const y = value ? new Date(value + 'T00:00:00').getFullYear() : new Date().getFullYear()
+    return y - 7
+  })
+  const triggerRef = useRef(null)
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
+
+  useEffect(() => {
+    if (value) setView(new Date(value + 'T00:00:00'))
+  }, [value])
+
+  useEffect(() => {
+    if (!open) return
+    const fn = (e) => { if (!triggerRef.current?.contains(e.target)) setOpen(false) }
+    document.addEventListener('mousedown', fn)
+    document.addEventListener('touchstart', fn, { passive: true })
+    return () => {
+      document.removeEventListener('mousedown', fn)
+      document.removeEventListener('touchstart', fn)
+    }
+  }, [open])
+
+  function handleOpen() {
+    const r = triggerRef.current.getBoundingClientRect()
+    const CAL_H = 320, CAL_W = Math.max(r.width, 260)
+    const top = r.bottom + 6 + CAL_H > window.innerHeight ? r.top - CAL_H - 6 : r.bottom + 6
+    const left = Math.min(r.left, window.innerWidth - CAL_W - 8)
+    setPos({ top, left, width: CAL_W })
+    setYearMode(false)
+    setYearStart(view.getFullYear() - 7)
+    setOpen(true)
+  }
+
+  const selected = value ? new Date(value + 'T00:00:00') : null
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const year = view.getFullYear(), month = view.getMonth()
+
+  const days = []
+  let startDow = new Date(year, month, 1).getDay() - 1
+  if (startDow < 0) startDow = 6
+  for (let i = startDow - 1; i >= 0; i--) days.push({ d: new Date(year, month, -i), other: true })
+  for (let i = 1; i <= new Date(year, month + 1, 0).getDate(); i++) days.push({ d: new Date(year, month, i), other: false })
+  let nextDay = 1
+  while (days.length < 42) days.push({ d: new Date(year, month + 1, nextDay++), other: true })
+
+  const display = selected
+    ? new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: 'numeric' }).format(selected)
+    : ''
+  const years = Array.from({ length: 16 }, (_, i) => yearStart + i)
+
+  return (
+    <div ref={triggerRef}>
+      <button type="button" onClick={handleOpen}
+        className="w-full flex items-center justify-between gap-2 cursor-pointer font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
+        style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: display ? 'var(--encre)' : 'var(--encre-tertiaire)' }}>
+        <span>{display || 'JJ / MM / AAAA'}</span>
+        <Calendar size={13} strokeWidth={1.75} style={{ color: 'var(--encre-tertiaire)', flexShrink: 0 }} />
+      </button>
+      {createPortal(
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, y: -6, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6, scale: 0.97 }}
+              transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+              style={{ position: 'fixed', top: pos.top, left: pos.left, width: pos.width, zIndex: 9999 }}
+              className="surface-velin p-3"
+              onMouseDown={e => e.stopPropagation()}
+              onTouchStart={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-3 px-1">
+                <button type="button"
+                  onClick={() => yearMode ? setYearStart(s => s - 16) : setView(new Date(year, month - 1, 1))}
+                  className="h-9 w-9 flex items-center justify-center rounded-sm"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  <ChevronLeft size={14} strokeWidth={2} />
+                </button>
+                <button type="button" onClick={() => setYearMode(m => !m)}
+                  className="font-serif italic text-sm px-2 py-1 rounded-sm"
+                  style={{ color: 'var(--encre)' }}>
+                  {yearMode ? `${yearStart} – ${yearStart + 15}` : `${MOIS_LABELS[month]} ${year}`}
+                </button>
+                <button type="button"
+                  onClick={() => yearMode ? setYearStart(s => s + 16) : setView(new Date(year, month + 1, 1))}
+                  className="h-9 w-9 flex items-center justify-center rounded-sm"
+                  style={{ color: 'var(--encre-tertiaire)' }}>
+                  <ChevronRight size={14} strokeWidth={2} />
+                </button>
+              </div>
+              {yearMode ? (
+                <div className="grid grid-cols-4 gap-1">
+                  {years.map(y => (
+                    <button key={y} type="button"
+                      onClick={() => { setView(new Date(y, month, 1)); setYearMode(false) }}
+                      className="h-9 rounded-sm text-xs font-sans transition-colors duration-100"
+                      style={{
+                        background: y === year ? 'var(--bordeaux)' : 'transparent',
+                        color: y === year ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
+                        fontWeight: y === year ? '600' : 'normal',
+                      }}>
+                      {y}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-7 mb-1">
+                    {JOURS_ABREV.map((j, i) => (
+                      <div key={i} className="text-center font-sans py-1 font-medium"
+                        style={{ fontSize: '0.6rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--encre-tertiaire)' }}>
+                        {j}
+                      </div>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-px">
+                    {days.map(({ d, other }, i) => {
+                      const isSel = selected && d.toDateString() === selected.toDateString()
+                      const isToday = d.toDateString() === today.toDateString()
+                      return (
+                        <button key={i} type="button"
+                          onClick={() => { onChange(d.toLocaleDateString('fr-CA')); setOpen(false) }}
+                          className="h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center"
+                          style={{
+                            color: other ? 'rgba(31,24,16,0.25)' : isSel ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
+                            background: isSel ? 'var(--bordeaux)' : isToday ? 'rgba(184,149,74,0.20)' : 'transparent',
+                            fontWeight: isSel || isToday ? '600' : 'normal',
+                          }}>
+                          {d.getDate()}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
+    </div>
+  )
+}
+
+function PoidsLineChart({ data }) {
+  const svgRef = useRef(null)
+  const [hovered, setHovered] = useState(null)
+
+  const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date))
+  const n = sorted.length
+
+  const W = 480, H = 200
+  const PAD = { t: 24, r: 20, b: 44, l: 54 }
+  const innerW = W - PAD.l - PAD.r
+  const innerH = H - PAD.t - PAD.b
+  const gradId = 'sante-poids-grad'
+
+  let pts = [], linePath = '', fillPath = '', yLabels = [], minW = 0, maxW = 0
+  if (n >= 2) {
+    const weights = sorted.map(d => d.poids)
+    minW = Math.min(...weights); maxW = Math.max(...weights)
+    const range = maxW - minW
+    const getY = (w) => range === 0 ? PAD.t + innerH / 2 : PAD.t + (1 - (w - minW) / range) * innerH
+    pts = sorted.map((d, i) => ({ x: PAD.l + (i / (n - 1)) * innerW, y: getY(d.poids), ...d }))
+    linePath = `M ${pts[0].x} ${pts[0].y}`
+    for (let i = 0; i < n - 1; i++) {
+      const dx = (pts[i + 1].x - pts[i].x) * 0.4
+      linePath += ` C ${pts[i].x + dx} ${pts[i].y} ${pts[i + 1].x - dx} ${pts[i + 1].y} ${pts[i + 1].x} ${pts[i + 1].y}`
+    }
+    fillPath = linePath + ` L ${pts[n-1].x} ${PAD.t + innerH} L ${pts[0].x} ${PAD.t + innerH} Z`
+    yLabels = range === 0
+      ? [{ val: maxW, y: getY(maxW) }]
+      : [
+          { val: maxW, y: getY(maxW) },
+          { val: Math.round((minW + maxW) / 2 * 2) / 2, y: getY((minW + maxW) / 2) },
+          { val: minW, y: getY(minW) },
+        ]
+  }
+
+  function handleTouchMove(e) {
+    if (!svgRef.current || n < 2) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((touch.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  function handleMouseMove(e) {
+    if (!svgRef.current || n < 2) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((e.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    pts.forEach((p, i) => { const d = Math.abs(p.x - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  const hp = hovered !== null ? pts[hovered] : null
+
+  if (n < 2) return (
+    <div className="py-8 text-center">
+      <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
+        {n === 0 ? 'Aucune pesée enregistrée.' : 'Ajoute une 2ème pesée pour voir le graphique.'}
+      </p>
+    </div>
+  )
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-3" style={{ height: '2rem' }}>
+        <span className="font-serif italic text-2xl tabular-nums" style={{ color: hp ? COULEUR : 'rgba(31,24,16,0.18)' }}>
+          {hp ? `${hp.poids} kg` : '— kg'}
+        </span>
+        {hp && (
+          <span className="font-sans tabular-nums text-sm" style={{ color: 'var(--encre-tertiaire)' }}>
+            {fmt(hp.date)}
+          </span>
+        )}
+      </div>
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`}
+        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair', touchAction: 'none' }}
+        onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
+        onTouchMove={handleTouchMove} onTouchEnd={() => setHovered(null)}>
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={COULEUR} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={COULEUR} stopOpacity="0.00" />
+          </linearGradient>
+        </defs>
+        {[0, 0.5, 1].map((t, i) => (
+          <line key={i} x1={PAD.l} y1={PAD.t + t * innerH} x2={PAD.l + innerW} y2={PAD.t + t * innerH}
+            stroke="rgba(31,24,16,0.07)" strokeWidth="1" />
+        ))}
+        {yLabels.map((l, i) => (
+          <text key={i} x={PAD.l - 7} y={l.y + 4.5} textAnchor="end"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.38)', fontWeight: '500' }}>
+            {l.val} kg
+          </text>
+        ))}
+        <path d={fillPath} fill={`url(#${gradId})`} />
+        <path d={linePath} fill="none" stroke={COULEUR} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+        {pts.map((p, i) => (
+          <circle key={i} cx={p.x} cy={p.y}
+            r={hovered === i ? 6 : 4}
+            fill={COULEUR}
+            opacity={hovered !== null && hovered !== i ? 0.25 : 1}
+            style={{ transition: 'r 0.08s ease, opacity 0.1s ease' }}
+          />
+        ))}
+        {hp && (
+          <>
+            <line x1={hp.x} y1={PAD.t} x2={hp.x} y2={PAD.t + innerH}
+              stroke={COULEUR} strokeWidth="1" strokeDasharray="4 3" strokeOpacity="0.35" />
+            <circle cx={hp.x} cy={hp.y} r={12} fill="none" stroke={COULEUR} strokeWidth="1.5" strokeOpacity="0.20" />
+          </>
+        )}
+        <text x={pts[0].x} y={H - 10} textAnchor="start"
+          style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? COULEUR : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
+          {fmt(pts[0].date)}
+        </text>
+        <text x={pts[n-1].x} y={H - 10} textAnchor="end"
+          style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === n-1 ? COULEUR : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n-1 ? '600' : 'normal' }}>
+          {fmt(pts[n-1].date)}
+        </text>
+        {hp && hovered !== 0 && hovered !== n-1 && (
+          <text x={hp.x} y={H - 10} textAnchor="middle"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: COULEUR, fontWeight: '600' }}>
+            {fmt(hp.date)}
+          </text>
+        )}
+      </svg>
+    </div>
+  )
+}
+
+function CartePoidsHisto({ entry, onDelete, isDeleting }) {
+  const dateLabel = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: 'long', year: 'numeric' })
+    .format(new Date(entry.date + 'T00:00:00'))
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center justify-between px-4 py-3 rounded-2xl"
+      style={{ background: 'rgba(31,24,16,0.03)', border: '1px solid rgba(31,24,16,0.07)' }}>
+      <div className="flex items-baseline gap-2.5">
+        <span className="font-serif italic text-xl" style={{ color: 'var(--encre)' }}>{entry.poids} kg</span>
+        <span className="font-sans text-sm" style={{ color: 'var(--encre-tertiaire)' }}>{dateLabel}</span>
+      </div>
+      <button
+        onClick={() => onDelete(entry.id)}
+        disabled={isDeleting}
+        className="w-7 h-7 flex items-center justify-center rounded-full transition-opacity hover:opacity-70 active:scale-95"
+        style={{ color: 'var(--encre-tertiaire)' }}>
+        {isDeleting
+          ? <span className="w-3 h-3 border-2 rounded-full animate-spin block" style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+          : <Trash2 size={13} strokeWidth={1.75} />}
+      </button>
+    </motion.div>
+  )
+}
+
+function ModalAjoutPoids({ onClose, onSave }) {
+  const [poids, setPoids] = useState('')
+  const [date, setDate] = useState(new Date().toLocaleDateString('fr-CA'))
+  const [saving, setSaving] = useState(false)
+  const poidsRef = useRef(null)
+  const valide = Number(poids) > 0 && !!date
+
+  useEffect(() => {
+    const t = setTimeout(() => poidsRef.current?.focus(), 80)
+    return () => clearTimeout(t)
+  }, [])
+
+  async function handleSave() {
+    if (!valide || saving) return
+    setSaving(true)
+    await onSave(Number(poids), date)
+    setSaving(false)
+  }
+
+  const jsx = (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: 'rgba(10,8,6,0.60)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}>
+      <motion.div
+        className="relative w-full rounded-t-3xl sm:rounded-2xl sm:max-w-md overflow-hidden"
+        style={{ background: 'var(--velin)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 32px 80px rgba(10,8,6,0.36)', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.97 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()}>
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, transparent 0%, ${COULEUR} 50%, transparent 100%)` }} />
+        <div className="absolute top-3 right-3">
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="px-6 pt-5 pb-2">
+          <h3 className="font-serif italic text-xl mb-5" style={{ color: 'var(--encre)' }}>Ajouter une pesée</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Poids (kg)</p>
+              <input
+                ref={poidsRef}
+                type="number"
+                step="0.1"
+                min="1"
+                max="499"
+                value={poids}
+                onChange={e => setPoids(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSave()}
+                placeholder="ex : 78.5"
+                className="w-full px-3 h-10 rounded-xl font-sans text-sm focus:outline-none"
+                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }}
+              />
+            </div>
+            <div>
+              <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Date</p>
+              <DatePicker value={date} onChange={setDate} />
+            </div>
+          </div>
+          <motion.button
+            onClick={handleSave}
+            disabled={!valide || saving}
+            whileTap={valide && !saving ? { scale: 0.97 } : {}}
+            className="w-full mt-5 h-11 rounded-2xl font-sans font-semibold text-sm transition-all duration-200"
+            style={{
+              background: valide ? COULEUR : 'rgba(31,24,16,0.08)',
+              color: valide ? '#fff' : 'rgba(31,24,16,0.30)',
+              cursor: valide ? 'pointer' : 'default',
+            }}>
+            {saving
+              ? <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : 'Enregistrer'}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+
+  return createPortal(jsx, document.body)
+}
+
+export default function Sante() {
+  const { user } = useContext(AuthContext)
+  const [entries, setEntries] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    loadEntries()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  async function loadEntries() {
+    setLoading(true)
+    const { data } = await supabase
+      .from('sante_poids')
+      .select('id, poids, date')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+    setEntries(data || [])
+    setLoading(false)
+  }
+
+  async function handleSave(poids, date) {
+    const { data, error } = await supabase
+      .from('sante_poids')
+      .insert({ user_id: user.id, poids, date })
+      .select('id, poids, date')
+      .single()
+    if (!error && data) {
+      setEntries(prev => [data, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    }
+    setShowModal(false)
+  }
+
+  async function handleDelete(id) {
+    setDeletingId(id)
+    const { error } = await supabase.from('sante_poids').delete().eq('id', id)
+    if (!error) setEntries(prev => prev.filter(e => e.id !== id))
+    setDeletingId(null)
+  }
+
+  const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
+  const latest = sorted[sorted.length - 1]
+  const first = sorted[0]
+  const evolution = latest && first && sorted.length >= 2
+    ? +(latest.poids - first.poids).toFixed(1)
+    : null
+
+  const EvolutionIcon = evolution === null ? null : evolution > 0 ? TrendingUp : evolution < 0 ? TrendingDown : Minus
+  const evolutionLabel = evolution === null ? null : evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
+  const evolutionColor = evolution === null ? null : evolution > 0 ? 'var(--bordeaux-clair)' : evolution < 0 ? COULEUR : 'var(--encre-tertiaire)'
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+
+      {/* Poids corporel */}
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-6 md:pt-6 md:pb-6">
+
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-4">
+          <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
+          <p className="t-label">Poids corporel</p>
+        </div>
+
+        {/* Stat principale */}
+        {!loading && latest && (
+          <div className="flex items-end gap-3 mb-5">
+            <span className="font-serif italic leading-none" style={{ fontSize: '2.75rem', color: 'var(--encre)' }}>
+              {latest.poids} <span style={{ fontSize: '1.5rem', color: 'var(--encre-secondaire)' }}>kg</span>
+            </span>
+            {evolution !== null && (
+              <div className="flex items-center gap-1.5 mb-1 px-2.5 py-1 rounded-full"
+                style={{ background: `${evolutionColor}18` }}>
+                <EvolutionIcon size={12} strokeWidth={2.5} style={{ color: evolutionColor }} />
+                <span className="font-sans font-bold text-xs tabular-nums" style={{ color: evolutionColor }}>
+                  {evolutionLabel}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {loading && (
+          <div className="h-10 mb-5 flex items-center">
+            <span className="font-serif italic text-2xl" style={{ color: 'rgba(31,24,16,0.18)' }}>Chargement…</span>
+          </div>
+        )}
+
+        {!loading && entries.length === 0 && (
+          <p className="font-sans text-sm italic mb-5" style={{ color: 'var(--encre-tertiaire)' }}>
+            Commence à enregistrer ton poids pour voir l'évolution.
+          </p>
+        )}
+
+        {/* Graphique */}
+        {!loading && <PoidsLineChart data={entries} />}
+
+        {/* Séparateur */}
+        <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+
+        {/* Bouton ajouter */}
+        <motion.button
+          onClick={() => setShowModal(true)}
+          whileHover={{ opacity: 0.85 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
+          style={{ background: COULEUR, color: '#fff', cursor: 'pointer' }}>
+          <Plus size={15} strokeWidth={2.5} />
+          Ajouter une pesée
+        </motion.button>
+      </section>
+
+      {/* Historique */}
+      {!loading && entries.length > 0 && (
+        <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-6">
+          <div className="flex items-center gap-2 mb-4">
+            <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
+            <p className="t-label">Historique</p>
+            <span className="font-sans text-xs ml-auto tabular-nums" style={{ color: 'var(--encre-tertiaire)' }}>
+              {entries.length} pesée{entries.length > 1 ? 's' : ''}
+            </span>
+          </div>
+          <div className="space-y-2">
+            <AnimatePresence initial={false}>
+              {entries.map(entry => (
+                <CartePoidsHisto
+                  key={entry.id}
+                  entry={entry}
+                  onDelete={handleDelete}
+                  isDeleting={deletingId === entry.id}
+                />
+              ))}
+            </AnimatePresence>
+          </div>
+        </section>
+      )}
+
+      {/* Modal ajout */}
+      <AnimatePresence>
+        {showModal && (
+          <ModalAjoutPoids
+            onClose={() => setShowModal(false)}
+            onSave={handleSave}
+          />
+        )}
+      </AnimatePresence>
+
+    </div>
+  )
+}
