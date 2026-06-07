@@ -289,19 +289,19 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
               <div className="flex items-center justify-between mb-3 px-1">
                 <button type="button"
                   onClick={() => yearMode ? setYearStart(s => s - 16) : setView(new Date(year, month - 1, 1))}
-                  className="h-9 w-9 flex items-center justify-center rounded-sm transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-md transition-colors duration-150"
                   style={{ color: 'var(--encre-tertiaire)' }}>
                   <ChevronLeft size={14} strokeWidth={2} />
                 </button>
                 <button type="button"
                   onClick={() => setYearMode(m => !m)}
-                  className="font-serif italic text-sm px-2 py-1 rounded-sm transition-colors duration-150"
+                  className="font-serif italic text-sm px-2 py-1 rounded-md transition-colors duration-150"
                   style={{ color: 'var(--encre)' }}>
                   {yearMode ? `${yearStart} – ${yearStart + 15}` : `${MOIS_LABELS[month]} ${year}`}
                 </button>
                 <button type="button"
                   onClick={() => yearMode ? setYearStart(s => s + 16) : setView(new Date(year, month + 1, 1))}
-                  className="h-9 w-9 flex items-center justify-center rounded-sm transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-md transition-colors duration-150"
                   style={{ color: 'var(--encre-tertiaire)' }}>
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
@@ -312,7 +312,7 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                   {years.map(y => (
                     <button key={y} type="button"
                       onClick={() => { setView(new Date(y, month, 1)); setYearMode(false) }}
-                      className="h-9 rounded-sm text-xs font-sans transition-colors duration-100"
+                      className="h-9 rounded-md text-xs font-sans transition-colors duration-100"
                       style={{
                         background: y === year ? 'var(--bordeaux)' : 'transparent',
                         color: y === year ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
@@ -338,7 +338,7 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                       const isToday = d.toDateString() === today.toDateString()
                       return (
                         <button key={i} type="button" onClick={() => { d.toLocaleDateString && onChange(d.toLocaleDateString('fr-CA')); setOpen(false) }}
-                          className="h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center"
+                          className="h-10 w-full rounded-md text-xs font-sans transition-colors duration-100 flex items-center justify-center"
                           style={{
                             color: other ? 'rgba(31,24,16,0.25)' : isSel ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
                             background: isSel ? 'var(--bordeaux)' : isToday ? 'rgba(184,149,74,0.20)' : 'transparent',

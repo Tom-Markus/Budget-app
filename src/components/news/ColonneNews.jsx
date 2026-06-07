@@ -42,7 +42,7 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
   return (
     <motion.div
       className="group relative flex items-start gap-3.5 py-3.5 border-b border-encre/6 last:border-b-0
-        pl-3 -ml-3 pr-1 rounded-sm transition-colors duration-200 hover:bg-velin-fonce/30"
+        pl-3 -ml-3 pr-1 rounded-md transition-colors duration-200 hover:bg-velin-fonce/30"
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, delay: index * 0.07, ease: [0.32, 0.72, 0, 1] }}
@@ -121,7 +121,7 @@ function CarteArticle({ article, index, isSaved, onToggleSave }) {
           onClick={(e) => { e.stopPropagation(); onToggleSave(article) }}
           aria-label={isSaved ? 'Retirer des favoris' : 'Sauvegarder cet article'}
           className={`
-            self-start mt-1 p-1.5 rounded-sm transition-all duration-200 shrink-0
+            self-start mt-1 p-1.5 rounded-md transition-all duration-200 shrink-0
             ${isSaved
               ? 'text-or opacity-100'
               : 'text-encre-tertiaire opacity-40 md:opacity-0 md:group-hover:opacity-60 hover:opacity-100'}
@@ -183,7 +183,7 @@ function CarteArticleFavori({ article, index, onToggleSave }) {
   return (
     <motion.div
       className="group relative flex items-start gap-3 py-3 border-b border-or/10 last:border-b-0
-        pl-2 -ml-2 rounded-sm transition-colors duration-200 hover:bg-or/5"
+        pl-2 -ml-2 rounded-md transition-colors duration-200 hover:bg-or/5"
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.25, delay: index * 0.05, ease: [0.32, 0.72, 0, 1] }}
@@ -209,7 +209,7 @@ function CarteArticleFavori({ article, index, onToggleSave }) {
         type="button"
         onClick={(e) => { e.stopPropagation(); onToggleSave(article) }}
         aria-label="Retirer des favoris"
-        className="self-start mt-0.5 p-1.5 rounded-sm text-encre-tertiaire/50
+        className="self-start mt-0.5 p-1.5 rounded-md text-encre-tertiaire/50
           hover:text-rouge hover:bg-rouge/10 transition-all duration-200 shrink-0"
       >
         <Star size={11} strokeWidth={1.75} fill="currentColor" aria-hidden="true" />

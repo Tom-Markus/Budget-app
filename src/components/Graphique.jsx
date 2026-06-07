@@ -178,7 +178,7 @@ export default function Graphique({
                       key={p.id}
                       onClick={() => setPeriode(p.id)}
                       className={`
-                        px-2.5 py-1 rounded-sm text-xs font-medium
+                        px-2.5 py-1 rounded-md text-xs font-medium
                         transition-all duration-200 ease-noble
                         ${
                           periode === p.id
@@ -198,7 +198,7 @@ export default function Graphique({
                   onClick={onClose}
                   aria-label="Fermer"
                   className="
-                    p-2 rounded-sm
+                    p-2 rounded-md
                     text-encre-tertiaire hover:text-encre hover:bg-velin-fonce
                     transition-colors duration-200
                   "

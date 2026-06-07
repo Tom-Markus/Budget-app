@@ -327,7 +327,7 @@ export default function News() {
               onClick={() => setActiveTab(i)}
               className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
                 uppercase tracking-wider transition-colors duration-200 relative
-                ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
+                ${active ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-md'}`}
             >
               <Icon size={13} strokeWidth={active ? 2 : 1.5} aria-hidden="true" />
               {cat.labelCourt}
@@ -351,7 +351,7 @@ export default function News() {
           onClick={() => setActiveTab(CATEGORIES_MOBILE.length)}
           className={`flex-1 flex flex-col items-center gap-1 py-2.5 text-[11px] font-sans font-medium
             uppercase tracking-wider transition-colors duration-200 relative
-            ${activeTab === CATEGORIES_MOBILE.length ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-sm'}`}
+            ${activeTab === CATEGORIES_MOBILE.length ? 'text-or' : 'text-encre-tertiaire hover:text-encre hover:bg-encre/5 rounded-md'}`}
         >
           <Star
             size={13}

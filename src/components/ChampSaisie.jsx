@@ -150,7 +150,7 @@ export default function ChampSaisie({
             aria-pressed={noteVisible}
             className={`
               h-8 w-8 flex items-center justify-center
-              rounded-sm transition-colors duration-200
+              rounded-md transition-colors duration-200
               ${
                 noteVisible
                   ? 'bg-or/15 text-or-fonce'
@@ -171,7 +171,7 @@ export default function ChampSaisie({
           title={disabledReason || undefined}
           className={`
             h-8 w-8 flex items-center justify-center
-            rounded-sm transition-colors duration-200
+            rounded-md transition-colors duration-200
             ${
               isInvalid
                 ? 'bg-or/30 text-encre/40 cursor-not-allowed'
@@ -190,7 +190,7 @@ export default function ChampSaisie({
             aria-label="Annuler la saisie"
             className="
               h-8 w-8 flex items-center justify-center
-              text-encre-tertiaire hover:text-encre rounded-sm
+              text-encre-tertiaire hover:text-encre rounded-md
               transition-colors duration-200
               focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2
             "

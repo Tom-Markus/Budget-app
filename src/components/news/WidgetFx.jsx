@@ -137,7 +137,7 @@ export function WidgetFx({ fx }) {
                 className="w-full font-serif font-medium text-[19px] sm:text-[21px] text-encre
                   bg-transparent outline-none text-center tabular-nums
                   disabled:opacity-30 placeholder:text-encre-tertiaire/30
-                  focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-sm transition-shadow
+                  focus:shadow-[0_0_0_2px_rgba(184,149,74,0.4)] rounded-md transition-shadow
                   [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                 style={{ fontVariantNumeric: 'tabular-nums lining-nums' }}
               />

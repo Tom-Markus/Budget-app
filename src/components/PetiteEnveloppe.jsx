@@ -208,7 +208,7 @@ function PetiteEnveloppe({
               disabled={modeEdition}
               {...dragHandleProps}
               className={`
-                shrink-0 mt-1 p-1 -ml-1 -mt-1 rounded-sm
+                shrink-0 mt-1 p-1 -ml-1 -mt-1 rounded-md
                 text-encre-tertiaire
                 transition-colors duration-300 ease-noble
                 ${
@@ -255,7 +255,7 @@ function PetiteEnveloppe({
                   aria-label={isDescriptionOpen ? 'Masquer la description' : 'Voir la description'}
                   aria-expanded={isDescriptionOpen}
                   className="
-                    p-2 rounded-sm
+                    p-2 rounded-md
                     text-encre-tertiaire hover:text-encre hover:bg-velin-fonce
                     transition-colors duration-200
                     focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-1
@@ -269,7 +269,7 @@ function PetiteEnveloppe({
                 onClick={onGraphique}
                 aria-label="Voir la courbe d'évolution"
                 className="
-                  p-2 rounded-sm
+                  p-2 rounded-md
                   text-encre-tertiaire hover:text-encre hover:bg-velin-fonce
                   transition-colors duration-200
                   focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-1

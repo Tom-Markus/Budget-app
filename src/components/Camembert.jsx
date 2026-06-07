@@ -75,7 +75,7 @@ function CustomLegend({ payload }) {
       {payload.map((entry, i) => (
         <li key={i} className="flex items-center gap-2">
           <span
-            className="w-3 h-3 rounded-sm shrink-0"
+            className="w-3 h-3 rounded-full shrink-0"
             style={{ background: entry.color }}
             aria-hidden="true"
           />

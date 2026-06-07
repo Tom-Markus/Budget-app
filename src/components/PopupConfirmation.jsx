@@ -96,7 +96,7 @@ export default function PopupConfirmation({
             transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
             className="
               relative w-full max-w-md
-              surface-velin
+              surface-velin rounded-xl
               p-6 md:p-7
               flex flex-col gap-4
             "
@@ -115,7 +115,7 @@ export default function PopupConfirmation({
               aria-label="Fermer"
               className="
                 absolute top-3 right-3
-                p-2 rounded-sm
+                p-2 rounded-md
                 text-encre-tertiaire hover:text-encre hover:bg-velin-fonce
                 transition-colors duration-200
               "

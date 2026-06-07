@@ -49,7 +49,7 @@ export function Toast({ message, type = 'info', isOpen, onClose, duration = 2000
               flex items-center gap-3 px-5 py-3
               bg-velin-clair text-encre
               border ${colorBorder}
-              rounded-md shadow-md
+              rounded-lg shadow-md
               max-w-md
             `}
           >

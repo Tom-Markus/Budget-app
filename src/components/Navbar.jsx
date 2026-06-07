@@ -184,7 +184,7 @@ export default function Navbar({
                         ? 'text-or opacity-100'
                         : 'text-velin-clair opacity-75 hover:opacity-100'
                     }
-                    focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2 rounded-sm
+                    focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2 rounded-md
                   `}
                   aria-current={isActive ? 'page' : undefined}
                 >

@@ -276,7 +276,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                 <button
                   type="button"
                   onClick={() => yearMode ? setYearStart(s => s - 16) : setView(new Date(year, month - 1, 1))}
-                  className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronLeft size={14} strokeWidth={2} />
                 </button>
@@ -284,7 +284,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                 <button
                   type="button"
                   onClick={() => setYearMode(m => !m)}
-                  className="font-serif italic text-encre text-sm hover:text-or transition-colors duration-150 px-2 py-1 rounded-sm hover:bg-velin-fonce"
+                  className="font-serif italic text-encre text-sm hover:text-or transition-colors duration-150 px-2 py-1 rounded-md hover:bg-velin-fonce"
                 >
                   {yearMode ? `${yearStart} – ${yearStart + 15}` : `${MOIS[month]} ${year}`}
                 </button>
@@ -292,7 +292,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                 <button
                   type="button"
                   onClick={() => yearMode ? setYearStart(s => s + 16) : setView(new Date(year, month + 1, 1))}
-                  className="h-9 w-9 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
+                  className="h-9 w-9 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-150"
                 >
                   <ChevronRight size={14} strokeWidth={2} />
                 </button>
@@ -306,7 +306,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                       type="button"
                       onClick={() => { setView(new Date(y, month, 1)); setYearMode(false) }}
                       className={[
-                        'h-9 rounded-sm text-xs font-sans transition-colors duration-100',
+                        'h-9 rounded-md text-xs font-sans transition-colors duration-100',
                         y === year ? 'bg-bordeaux text-velin-clair font-semibold' : 'text-encre-secondaire hover:bg-velin-fonce',
                       ].join(' ')}
                     >
@@ -333,7 +333,7 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                           type="button"
                           onClick={() => pick(d)}
                           className={[
-                            'h-10 w-full rounded-sm text-xs font-sans transition-colors duration-100 flex items-center justify-center',
+                            'h-10 w-full rounded-md text-xs font-sans transition-colors duration-100 flex items-center justify-center',
                             other   ? 'text-encre-tertiaire/35' : 'text-encre-secondaire',
                             isSel   ? 'bg-bordeaux text-velin-clair font-semibold' : '',
                             isToday && !isSel ? 'bg-or/20 text-or-fonce font-semibold' : '',
@@ -394,7 +394,7 @@ function Modal({ isOpen, onClose, children }) {
               type="button"
               onClick={onClose}
               aria-label="Fermer"
-              className="absolute top-3 right-3 p-2 rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
+              className="absolute top-3 right-3 p-2 rounded-md text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
             >
               <X size={18} strokeWidth={1.5} />
             </button>
@@ -636,7 +636,7 @@ function PerfBadge({ pct }) {
 
   return (
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-sm text-[0.65rem] font-medium uppercase tracking-wider ${bg} ${text}`}
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[0.65rem] font-medium uppercase tracking-wider ${bg} ${text}`}
     >
       <Icon size={9} strokeWidth={2.5} aria-hidden="true" />
       {pct >= 0 ? '+' : ''}{pct.toFixed(1)}%
@@ -655,7 +655,7 @@ function StatCard({ label, value, sub, couleur, onChart }) {
           type="button"
           onClick={onChart}
           aria-label="Voir l'évolution du portefeuille"
-          className="absolute top-2 right-2 p-1.5 rounded-sm text-encre-tertiaire hover:text-or hover:bg-velin-fonce transition-colors duration-200"
+          className="absolute top-2 right-2 p-1.5 rounded-md text-encre-tertiaire hover:text-or hover:bg-velin-fonce transition-colors duration-200"
         >
           <BarChart2 size={13} strokeWidth={1.75} />
         </button>
@@ -674,7 +674,7 @@ function StatCard({ label, value, sub, couleur, onChart }) {
 function TypeBadge({ type }) {
   const cfg = TYPES[type] || { label: type, bg: 'bg-encre/10', text: 'text-encre-secondaire' }
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-sm text-[0.65rem] font-medium uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[0.65rem] font-medium uppercase tracking-wider ${cfg.bg} ${cfg.text}`}>
       {cfg.label}
     </span>
   )
@@ -750,7 +750,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
               </div>
               <button
                 type="button" onClick={onClose} aria-label="Fermer"
-                className="p-2 rounded-sm text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
+                className="p-2 rounded-md text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
               >
                 <X size={20} strokeWidth={1.5} />
               </button>
@@ -865,7 +865,7 @@ function DonutStatCard({ data }) {
         {data.map(d => (
           <span key={d.id} className="flex items-center gap-1">
             <span
-              className="w-1.5 h-1.5 rounded-sm shrink-0"
+              className="w-1.5 h-1.5 rounded-full shrink-0"
               style={{ background: DONUT_COLORS[d.id] ?? '#888' }}
               aria-hidden="true"
             />
@@ -928,7 +928,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
             <button
               onClick={() => onCloturer(inv)}
               title="Clôturer la position"
-              className="h-10 w-10 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
+              className="h-10 w-10 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
             >
               <Lock size={14} strokeWidth={1.75} />
             </button>
@@ -936,7 +936,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
           <button
             onClick={() => onSupprimer(inv.id)}
             title="Supprimer"
-            className="h-10 w-10 flex items-center justify-center rounded-sm text-encre-tertiaire hover:text-rouge hover:bg-rouge/10 transition-colors duration-200"
+            className="h-10 w-10 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-rouge hover:bg-rouge/10 transition-colors duration-200"
           >
             <Trash2 size={14} strokeWidth={1.75} />
           </button>

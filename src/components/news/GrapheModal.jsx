@@ -451,7 +451,7 @@ export function GrapheModal({ item, onClose }) {
                   type="button"
                   onClick={() => handleModeSwitch('line')}
                   title="Graphique en ligne"
-                  className={`p-1.5 rounded-sm transition-all duration-150 ${
+                  className={`p-1.5 rounded-md transition-all duration-150 ${
                     chartMode === 'line'
                       ? 'bg-velin-clair text-encre shadow-xs'
                       : 'text-encre-tertiaire hover:text-encre'
@@ -463,7 +463,7 @@ export function GrapheModal({ item, onClose }) {
                   type="button"
                   onClick={() => handleModeSwitch('candle')}
                   title="Graphique en bougies"
-                  className={`p-1.5 rounded-sm transition-all duration-150 ${
+                  className={`p-1.5 rounded-md transition-all duration-150 ${
                     chartMode === 'candle'
                       ? 'bg-velin-clair text-encre shadow-xs'
                       : 'text-encre-tertiaire hover:text-encre'

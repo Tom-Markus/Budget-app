@@ -153,7 +153,7 @@ export default function EnveloppeCreance({
               onClick={onGraphique}
               aria-label="Voir la courbe d'évolution"
               className="
-                p-2 rounded-sm
+                p-2 rounded-md
                 text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/5
                 transition-colors duration-200
                 focus-visible:outline-2 focus-visible:outline-bordeaux focus-visible:outline-offset-1
@@ -167,7 +167,7 @@ export default function EnveloppeCreance({
               aria-label={parcheminOuvert ? 'Refermer le détail' : 'Voir le détail (parchemin)'}
               aria-expanded={parcheminOuvert}
               className="
-                p-2 rounded-sm
+                p-2 rounded-md
                 text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/5
                 transition-colors duration-200
                 focus-visible:outline-2 focus-visible:outline-bordeaux focus-visible:outline-offset-1
