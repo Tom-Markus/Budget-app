@@ -400,7 +400,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
   const n = sorted.length
 
   const W = 480, H = 200
-  const PAD = { t: 24, r: 20, b: 36, l: 46 }
+  const PAD = { t: 24, r: 20, b: 44, l: 54 }
   const innerW = W - PAD.l - PAD.r
   const innerH = H - PAD.t - PAD.b
   const gradId = `poids-grad-${type}`
@@ -551,7 +551,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
               {/* Axe Y — poids permanents à gauche */}
               {yLabels.map((l, i) => (
                 <text key={i} x={PAD.l - 7} y={l.y + 3.5} textAnchor="end"
-                  style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.38)', fontWeight: '500' }}>
+                  style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.38)', fontWeight: '500' }}>
                   {l.val} kg
                 </text>
               ))}
@@ -581,18 +581,18 @@ function PoidsChart({ data, couleur, type, onClose }) {
 
               {/* Dates X — toujours affichées */}
               <text x={pts[0].x} y={H - 10} textAnchor="start"
-                style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
+                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
                 {fmt(pts[0].date)}
               </text>
               <text x={pts[n - 1].x} y={H - 10} textAnchor="end"
-                style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
+                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
                 {fmt(pts[n - 1].date)}
               </text>
 
               {/* Date du point survolé (si ce n'est pas le premier ou le dernier) */}
               {hp && hovered !== 0 && hovered !== n - 1 && (
                 <text x={hp.x} y={H - 10} textAnchor="middle"
-                  style={{ fontSize: '9px', fontFamily: 'sans-serif', fill: couleur, fontWeight: '600' }}>
+                  style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: couleur, fontWeight: '600' }}>
                   {fmt(hp.date)}
                 </text>
               )}
