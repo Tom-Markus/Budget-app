@@ -976,7 +976,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
         {isPPL && !editing ? (
           /* ── LAYOUT 2 COLONNES (PPL, mode lecture) ── */
-          <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden" style={{ minHeight: 0 }}>
+          <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden" style={{ minHeight: 0, height: 0 }}>
 
             {/* Colonne gauche — image + infos */}
             <div className="sm:w-[52%] flex flex-col sm:overflow-y-auto sm:flex-shrink-0" style={{ minHeight: 0 }}>
@@ -1033,7 +1033,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
         ) : (
           /* ── LAYOUT COLONNE UNIQUE (Home, édition) ── */
-          <div className="overflow-y-auto flex-1" style={{ minHeight: 0 }}>
+          <div className="overflow-y-auto flex-1" style={{ minHeight: 0, height: 0 }}>
             {customImage && !editing && (
               <div className="w-full h-56 flex-shrink-0 overflow-hidden relative">
                 <img src={customImage} aria-hidden alt=""
