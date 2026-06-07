@@ -1209,6 +1209,7 @@ export default function Sport() {
   const [customImages, setCustomImages] = useState({})
   const [uploading, setUploading] = useState(null)
   const [customExos, setCustomExos] = useState({})
+  const [customExosLoaded, setCustomExosLoaded] = useState(false)
   const [checkedExos, setCheckedExos] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sport_checked_exos') || '{}') }
     catch { return {} }
@@ -1267,6 +1268,7 @@ export default function Sport() {
       localStorage.removeItem('sport_custom_exos')
     }
     setCustomExos(fromDB)
+    setCustomExosLoaded(true)
   }
 
   async function loadImages() {
@@ -1431,7 +1433,7 @@ export default function Sport() {
           </div>
 
           <div className="px-5 py-4 md:px-6 space-y-2">
-            {session.exercices.map((originalEx, i) => {
+            {customExosLoaded && session.exercices.map((originalEx, i) => {
               const ex = { ...originalEx, ...(customExos[originalEx.nom] || {}) }
               const isChecked = !!(checkedExos[jourActifId] || {})[originalEx.nom]
               return (
