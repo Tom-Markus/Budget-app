@@ -83,6 +83,10 @@ input {
   outline: none;
 }
 
+input[type="time"]::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 input:focus-visible,
 button:focus-visible,
 a:focus-visible {

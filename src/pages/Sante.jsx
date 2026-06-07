@@ -617,12 +617,12 @@ function CarteNuitHisto({ entry, onDelete, isDeleting }) {
       transition={{ duration: 0.2 }}
       className="flex items-center justify-between px-4 py-3 rounded-2xl"
       style={{ background: 'rgba(31,24,16,0.03)', border: '1px solid rgba(31,24,16,0.07)' }}>
-      <div className="flex items-baseline gap-2.5">
-        <span className="font-serif italic text-xl" style={{ color: 'var(--encre)' }}>{fmtDuree(entry.duree_minutes)}</span>
-        <span className="font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
+      <div className="flex items-baseline flex-wrap gap-x-2.5 gap-y-0.5 min-w-0 flex-1 pr-2">
+        <span className="font-serif italic text-xl flex-shrink-0" style={{ color: 'var(--encre)' }}>{fmtDuree(entry.duree_minutes)}</span>
+        <span className="font-sans text-sm flex-shrink-0" style={{ color: 'var(--encre-secondaire)' }}>
           {fmtTime(entry.heure_couche)} → {fmtTime(entry.heure_lever)}
         </span>
-        <span className="font-sans text-sm" style={{ color: 'var(--encre-tertiaire)' }}>{dateLabel}</span>
+        <span className="font-sans text-sm truncate" style={{ color: 'var(--encre-tertiaire)' }}>{dateLabel}</span>
       </div>
       <button
         onClick={() => onDelete(entry.id)}
@@ -888,6 +888,7 @@ export default function Sante() {
   const EvolutionIcon = evolution === null ? null : evolution > 0 ? TrendingUp : evolution < 0 ? TrendingDown : Minus
   const evolutionLabel = evolution === null ? null : evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
   const evolutionColor = evolution === null ? null : evolution > 0 ? 'var(--bordeaux-clair)' : evolution < 0 ? COULEUR : 'var(--encre-tertiaire)'
+  const evolutionBg   = evolution === null ? null : evolution > 0 ? 'rgba(122,38,50,0.09)' : evolution < 0 ? 'rgba(14,163,113,0.09)' : 'rgba(138,128,115,0.09)'
 
   return (
     <div className="max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -918,7 +919,7 @@ export default function Sante() {
             </span>
             {evolution !== null && (
               <div className="flex items-center gap-1.5 mb-1 px-2.5 py-1 rounded-full"
-                style={{ background: `${evolutionColor}18` }}>
+                style={{ background: evolutionBg }}>
                 <EvolutionIcon size={12} strokeWidth={2.5} style={{ color: evolutionColor }} />
                 <span className="font-sans font-bold text-xs tabular-nums" style={{ color: evolutionColor }}>
                   {evolutionLabel}
@@ -950,7 +951,6 @@ export default function Sante() {
           {/* Bouton ajouter */}
           <motion.button
             onClick={() => setShowModal(true)}
-            whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
             className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
             style={{ background: COULEUR, color: '#fff', cursor: 'pointer' }}>
@@ -984,6 +984,7 @@ export default function Sante() {
           const slice7 = entriesSommeil.slice(0, 7)
           const avg = Math.round(slice7.reduce((s, e) => s + e.duree_minutes, 0) / slice7.length)
           const avgColor = avg >= 420 ? COULEUR_SOMMEIL : avg >= 360 ? 'var(--or)' : 'var(--bordeaux-clair)'
+          const avgBg    = avg >= 420 ? 'rgba(91,127,214,0.09)' : avg >= 360 ? 'rgba(184,149,74,0.09)' : 'rgba(122,38,50,0.09)'
           return (
             <div className="flex items-end gap-3 mb-5">
               <span className="font-serif italic leading-none" style={{ fontSize: '2.75rem', color: 'var(--encre)' }}>
@@ -991,7 +992,7 @@ export default function Sante() {
               </span>
               {entriesSommeil.length >= 2 && (
                 <div className="flex items-center gap-1.5 mb-1 px-2.5 py-1 rounded-full"
-                  style={{ background: `${avgColor}18` }}>
+                  style={{ background: avgBg }}>
                   <span className="font-sans font-bold text-xs tabular-nums" style={{ color: avgColor }}>
                     Ø {fmtDuree(avg)} /nuit
                   </span>
@@ -1023,7 +1024,6 @@ export default function Sante() {
           {/* Bouton ajouter */}
           <motion.button
             onClick={() => setShowModalSommeil(true)}
-            whileHover={{ opacity: 0.85 }}
             whileTap={{ scale: 0.97 }}
             className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
             style={{ background: COULEUR_SOMMEIL, color: '#fff', cursor: 'pointer' }}>
