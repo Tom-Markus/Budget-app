@@ -1208,8 +1208,10 @@ export default function Sport() {
   const [modal, setModal] = useState(null)
   const [customImages, setCustomImages] = useState({})
   const [uploading, setUploading] = useState(null)
-  const [customExos, setCustomExos] = useState({})
-  const [customExosLoaded, setCustomExosLoaded] = useState(false)
+  const [customExos, setCustomExos] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('sport_custom_exos_cache') || '{}') }
+    catch { return {} }
+  })
   const [checkedExos, setCheckedExos] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sport_checked_exos') || '{}') }
     catch { return {} }
@@ -1234,7 +1236,9 @@ export default function Sport() {
 
   async function saveCustomExo(nomCle, changes) {
     const merged = { ...(customExos[nomCle] || {}), ...changes }
-    setCustomExos(prev => ({ ...prev, [nomCle]: merged }))
+    const next = { ...customExos, [nomCle]: merged }
+    setCustomExos(next)
+    localStorage.setItem('sport_custom_exos_cache', JSON.stringify(next))
     await supabase.from('sport_custom_exos')
       .upsert({ user_id: user.id, nom: nomCle, changes: merged }, { onConflict: 'user_id,nom' })
   }
@@ -1251,7 +1255,7 @@ export default function Sport() {
       .from('sport_custom_exos')
       .select('nom, changes')
       .eq('user_id', user.id)
-    if (error) { setCustomExosLoaded(true); return }
+    if (error) return
     const fromDB = {}
     for (const row of (data || [])) fromDB[row.nom] = row.changes
 
@@ -1268,7 +1272,7 @@ export default function Sport() {
       if (!migErr) localStorage.removeItem('sport_custom_exos')
     }
     setCustomExos(fromDB)
-    setCustomExosLoaded(true)
+    localStorage.setItem('sport_custom_exos_cache', JSON.stringify(fromDB))
   }
 
   async function loadImages() {
@@ -1433,7 +1437,7 @@ export default function Sport() {
           </div>
 
           <div className="px-5 py-4 md:px-6 space-y-2">
-            {customExosLoaded && session.exercices.map((originalEx, i) => {
+            {session.exercices.map((originalEx, i) => {
               const ex = { ...originalEx, ...(customExos[originalEx.nom] || {}) }
               const isChecked = !!(checkedExos[jourActifId] || {})[originalEx.nom]
               return (
