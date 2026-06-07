@@ -561,7 +561,7 @@ function PetiteEnveloppe({
 
         {/* ============ Sous-enveloppes imbriquées ============ */}
         {sousEnveloppes.length > 0 && (
-          <div className="mt-4 pt-4 border-t-2 border-l-2 border-or/20 rounded-tl-lg flex flex-col gap-3 pl-3 ml-2">
+          <div className="mt-4 border-2 border-or/20 rounded-xl flex flex-col gap-3 p-3">
             {sousEnveloppes.map((sous, i) => (
               <PetiteEnveloppe
                 key={sous.id || i}
