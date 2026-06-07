@@ -1251,7 +1251,7 @@ export default function Sport() {
       .from('sport_custom_exos')
       .select('nom, changes')
       .eq('user_id', user.id)
-    if (error) return
+    if (error) { setCustomExosLoaded(true); return }
     const fromDB = {}
     for (const row of (data || [])) fromDB[row.nom] = row.changes
 
@@ -1260,12 +1260,12 @@ export default function Sport() {
     try { fromLS = JSON.parse(localStorage.getItem('sport_custom_exos') || '{}') } catch { /* */ }
     const toMigrate = Object.entries(fromLS).filter(([nom]) => !fromDB[nom])
     if (toMigrate.length > 0) {
-      await supabase.from('sport_custom_exos').upsert(
+      for (const [nom, changes] of toMigrate) fromDB[nom] = changes
+      const { error: migErr } = await supabase.from('sport_custom_exos').upsert(
         toMigrate.map(([nom, changes]) => ({ user_id: user.id, nom, changes })),
         { onConflict: 'user_id,nom' }
       )
-      for (const [nom, changes] of toMigrate) fromDB[nom] = changes
-      localStorage.removeItem('sport_custom_exos')
+      if (!migErr) localStorage.removeItem('sport_custom_exos')
     }
     setCustomExos(fromDB)
     setCustomExosLoaded(true)
