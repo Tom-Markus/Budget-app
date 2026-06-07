@@ -6,7 +6,7 @@ suit ses dépenses, gère des créances (sommes qu'on lui doit), et visualise le
 tout avec des graphiques.
 
 Application **web installable** (PWA), synchronisée en temps réel entre
-appareils, avec authentification Google.
+appareils, avec authentification Google et database.
 
 ---
 
