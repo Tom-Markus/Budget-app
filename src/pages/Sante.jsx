@@ -467,10 +467,11 @@ export default function Sante() {
   const evolutionColor = evolution === null ? null : evolution > 0 ? 'var(--bordeaux-clair)' : evolution < 0 ? COULEUR : 'var(--encre-tertiaire)'
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="max-w-5xl mx-auto">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
 
       {/* Poids corporel */}
-      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-6 md:pt-6 md:pb-6">
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
 
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
@@ -527,29 +528,36 @@ export default function Sante() {
       </section>
 
       {/* Historique */}
-      {!loading && entries.length > 0 && (
-        <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
-            <p className="t-label">Historique</p>
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
+        <div className="flex items-center gap-2 mb-4">
+          <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
+          <p className="t-label">Historique</p>
+          {entries.length > 0 && (
             <span className="font-sans text-xs ml-auto tabular-nums" style={{ color: 'var(--encre-tertiaire)' }}>
               {entries.length} pesée{entries.length > 1 ? 's' : ''}
             </span>
-          </div>
-          <div className="space-y-2">
-            <AnimatePresence initial={false}>
-              {entries.map(entry => (
-                <CartePoidsHisto
-                  key={entry.id}
-                  entry={entry}
-                  onDelete={handleDelete}
-                  isDeleting={deletingId === entry.id}
-                />
-              ))}
-            </AnimatePresence>
-          </div>
-        </section>
-      )}
+          )}
+        </div>
+        {!loading && entries.length === 0 && (
+          <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
+            Aucune pesée enregistrée.
+          </p>
+        )}
+        <div className="space-y-2">
+          <AnimatePresence initial={false}>
+            {entries.map(entry => (
+              <CartePoidsHisto
+                key={entry.id}
+                entry={entry}
+                onDelete={handleDelete}
+                isDeleting={deletingId === entry.id}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      </div>{/* fin grid */}
 
       {/* Modal ajout */}
       <AnimatePresence>
