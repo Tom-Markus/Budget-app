@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Calendar, Plus, X, Trash2, Scale, TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Plus, X, Trash2, Scale, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
@@ -324,6 +324,59 @@ function CartePoidsHisto({ entry, onDelete, isDeleting }) {
   )
 }
 
+function ModalHistorique({ entries, onDelete, deletingId, onClose }) {
+  const jsx = (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(10,8,6,0.60)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}>
+      <motion.div
+        className="relative w-full rounded-2xl overflow-hidden flex flex-col"
+        style={{ maxWidth: 480, maxHeight: '80dvh', background: 'var(--velin)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 32px 80px rgba(10,8,6,0.36)' }}
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()}>
+        <div className="h-1 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg, transparent 0%, ${COULEUR} 50%, transparent 100%)` }} />
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0">
+          <div>
+            <h3 className="font-serif italic text-xl" style={{ color: 'var(--encre)' }}>Historique</h3>
+            <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-tertiaire)' }}>
+              {entries.length} pesée{entries.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 pb-6 space-y-2" style={{ minHeight: 0 }}>
+          {entries.length === 0 && (
+            <p className="font-sans text-sm italic text-center py-8" style={{ color: 'var(--encre-tertiaire)' }}>
+              Aucune pesée enregistrée.
+            </p>
+          )}
+          <AnimatePresence initial={false}>
+            {entries.map(entry => (
+              <CartePoidsHisto
+                key={entry.id}
+                entry={entry}
+                onDelete={onDelete}
+                isDeleting={deletingId === entry.id}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+  return createPortal(jsx, document.body)
+}
+
 function ModalAjoutPoids({ onClose, onSave }) {
   const [poids, setPoids] = useState('')
   const [date, setDate] = useState(new Date().toLocaleDateString('fr-CA'))
@@ -417,6 +470,7 @@ export default function Sante() {
   const [entries, setEntries] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showHistorique, setShowHistorique] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
@@ -467,8 +521,7 @@ export default function Sante() {
   const evolutionColor = evolution === null ? null : evolution > 0 ? 'var(--bordeaux-clair)' : evolution < 0 ? COULEUR : 'var(--encre-tertiaire)'
 
   return (
-    <div className="max-w-5xl mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+    <div className="max-w-2xl mx-auto space-y-4">
 
       {/* Poids corporel */}
       <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
@@ -477,6 +530,15 @@ export default function Sante() {
         <div className="flex items-center gap-2 mb-4">
           <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
           <p className="t-label">Poids corporel</p>
+          {entries.length > 0 && (
+            <button
+              onClick={() => setShowHistorique(true)}
+              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full font-sans text-xs transition-opacity hover:opacity-70"
+              style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+              <Clock size={11} strokeWidth={2} />
+              {entries.length} pesée{entries.length > 1 ? 's' : ''}
+            </button>
+          )}
         </div>
 
         {/* Stat principale */}
@@ -527,37 +589,17 @@ export default function Sante() {
         </motion.button>
       </section>
 
-      {/* Historique */}
-      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
-        <div className="flex items-center gap-2 mb-4">
-          <Scale size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
-          <p className="t-label">Historique</p>
-          {entries.length > 0 && (
-            <span className="font-sans text-xs ml-auto tabular-nums" style={{ color: 'var(--encre-tertiaire)' }}>
-              {entries.length} pesée{entries.length > 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-        {!loading && entries.length === 0 && (
-          <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
-            Aucune pesée enregistrée.
-          </p>
+      {/* Modal historique */}
+      <AnimatePresence>
+        {showHistorique && (
+          <ModalHistorique
+            entries={entries}
+            onDelete={handleDelete}
+            deletingId={deletingId}
+            onClose={() => setShowHistorique(false)}
+          />
         )}
-        <div className="space-y-2">
-          <AnimatePresence initial={false}>
-            {entries.map(entry => (
-              <CartePoidsHisto
-                key={entry.id}
-                entry={entry}
-                onDelete={handleDelete}
-                isDeleting={deletingId === entry.id}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-      </section>
-
-      </div>{/* fin grid */}
+      </AnimatePresence>
 
       {/* Modal ajout */}
       <AnimatePresence>
