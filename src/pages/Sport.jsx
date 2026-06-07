@@ -979,7 +979,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           <div className="flex flex-col sm:flex-row flex-1 overflow-y-auto sm:overflow-hidden" style={{ minHeight: 0, height: 0 }}>
 
             {/* Colonne gauche — image + infos */}
-            <div className="sm:w-[52%] flex flex-col sm:overflow-y-auto sm:flex-shrink-0" style={{ minHeight: 0 }}>
+            <div className="sm:w-[52%] sm:min-h-0 flex flex-col sm:overflow-y-auto sm:flex-shrink-0">
               {customImage && (
                 <div className="w-full h-52 flex-shrink-0 overflow-hidden relative">
                   <img src={customImage} aria-hidden alt=""
@@ -1025,7 +1025,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             <div className="hidden sm:block w-px flex-shrink-0 self-stretch" style={{ background: 'linear-gradient(180deg, transparent, rgba(31,24,16,0.10) 15%, rgba(31,24,16,0.10) 85%, transparent)' }} />
 
             {/* Colonne droite — performances + photo */}
-            <div className="sm:flex-1 sm:overflow-y-auto px-4 pt-5" style={{ minHeight: 0, paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
+            <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto px-4 pt-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
               {perfSection}
               <div className="mt-4">{photoBouton}</div>
             </div>
