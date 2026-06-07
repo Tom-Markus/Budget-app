@@ -45,48 +45,52 @@ function extractTag(xml, tag) {
 // \bwar\b évite "star wars" ; \bbanned\b évite "unbanned" ; etc.
 const MAJOR_WORD_RE = /\b(war|crisis|collapse|recession|emergency|banned|leaked|hacked)\b/i
 
-function scoreImportance(title, source) {
-  const t = ' ' + title.toLowerCase() + ' '
+function scoreImportance(title, source, isAICategory = false) {
+  // Strip possessives ('s) avant matching — évite que "Apple's" rate le match ' apple '
+  const t = ' ' + title.toLowerCase().replace(/'s\b/g, '') + ' '
 
   const entities = [
     // Labs IA & modèles
     'openai', 'anthropic', ' deepmind', 'mistral', ' xai ', 'meta ai',
-    'chatgpt', ' claude ', ' gemini', 'gpt-', 'llama', 'deepseek', 'copilot', 'sora',
+    'chatgpt', ' claude ', ' gemini', 'gpt-', 'deepseek',
     'hugging face', 'perplexity', 'midjourney', 'stability ai',
     // Big tech & hardware IA
     'nvidia', 'microsoft', ' apple ', 'samsung', 'tesla', ' google ', 'spacex',
-    ' amazon ', ' meta ', ' intel ', ' amd ',
-    // Crypto (marchés + IA)
-    'bitcoin', 'ethereum',
-    // Figures clés & institutions financières
+    ' amazon ', ' meta ', ' amd ',
+    // Marchés financiers
+    'bitcoin', 'ethereum', 'stock market', 'interest rate',
+    // Figures clés & institutions
     'elon musk', 'sam altman', 'trump',
-    'federal reserve', ' the fed ', ' ecb ',
+    'federal reserve', ' the fed ', ' ecb ', 'european central bank', 'bank of england', 'european union',
+    // Géopolitique & holdings
+    ' nato ', 'alphabet',
   ]
 
+  // Actions fortes : événement concret et immédiat (lancement effectif, sanction, acquisition…)
   const strongActions = [
-    // Annonces / lancements
-    'releases ', 'released ',
+    'releases ', 'released ', 'releasing ',
     'launches ', 'launched ', ' launch ',
-    'announces ', 'announced ',
     'unveils ', 'unveiled ',
-    'introduces ', 'introduced ',
-    'reveals ', 'revealed ',
-    // Tech / IA
+    'introduces ', 'introduced ', 'introducing ',
     'open-sources ', 'open-weight', 'open weight',
     ' drops ', 'debuts ', 'crashes ',
-    // Business / Corporate
-    'acquired', 'acquires ',
+    'acquired ', 'acquires ',
+    'overtakes ', 'outperforms ', 'beats ',
     'raises ', 'raised ',
     'sues ', 'sued ',
     'bans ',
     ' fires ', ' fired ', ' cuts ',
     'recalls ', 'merges ',
-    'surpasses ', 'partners with',
-    // Sécurité
-    'leaked ', 'hacked ',
+    'surpasses ',
     ' fined ',
-    // Fermetures
     'shuts down', 'shut down',
+  ]
+
+  // Actions douces : annonce ou révélation (peut être futur ou spéculatif)
+  const softActions = [
+    'announces ', 'announced ', 'announcing ',
+    'reveals ', 'revealed ',
+    'partners with',
   ]
 
   // Phrases non-ambiguës : substring suffit
@@ -106,14 +110,18 @@ function scoreImportance(title, source) {
   const hasMajorWord      = MAJOR_WORD_RE.test(title)
   const hasMajor          = hasMajorPhrase || hasMajorWord || hasFinancialScale
 
-  const hasEntity = entities.some(e => t.includes(e))
-  const hasAction = strongActions.some(a => t.includes(a))
-  const isPrimary = ['OpenAI', 'Google AI'].includes(source)
-  // Sources 100% IA : entité OU action suffit pour être notable
-  const isAISrc   = ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI', 'MIT Tech Review'].includes(source)
+  const hasEntity  = entities.some(e => t.includes(e))
+  const hasStrong  = strongActions.some(a => t.includes(a))
+  const hasSoft    = softActions.some(a => t.includes(a))
 
-  if ((hasEntity && hasAction) || (hasMajor && hasEntity) || (isPrimary && hasAction)) return 'critical'
-  if (hasMajor || (isAISrc && (hasEntity || hasAction))) return 'high'
+  const isPrimary = ['OpenAI', 'Google AI'].includes(source)
+  // Sources 100% IA : entité OU action forte suffit — seulement dans le contexte catégorie IA
+  const isAISrc   = isAICategory && ['VentureBeat AI', 'The Decoder', 'OpenAI', 'Google AI', 'MIT Tech Review'].includes(source)
+
+  // critical  = événement fort confirmé OU majeur + entité OU source primaire qui publie quoi que ce soit
+  if ((hasEntity && hasStrong) || (hasMajor && hasEntity) || (isPrimary && (hasStrong || hasSoft))) return 'critical'
+  // high      = entité + annonce douce OU signal majeur seul OU source IA spécialisée + entité/action forte
+  if ((hasEntity && hasSoft) || hasMajor || (isAISrc && (hasEntity || hasStrong))) return 'high'
   return null
 }
 
@@ -127,7 +135,7 @@ function decodeEntities(str) {
     .replace(/&#x27;/g, "'")
 }
 
-async function parseFeed({ url, source }) {
+async function parseFeed({ url, source }, isAICategory = false) {
   const r = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)',
@@ -154,7 +162,7 @@ async function parseFeed({ url, source }) {
         url:         link,
         source,
         publishedAt: pubDate || new Date().toISOString(),
-        importance:  scoreImportance(cleanTitle, source),
+        importance:  scoreImportance(cleanTitle, source, isAICategory),
       })
     }
   }
@@ -163,13 +171,14 @@ async function parseFeed({ url, source }) {
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800')
+  res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=900')
 
   const { category } = req.query
   const feeds = FEEDS[category]
   if (!feeds) return res.status(400).json({ error: 'Catégorie inconnue' })
 
-  const results = await Promise.allSettled(feeds.map(parseFeed))
+  const isAICategory = category === 'ai'
+  const results = await Promise.allSettled(feeds.map(f => parseFeed(f, isAICategory)))
 
   const allItems = []
   results.forEach(r => { if (r.status === 'fulfilled') allItems.push(...r.value) })
