@@ -1,13 +1,34 @@
 import { useState, useEffect, useContext, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { ChevronLeft, ChevronRight, Calendar, Plus, X, Trash2, Scale, TrendingUp, TrendingDown, Minus, Clock } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Calendar, Plus, X, Trash2, Scale, TrendingUp, TrendingDown, Minus, Clock, Moon } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { AuthContext } from '../contexts/AuthContext'
 
 const COULEUR = 'var(--vert)'
+const COULEUR_SOMMEIL = '#5B7FD6'
 const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 const JOURS_ABREV = ['L','M','M','J','V','S','D']
+
+function fmtDuree(minutes) {
+  const h = Math.floor(minutes / 60)
+  const m = minutes % 60
+  return m === 0 ? `${h}h` : `${h}h${m.toString().padStart(2, '0')}`
+}
+
+function fmtTime(t) {
+  if (!t) return ''
+  return t.slice(0, 5)
+}
+
+function computeDuree(couche, lever) {
+  const [ch, cm] = couche.split(':').map(Number)
+  const [lh, lm] = lever.split(':').map(Number)
+  let cMin = ch * 60 + cm
+  let lMin = lh * 60 + lm
+  if (lMin <= cMin) lMin += 24 * 60
+  return lMin - cMin
+}
 
 function fmt(dateStr) {
   const d = new Date(dateStr + 'T00:00:00')
@@ -465,6 +486,317 @@ function ModalAjoutPoids({ onClose, onSave }) {
   return createPortal(jsx, document.body)
 }
 
+function SommeilBarChart({ data }) {
+  const [hovered, setHovered] = useState(null)
+  const svgRef = useRef(null)
+
+  const sorted = [...data].sort((a, b) => a.date.localeCompare(b.date)).slice(-14)
+  const n = sorted.length
+
+  if (n === 0) return (
+    <div className="py-8 text-center">
+      <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>
+        Aucune nuit enregistrée.
+      </p>
+    </div>
+  )
+
+  const W = 480, H = 180
+  const PAD = { t: 16, r: 16, b: 44, l: 44 }
+  const innerW = W - PAD.l - PAD.r
+  const innerH = H - PAD.t - PAD.b
+  const MAX_M = 720
+
+  const getY = (min) => PAD.t + (1 - Math.min(min, MAX_M) / MAX_M) * innerH
+
+  const barW = Math.min(40, n === 1 ? 40 : Math.floor((innerW - (n - 1) * 6) / n))
+  const gap = n <= 1 ? 0 : (innerW - n * barW) / (n - 1)
+
+  const bars = sorted.map((d, i) => ({
+    ...d,
+    x: PAD.l + i * (barW + gap),
+    y: getY(d.duree_minutes),
+    h: innerH - (getY(d.duree_minutes) - PAD.t),
+  }))
+
+  const hp = hovered !== null ? bars[hovered] : null
+
+  function handleMouseMove(e) {
+    if (!svgRef.current) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((e.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    bars.forEach((b, i) => { const d = Math.abs(b.x + barW / 2 - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  function handleTouchMove(e) {
+    if (!svgRef.current) return
+    e.preventDefault()
+    const touch = e.touches[0]
+    const rect = svgRef.current.getBoundingClientRect()
+    const svgX = ((touch.clientX - rect.left) / rect.width) * W
+    let minDist = Infinity, minIdx = 0
+    bars.forEach((b, i) => { const d = Math.abs(b.x + barW / 2 - svgX); if (d < minDist) { minDist = d; minIdx = i } })
+    setHovered(minIdx)
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-3 mb-3" style={{ height: '2rem' }}>
+        <span className="font-serif italic text-2xl tabular-nums" style={{ color: hp ? COULEUR_SOMMEIL : 'rgba(31,24,16,0.18)' }}>
+          {hp ? fmtDuree(hp.duree_minutes) : '—'}
+        </span>
+        {hp && (
+          <span className="font-sans tabular-nums text-sm" style={{ color: 'var(--encre-tertiaire)' }}>
+            {fmtTime(hp.heure_couche)} → {fmtTime(hp.heure_lever)} · {fmt(hp.date)}
+          </span>
+        )}
+      </div>
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${W} ${H}`}
+        style={{ display: 'block', overflow: 'visible', cursor: 'crosshair', touchAction: 'none' }}
+        onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
+        onTouchMove={handleTouchMove} onTouchEnd={() => setHovered(null)}>
+        {/* Grid lines at 4h, 8h, 12h */}
+        {[240, 480, 720].map((m, i) => (
+          <line key={i} x1={PAD.l} y1={getY(m)} x2={PAD.l + innerW} y2={getY(m)}
+            stroke={m === 480 ? `${COULEUR_SOMMEIL}55` : 'rgba(31,24,16,0.07)'}
+            strokeWidth={m === 480 ? 1.5 : 1}
+            strokeDasharray={m === 480 ? '4 3' : undefined}
+          />
+        ))}
+        {[240, 480, 720].map((m, i) => (
+          <text key={i} x={PAD.l - 7} y={getY(m) + 4.5} textAnchor="end"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: m === 480 ? `${COULEUR_SOMMEIL}CC` : 'rgba(31,24,16,0.38)', fontWeight: m === 480 ? '600' : '500' }}>
+            {m / 60}h
+          </text>
+        ))}
+        {/* Bars */}
+        {bars.map((b, i) => (
+          <rect key={i} x={b.x} y={b.y} width={barW} height={b.h}
+            rx={Math.min(5, barW / 3)}
+            fill={COULEUR_SOMMEIL}
+            opacity={hovered !== null && hovered !== i ? 0.22 : 1}
+            style={{ transition: 'opacity 0.1s ease' }}
+          />
+        ))}
+        {/* Date labels */}
+        {n >= 1 && (
+          <text x={bars[0].x + barW / 2} y={H - 10} textAnchor="middle"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? COULEUR_SOMMEIL : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
+            {fmt(bars[0].date)}
+          </text>
+        )}
+        {n >= 2 && (
+          <text x={bars[n - 1].x + barW / 2} y={H - 10} textAnchor="middle"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? COULEUR_SOMMEIL : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
+            {fmt(bars[n - 1].date)}
+          </text>
+        )}
+        {hp && hovered !== 0 && hovered !== n - 1 && (
+          <text x={hp.x + barW / 2} y={H - 10} textAnchor="middle"
+            style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: COULEUR_SOMMEIL, fontWeight: '600' }}>
+            {fmt(hp.date)}
+          </text>
+        )}
+      </svg>
+    </div>
+  )
+}
+
+function CarteNuitHisto({ entry, onDelete, isDeleting }) {
+  const dateLabel = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: 'long', year: 'numeric' })
+    .format(new Date(entry.date + 'T00:00:00'))
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: -16 }}
+      transition={{ duration: 0.2 }}
+      className="flex items-center justify-between px-4 py-3 rounded-2xl"
+      style={{ background: 'rgba(31,24,16,0.03)', border: '1px solid rgba(31,24,16,0.07)' }}>
+      <div className="flex items-baseline gap-2.5">
+        <span className="font-serif italic text-xl" style={{ color: 'var(--encre)' }}>{fmtDuree(entry.duree_minutes)}</span>
+        <span className="font-sans text-sm" style={{ color: 'var(--encre-secondaire)' }}>
+          {fmtTime(entry.heure_couche)} → {fmtTime(entry.heure_lever)}
+        </span>
+        <span className="font-sans text-sm" style={{ color: 'var(--encre-tertiaire)' }}>{dateLabel}</span>
+      </div>
+      <button
+        onClick={() => onDelete(entry.id)}
+        disabled={isDeleting}
+        className="w-7 h-7 flex items-center justify-center rounded-full transition-opacity hover:opacity-70 active:scale-95"
+        style={{ color: 'var(--encre-tertiaire)' }}>
+        {isDeleting
+          ? <span className="w-3 h-3 border-2 rounded-full animate-spin block" style={{ borderColor: 'var(--encre-tertiaire)', borderTopColor: 'transparent' }} />
+          : <Trash2 size={13} strokeWidth={1.75} />}
+      </button>
+    </motion.div>
+  )
+}
+
+function ModalHistoriqueSommeil({ entries, onDelete, deletingId, onClose }) {
+  const jsx = (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'rgba(10,8,6,0.60)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}>
+      <motion.div
+        className="relative w-full rounded-2xl overflow-hidden flex flex-col"
+        style={{ maxWidth: 480, maxHeight: '80dvh', background: 'var(--velin)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 32px 80px rgba(10,8,6,0.36)' }}
+        initial={{ opacity: 0, scale: 0.96, y: 16 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 16 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()}>
+        <div className="h-1 w-full flex-shrink-0" style={{ background: `linear-gradient(90deg, transparent 0%, ${COULEUR_SOMMEIL} 50%, transparent 100%)` }} />
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 flex-shrink-0">
+          <div>
+            <h3 className="font-serif italic text-xl" style={{ color: 'var(--encre)' }}>Historique</h3>
+            <p className="font-sans text-xs mt-0.5" style={{ color: 'var(--encre-tertiaire)' }}>
+              {entries.length} nuit{entries.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 pb-6 space-y-2" style={{ minHeight: 0 }}>
+          {entries.length === 0 && (
+            <p className="font-sans text-sm italic text-center py-8" style={{ color: 'var(--encre-tertiaire)' }}>
+              Aucune nuit enregistrée.
+            </p>
+          )}
+          <AnimatePresence initial={false}>
+            {entries.map(entry => (
+              <CarteNuitHisto
+                key={entry.id}
+                entry={entry}
+                onDelete={onDelete}
+                isDeleting={deletingId === entry.id}
+              />
+            ))}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+  return createPortal(jsx, document.body)
+}
+
+function ModalAjoutSommeil({ onClose, onSave }) {
+  const [date, setDate] = useState(new Date().toLocaleDateString('fr-CA'))
+  const [couche, setCouche] = useState('23:00')
+  const [lever, setLever] = useState('07:00')
+  const [saving, setSaving] = useState(false)
+
+  const duree = couche && lever ? computeDuree(couche, lever) : 0
+  const valide = !!date && duree > 0 && duree <= 1440
+
+  async function handleSave() {
+    if (!valide || saving) return
+    setSaving(true)
+    await onSave({ date, heure_couche: couche, heure_lever: lever, duree_minutes: duree })
+    setSaving(false)
+  }
+
+  const timeInputStyle = {
+    background: 'rgba(31,24,16,0.06)',
+    border: '1px solid rgba(31,24,16,0.10)',
+    color: 'var(--encre)',
+  }
+
+  const jsx = (
+    <motion.div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4"
+      style={{ background: 'rgba(10,8,6,0.60)', backdropFilter: 'blur(3px)', WebkitBackdropFilter: 'blur(3px)' }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}>
+      <motion.div
+        className="relative w-full rounded-t-3xl sm:rounded-2xl sm:max-w-md overflow-hidden"
+        style={{ background: 'var(--velin)', boxShadow: '0 0 0 1px rgba(255,255,255,0.06) inset, 0 32px 80px rgba(10,8,6,0.36)', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}
+        initial={{ opacity: 0, y: 24, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 16, scale: 0.97 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        onClick={e => e.stopPropagation()}>
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, transparent 0%, ${COULEUR_SOMMEIL} 50%, transparent 100%)` }} />
+        <div className="absolute top-3 right-3">
+          <button onClick={onClose}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
+            style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+            <X size={14} strokeWidth={2} />
+          </button>
+        </div>
+        <div className="px-6 pt-5 pb-2">
+          <h3 className="font-serif italic text-xl mb-5" style={{ color: 'var(--encre)' }}>Ajouter une nuit</h3>
+          <div className="space-y-3">
+            <div>
+              <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Date (réveil)</p>
+              <DatePicker value={date} onChange={setDate} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Heure coucher</p>
+                <input
+                  type="time"
+                  value={couche}
+                  onChange={e => setCouche(e.target.value)}
+                  className="w-full px-3 h-10 rounded-xl font-sans text-sm focus:outline-none"
+                  style={timeInputStyle}
+                />
+              </div>
+              <div>
+                <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Heure lever</p>
+                <input
+                  type="time"
+                  value={lever}
+                  onChange={e => setLever(e.target.value)}
+                  className="w-full px-3 h-10 rounded-xl font-sans text-sm focus:outline-none"
+                  style={timeInputStyle}
+                />
+              </div>
+            </div>
+            {duree > 0 && (
+              <div className="flex items-center justify-center gap-2 py-2 rounded-xl"
+                style={{ background: `${COULEUR_SOMMEIL}12` }}>
+                <Moon size={13} style={{ color: COULEUR_SOMMEIL }} strokeWidth={2} />
+                <span className="font-serif italic text-lg tabular-nums" style={{ color: COULEUR_SOMMEIL }}>
+                  {fmtDuree(duree)}
+                </span>
+                <span className="font-sans text-xs" style={{ color: `${COULEUR_SOMMEIL}AA` }}>de sommeil</span>
+              </div>
+            )}
+          </div>
+          <motion.button
+            onClick={handleSave}
+            disabled={!valide || saving}
+            whileTap={valide && !saving ? { scale: 0.97 } : {}}
+            className="w-full mt-5 h-11 rounded-2xl font-sans font-semibold text-sm transition-all duration-200"
+            style={{
+              background: valide ? COULEUR_SOMMEIL : 'rgba(31,24,16,0.08)',
+              color: valide ? '#fff' : 'rgba(31,24,16,0.30)',
+              cursor: valide ? 'pointer' : 'default',
+            }}>
+            {saving
+              ? <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              : 'Enregistrer'}
+          </motion.button>
+        </div>
+      </motion.div>
+    </motion.div>
+  )
+
+  return createPortal(jsx, document.body)
+}
+
 export default function Sante() {
   const { user } = useContext(AuthContext)
   const [entries, setEntries] = useState([])
@@ -473,9 +805,16 @@ export default function Sante() {
   const [showHistorique, setShowHistorique] = useState(false)
   const [deletingId, setDeletingId] = useState(null)
 
+  const [entriesSommeil, setEntriesSommeil] = useState([])
+  const [loadingSommeil, setLoadingSommeil] = useState(true)
+  const [showModalSommeil, setShowModalSommeil] = useState(false)
+  const [showHistoriqueSommeil, setShowHistoriqueSommeil] = useState(false)
+  const [deletingIdSommeil, setDeletingIdSommeil] = useState(null)
+
   useEffect(() => {
     if (!user) return
     loadEntries()
+    loadSommeil()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
@@ -507,6 +846,36 @@ export default function Sante() {
     const { error } = await supabase.from('sante_poids').delete().eq('id', id)
     if (!error) setEntries(prev => prev.filter(e => e.id !== id))
     setDeletingId(null)
+  }
+
+  async function loadSommeil() {
+    setLoadingSommeil(true)
+    const { data } = await supabase
+      .from('sante_sommeil')
+      .select('id, date, heure_couche, heure_lever, duree_minutes')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+    setEntriesSommeil(data || [])
+    setLoadingSommeil(false)
+  }
+
+  async function handleSaveSommeil({ date, heure_couche, heure_lever, duree_minutes }) {
+    const { data, error } = await supabase
+      .from('sante_sommeil')
+      .insert({ user_id: user.id, date, heure_couche, heure_lever, duree_minutes })
+      .select('id, date, heure_couche, heure_lever, duree_minutes')
+      .single()
+    if (!error && data) {
+      setEntriesSommeil(prev => [data, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    }
+    setShowModalSommeil(false)
+  }
+
+  async function handleDeleteSommeil(id) {
+    setDeletingIdSommeil(id)
+    const { error } = await supabase.from('sante_sommeil').delete().eq('id', id)
+    if (!error) setEntriesSommeil(prev => prev.filter(e => e.id !== id))
+    setDeletingIdSommeil(null)
   }
 
   const sorted = [...entries].sort((a, b) => a.date.localeCompare(b.date))
@@ -588,6 +957,99 @@ export default function Sante() {
           Ajouter une pesée
         </motion.button>
       </section>
+
+      {/* Sommeil */}
+      <section className="surface-velin liserer-signature px-5 pt-5 pb-5 md:px-7 md:pt-7 md:pb-7">
+
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-4">
+          <Moon size={13} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2} />
+          <p className="t-label">Sommeil</p>
+          {entriesSommeil.length > 0 && (
+            <button
+              onClick={() => setShowHistoriqueSommeil(true)}
+              className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full font-sans text-xs transition-opacity hover:opacity-70"
+              style={{ background: 'rgba(31,24,16,0.06)', color: 'var(--encre-tertiaire)' }}>
+              <Clock size={11} strokeWidth={2} />
+              {entriesSommeil.length} nuit{entriesSommeil.length > 1 ? 's' : ''}
+            </button>
+          )}
+        </div>
+
+        {/* Stat principale */}
+        {!loadingSommeil && entriesSommeil.length > 0 && (() => {
+          const latest = entriesSommeil[0]
+          const slice7 = entriesSommeil.slice(0, 7)
+          const avg = Math.round(slice7.reduce((s, e) => s + e.duree_minutes, 0) / slice7.length)
+          const avgColor = avg >= 420 ? COULEUR_SOMMEIL : avg >= 360 ? 'var(--or)' : 'var(--bordeaux-clair)'
+          return (
+            <div className="flex items-end gap-3 mb-5">
+              <span className="font-serif italic leading-none" style={{ fontSize: '2.75rem', color: 'var(--encre)' }}>
+                {fmtDuree(latest.duree_minutes)}
+              </span>
+              {entriesSommeil.length >= 2 && (
+                <div className="flex items-center gap-1.5 mb-1 px-2.5 py-1 rounded-full"
+                  style={{ background: `${avgColor}18` }}>
+                  <span className="font-sans font-bold text-xs tabular-nums" style={{ color: avgColor }}>
+                    Ø {fmtDuree(avg)} /nuit
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })()}
+
+        {loadingSommeil && (
+          <div className="h-10 mb-5 flex items-center">
+            <span className="font-serif italic text-2xl" style={{ color: 'rgba(31,24,16,0.18)' }}>Chargement…</span>
+          </div>
+        )}
+
+        {!loadingSommeil && entriesSommeil.length === 0 && (
+          <p className="font-sans text-sm italic mb-5" style={{ color: 'var(--encre-tertiaire)' }}>
+            Commence à enregistrer tes nuits pour voir l'évolution.
+          </p>
+        )}
+
+        {/* Graphique */}
+        {!loadingSommeil && <SommeilBarChart data={entriesSommeil} />}
+
+        {/* Séparateur */}
+        <div className="h-px w-full my-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+
+        {/* Bouton ajouter */}
+        <motion.button
+          onClick={() => setShowModalSommeil(true)}
+          whileHover={{ opacity: 0.85 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full h-10 rounded-2xl flex items-center justify-center gap-2 font-sans font-semibold text-sm"
+          style={{ background: COULEUR_SOMMEIL, color: '#fff', cursor: 'pointer' }}>
+          <Plus size={15} strokeWidth={2.5} />
+          Ajouter une nuit
+        </motion.button>
+      </section>
+
+      {/* Modal historique sommeil */}
+      <AnimatePresence>
+        {showHistoriqueSommeil && (
+          <ModalHistoriqueSommeil
+            entries={entriesSommeil}
+            onDelete={handleDeleteSommeil}
+            deletingId={deletingIdSommeil}
+            onClose={() => setShowHistoriqueSommeil(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Modal ajout sommeil */}
+      <AnimatePresence>
+        {showModalSommeil && (
+          <ModalAjoutSommeil
+            onClose={() => setShowModalSommeil(false)}
+            onSave={handleSaveSommeil}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Modal historique */}
       <AnimatePresence>
