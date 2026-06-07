@@ -1208,10 +1208,7 @@ export default function Sport() {
   const [modal, setModal] = useState(null)
   const [customImages, setCustomImages] = useState({})
   const [uploading, setUploading] = useState(null)
-  const [customExos, setCustomExos] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('sport_custom_exos') || '{}') }
-    catch { return {} }
-  })
+  const [customExos, setCustomExos] = useState({})
   const [checkedExos, setCheckedExos] = useState(() => {
     try { return JSON.parse(localStorage.getItem('sport_checked_exos') || '{}') }
     catch { return {} }
@@ -1236,17 +1233,43 @@ export default function Sport() {
 
   function saveCustomExo(nomCle, changes) {
     setCustomExos(prev => {
-      const next = { ...prev, [nomCle]: { ...(prev[nomCle] || {}), ...changes } }
-      localStorage.setItem('sport_custom_exos', JSON.stringify(next))
-      return next
+      const merged = { ...(prev[nomCle] || {}), ...changes }
+      supabase.from('sport_custom_exos')
+        .upsert({ user_id: user.id, nom: nomCle, changes: merged }, { onConflict: 'user_id,nom' })
+      return { ...prev, [nomCle]: merged }
     })
   }
 
   useEffect(() => {
     if (!user) return
+    loadCustomExos()
     loadImages()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
+
+  async function loadCustomExos() {
+    const { data, error } = await supabase
+      .from('sport_custom_exos')
+      .select('nom, changes')
+      .eq('user_id', user.id)
+    if (error) return
+    const fromDB = {}
+    for (const row of (data || [])) fromDB[row.nom] = row.changes
+
+    // Migration one-shot : upload les données localStorage si absentes de Supabase
+    let fromLS = {}
+    try { fromLS = JSON.parse(localStorage.getItem('sport_custom_exos') || '{}') } catch { /* */ }
+    const toMigrate = Object.entries(fromLS).filter(([nom]) => !fromDB[nom])
+    if (toMigrate.length > 0) {
+      await supabase.from('sport_custom_exos').upsert(
+        toMigrate.map(([nom, changes]) => ({ user_id: user.id, nom, changes })),
+        { onConflict: 'user_id,nom' }
+      )
+      for (const [nom, changes] of toMigrate) fromDB[nom] = changes
+      localStorage.removeItem('sport_custom_exos')
+    }
+    setCustomExos(fromDB)
+  }
 
   async function loadImages() {
     const { data, error } = await supabase.storage
