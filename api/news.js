@@ -42,7 +42,8 @@ function extractTag(xml, tag) {
 }
 
 // collapses? couvre le verbe "collapses" + substantif "collapse"
-const MAJOR_WORD_RE = /\b(war|crisis|collapses?|recession|emergency|banned|leaked|hacked)\b/i
+// shooting : capturé ici (et non dans majorPhrases) — nécessite entité/action pour éviter les FP "film shooting"
+const MAJOR_WORD_RE = /\b(war|crisis|collapses?|recession|emergency|banned|leaked|hacked|shooting)\b/i
 
 // Promotions commerciales récurrentes : jamais de pastille
 const PROMO_RE = /\b(prime\s+day|black\s+friday)\b/i
@@ -75,6 +76,7 @@ function scoreImportance(title, source, isAICategory = false) {
     // Pays & acteurs géopolitiques
     ' china ', ' russia ', ' iran ', ' ukraine ', ' taiwan ',
     ' israel ', 'hamas', 'hezbollah', 'taliban', 'islamic state',
+    'boko haram', 'al shabaab', 'al qaeda',
     ' japan ', ' india ', ' france ', ' germany ', ' britain ',
     ' north korea ',
     // Dirigeants mondiaux
@@ -117,6 +119,7 @@ function scoreImportance(title, source, isAICategory = false) {
     ' escalates ',
     'seizes ',
     'expels ',
+    'freed ', 'rescued ',
   ]
 
   // Actions douces : annonce ou révélation (peut être futur ou spéculatif)
@@ -128,6 +131,8 @@ function scoreImportance(title, source, isAICategory = false) {
     ' meets ',
     'discovers ', 'discover ',
     'confirms ', 'confirmed ',
+    'says ',
+    'plans to',
   ]
 
   // Phrases non-ambiguës : substring suffit
@@ -158,6 +163,10 @@ function scoreImportance(title, source, isAICategory = false) {
     ' covid',
     'climate crisis', 'climate change',
     'breakthrough',
+    // Cybersécurité
+    'ransom', 'ransomware',
+    // Santé
+    'cancer risk',
   ]
 
   // $1.75tn / $10bn / €2bn / £5tn — montants financiers abrégés
