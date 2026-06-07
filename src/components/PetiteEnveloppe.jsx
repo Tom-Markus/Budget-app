@@ -395,9 +395,19 @@ function PetiteEnveloppe({
         </div>
 
         {/* ============ Barre de progression objectif ============ */}
-        {objectif && objectif.cible > 0 && !modeEdition && (
-          <BarreObjectif courant={montant} cible={objectif.cible} />
-        )}
+        <AnimatePresence>
+          {objectif && objectif.cible > 0 && !modeEdition && (
+            <motion.div
+              key="barre-objectif"
+              initial={false}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ overflow: 'hidden' }}
+              transition={{ duration: 0.2, ease: [0.32, 0.72, 0, 1] }}
+            >
+              <BarreObjectif courant={montant} cible={objectif.cible} />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ============ Ligne 3 : Boutons (action OU édition) ============ */}
         <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[rgba(31,24,16,0.06)]">
