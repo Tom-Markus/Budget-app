@@ -23,6 +23,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useApp } from '../hooks/useApp'
 import Camembert from '../components/Camembert'
 import EnveloppeCreance from '../components/EnveloppeCreance'
+import GrandLivre from '../components/GrandLivre'
 import Graphique from '../components/Graphique'
 import BoutonNouvelleEnveloppe from '../components/BoutonNouvelleEnveloppe'
 import PopupConfirmation from '../components/PopupConfirmation'
@@ -318,7 +319,10 @@ export default function GraphesEtDettes() {
         </div>
       </section>
 
-      {/* === 3. Créances (drag & drop) === */}
+      {/* === 3. Le Grand Livre (journal des mouvements) === */}
+      <GrandLivre envelopes={envelopes} mouvements={mouvements} />
+
+      {/* === 4. Créances (drag & drop) === */}
       <section className="flex flex-col gap-4">
         {creances.length > 0 && (
           <h2 className="t-label-noble px-1">Personnes qui te doivent</h2>
