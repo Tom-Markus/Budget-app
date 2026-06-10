@@ -1,19 +1,8 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
-  <title>Tom's Cabinet</title>
-  <defs>
-    <linearGradient id="or-fav" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#D4B16A"/>
-      <stop offset="55%" stop-color="#B8954A"/>
-      <stop offset="100%" stop-color="#8E6F2F"/>
-    </linearGradient>
-  </defs>
-  <!-- Fond bleu nuit (cachet plein) -->
-  <rect width="100" height="100" rx="22" fill="#0E1F3A"/>
-  <!-- Anneau extérieur or -->
-  <circle cx="50" cy="50" r="42" fill="none" stroke="url(#or-fav)" stroke-width="2.5"/>
-  <!-- Filet intérieur -->
-  <circle cx="50" cy="50" r="36.5" fill="none" stroke="#D4B16A" stroke-width="0.75" opacity="0.5"/>
-  <!-- T serif vectorisé or -->
-  <path d="M30 34 L70 34 L70 43 L66 43 L66 39 L54 39 L54 64 L61 64 L61 69 L39 69 L39 64 L46 64 L46 39 L34 39 L34 43 L30 43 Z"
-        fill="url(#or-fav)" transform="translate(0 -1.5)"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <rect width="32" height="32" fill="#0E1F3A"/>
+  <path d="M 5 16 Q 9 14, 11 16 Q 9 18, 5 16 Z" fill="#B8954A" opacity="0.85"/>
+  <path d="M 27 16 Q 23 14, 21 16 Q 23 18, 27 16 Z" fill="#B8954A" opacity="0.85"/>
+  <text x="16" y="24" text-anchor="middle"
+        font-family="Georgia, serif"
+        font-style="italic" font-weight="500" font-size="22" fill="#B8954A">T</text>
 </svg>
