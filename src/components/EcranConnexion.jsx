@@ -11,8 +11,27 @@
  *   error       — string | null, message d'erreur éventuel
  * ----------------------------------------------------------------------------
  */
+import { lazy, Suspense, useState } from 'react';
 import { motion } from 'framer-motion';
 import { AlertCircle } from 'lucide-react';
+
+import Boundary3D from './three/Boundary3D';
+
+// Pièce d'or 3D — chargée en lazy : Three.js reste hors du bundle principal.
+const PieceOr = lazy(() => import('./three/PieceOr'));
+
+/** Détecte si l'on peut afficher la version 3D (WebGL dispo + animations non réduites). */
+function peutAfficher3D() {
+  if (typeof window === 'undefined') return false;
+  try {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return false;
+    const c = document.createElement('canvas');
+    return !!(window.WebGLRenderingContext &&
+      (c.getContext('webgl') || c.getContext('experimental-webgl')));
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Logo Google officiel (SVG simplifié multicolore).
@@ -66,6 +85,7 @@ function MonomarkGrand() {
 }
 
 export default function EcranConnexion({ onLogin, loading = false, error = null }) {
+  const [use3D] = useState(peutAfficher3D);
   return (
     <main
       className="
@@ -82,13 +102,23 @@ export default function EcranConnexion({ onLogin, loading = false, error = null 
         transition={{ duration: 0.7, ease: [0.32, 0.72, 0, 1] }}
         className="w-full max-w-md flex flex-col items-center gap-8"
       >
-        {/* Monomark */}
+        {/* Monomark — pièce d'or 3D si possible, sinon SVG statique */}
         <motion.div
           initial={{ opacity: 0, scale: 0.92 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: [0.32, 0.72, 0, 1], delay: 0.1 }}
+          className="flex items-center justify-center"
+          style={{ height: use3D ? 220 : 96 }}
         >
-          <MonomarkGrand />
+          {use3D ? (
+            <Boundary3D fallback={<MonomarkGrand />}>
+              <Suspense fallback={<MonomarkGrand />}>
+                <PieceOr size={220} />
+              </Suspense>
+            </Boundary3D>
+          ) : (
+            <MonomarkGrand />
+          )}
         </motion.div>
 
         {/* Titre wordmark */}
