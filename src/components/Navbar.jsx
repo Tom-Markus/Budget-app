@@ -49,9 +49,16 @@ function formatDateMobile(date) {
 }
 
 /**
- * Monomark : T orné, version compacte du logo.
- * Style : ornement de page de garde de livre ancien — T capital serif avec
- * deux fioritures latérales fines en or.
+ * Tracé vectoriel du T serif à empattements (indépendant de toute police).
+ * Centré dans un viewBox 0 0 100 100 via translate(0 -1.5).
+ */
+const T_PATH =
+  'M30 34 L70 34 L70 43 L66 43 L66 39 L54 39 L54 64 L61 64 L61 69 L39 69 ' +
+  'L39 64 L46 64 L46 39 L34 39 L34 43 L30 43 Z';
+
+/**
+ * Monomark : sceau de cabinet — T serif vectorisé dans un anneau doré.
+ * Version compacte du logo (cachet). Reste net jusqu'à 16px.
  */
 function Monomark({ size = 28, className = '' }) {
   return (
@@ -61,33 +68,22 @@ function Monomark({ size = 28, className = '' }) {
       height={size}
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      fill="none"
       aria-hidden="true"
     >
-      {/* Fioriture gauche */}
-      <path
-        d="M 12 50 Q 22 44, 28 50 Q 22 56, 12 50 Z"
-        fill="currentColor"
-        opacity="0.7"
+      {/* Anneau extérieur du sceau */}
+      <circle cx="50" cy="50" r="43" stroke="currentColor" strokeWidth="2.25" />
+      {/* Filet intérieur (double trait de cachet) */}
+      <circle
+        cx="50"
+        cy="50"
+        r="37.5"
+        stroke="currentColor"
+        strokeWidth="0.75"
+        opacity="0.45"
       />
-      {/* Fioriture droite */}
-      <path
-        d="M 88 50 Q 78 44, 72 50 Q 78 56, 88 50 Z"
-        fill="currentColor"
-        opacity="0.7"
-      />
-      {/* T capital serif */}
-      <text
-        x="50"
-        y="74"
-        textAnchor="middle"
-        fontFamily="EB Garamond, Cormorant Garamond, Georgia, serif"
-        fontStyle="italic"
-        fontWeight="500"
-        fontSize="68"
-        fill="currentColor"
-      >
-        T
-      </text>
+      {/* T serif vectorisé, optiquement centré */}
+      <path d={T_PATH} fill="currentColor" transform="translate(0 -1.5)" />
     </svg>
   );
 }

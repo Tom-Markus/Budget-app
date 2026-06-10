@@ -42,25 +42,29 @@ function GoogleLogo({ size = 20 }) {
 }
 
 /**
- * Monomark T orné — version statique pour cet écran.
+ * Monomark T — sceau de cabinet, version grand format pour cet écran.
+ * Anneau or métallique (dégradé) + T serif vectorisé encre sur fond vélin.
  */
+const T_PATH =
+  'M30 34 L70 34 L70 43 L66 43 L66 39 L54 39 L54 64 L61 64 L61 69 L39 69 ' +
+  'L39 64 L46 64 L46 39 L34 39 L34 43 L30 43 Z';
+
 function MonomarkGrand() {
   return (
-    <svg width="96" height="96" viewBox="0 0 100 100" aria-hidden="true">
-      <path d="M 12 50 Q 22 44, 28 50 Q 22 56, 12 50 Z" fill="var(--or)" opacity="0.85" />
-      <path d="M 88 50 Q 78 44, 72 50 Q 78 56, 88 50 Z" fill="var(--or)" opacity="0.85" />
-      <text
-        x="50"
-        y="74"
-        textAnchor="middle"
-        fontFamily="EB Garamond, Cormorant Garamond, Georgia, serif"
-        fontStyle="italic"
-        fontWeight="500"
-        fontSize="68"
-        fill="var(--nuit)"
-      >
-        T
-      </text>
+    <svg width="96" height="96" viewBox="0 0 100 100" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="seal-or" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="var(--or-clair)" />
+          <stop offset="55%" stopColor="var(--or)" />
+          <stop offset="100%" stopColor="var(--or-fonce)" />
+        </linearGradient>
+      </defs>
+      {/* Anneau extérieur — or métallique */}
+      <circle cx="50" cy="50" r="43" stroke="url(#seal-or)" strokeWidth="2.5" />
+      {/* Filet intérieur (double trait de cachet) */}
+      <circle cx="50" cy="50" r="37.5" stroke="var(--or)" strokeWidth="0.75" opacity="0.5" />
+      {/* T serif vectorisé, optiquement centré */}
+      <path d={T_PATH} fill="var(--nuit)" transform="translate(0 -1.5)" />
     </svg>
   );
 }

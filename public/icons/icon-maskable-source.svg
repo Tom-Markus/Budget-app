@@ -1,30 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="512" height="512">
   <title>Tom's Cabinet — Maskable App Icon</title>
-
-  <!-- Fond bleu nuit plein (Android croppe les bords en cercle, le fond doit couvrir tout) -->
-  <rect width="512" height="512" fill="#0E1F3A"/>
-
-  <!-- Subtil dégradé radial pour la profondeur -->
   <defs>
     <radialGradient id="profondeur-msk" cx="50%" cy="40%" r="60%">
       <stop offset="0%" stop-color="#1A2D52" stop-opacity="0.6"/>
       <stop offset="100%" stop-color="#08152A" stop-opacity="0"/>
     </radialGradient>
+    <linearGradient id="or-msk" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#D4B16A"/>
+      <stop offset="55%" stop-color="#B8954A"/>
+      <stop offset="100%" stop-color="#8E6F2F"/>
+    </linearGradient>
   </defs>
-  <rect width="512" height="512" fill="url(#profondeur-msk)"/>
-
-  <!-- SAFE ZONE : tout le contenu critique tient dans un cercle centré de rayon 205px
-       (soit 80% des 512, comme recommandé par la spec PWA maskable).
-       Donc le contenu est ramené à un carré "logique" de 410x410 centré. -->
-
-  <!-- Fioriture gauche (plus rapprochée du centre vs icône standard) -->
-  <path d="M 145 256 Q 188 232, 213 256 Q 188 280, 145 256 Z" fill="#B8954A" opacity="0.9"/>
-
-  <!-- Fioriture droite -->
-  <path d="M 367 256 Q 324 232, 299 256 Q 324 280, 367 256 Z" fill="#B8954A" opacity="0.9"/>
-
-  <!-- T capital serif italique central (plus petit pour rester dans la safe zone) -->
-  <text x="256" y="360" text-anchor="middle"
-        font-family="EB Garamond, Cormorant Garamond, Georgia, serif"
-        font-style="italic" font-weight="500" font-size="280" fill="#B8954A">T</text>
+  <!-- Fond plein (Android croppe en cercle) -->
+  <rect width="100" height="100" fill="#0E1F3A"/>
+  <rect width="100" height="100" fill="url(#profondeur-msk)"/>
+  <!-- SAFE ZONE : sceau réduit à 82% pour tenir dans le cercle central de 80% -->
+  <g transform="translate(50 50) scale(0.82) translate(-50 -50)">
+    <circle cx="50" cy="50" r="42" fill="none" stroke="url(#or-msk)" stroke-width="3"/>
+    <circle cx="50" cy="50" r="36.5" fill="none" stroke="#D4B16A" stroke-width="0.9" opacity="0.5"/>
+    <path d="M30 34 L70 34 L70 43 L66 43 L66 39 L54 39 L54 64 L61 64 L61 69 L39 69 L39 64 L46 64 L46 39 L34 39 L34 43 L30 43 Z"
+          fill="url(#or-msk)" transform="translate(0 -1.5)"/>
+  </g>
 </svg>
