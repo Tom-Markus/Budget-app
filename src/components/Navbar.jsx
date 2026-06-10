@@ -203,7 +203,6 @@ export default function Navbar({
           </nav>
 
           <div className="flex items-center gap-4">
-            <span className="h-2.5 w-2.5 rounded-full bg-rouge" aria-hidden="true" />
             <span className="t-label-noble text-velin-clair opacity-70">
               {formatDatePC(currentDate)}
             </span>
