@@ -12,14 +12,22 @@
  * Esthétique « or liquide » :
  *   - 4 tons d'or (champagne → or → or profond → bronze) assignés par taille :
  *     les grandes bulles sont sombres (fond), les petites claires (lumière)
- *   - Reflet radial décentré (38% 30%) → rendu métal en fusion après le goo
+ *   - Reflet radial décentré (38% 30%) + cœur clair → base chaude avant éclairage
  *   - Respiration lente par bulle (scale ±5%, phases décalées)
  *   - Thème clair : mix-blend multiply → encre dorée imprimée sur le vélin
  *     Thème sombre : mix-blend screen  → l'or luit sur la nuit
  *   - Vignette douce au centre (mask) pour préserver la lisibilité du contenu
  *   - prefers-reduced-motion : composition statique, aucune animation
  *
- * Filtre SVG : feGaussianBlur σ=18 + feColorMatrix seuil α≈0.36.
+ * Filtre SVG « métal en fusion » :
+ *   1. feGaussianBlur σ=18 + feColorMatrix seuil α≈0.36 → goo (fusion)
+ *   2. L'alpha flouté (pré-seuil) sert de bump map → relief bombé des bulles
+ *   3. feDiffuseLighting (distant, haut-gauche) × goo → ombrage 3D des bords
+ *   4. feSpecularLighting large (distant) → lustre directionnel du métal
+ *   5. feSpecularLighting net (fePointLight) → glint qui SUIT LE CURSEUR ;
+ *      sans souris (tactile), la lumière balaie lentement l'écran en autonomie
+ *   En thème clair (multiply), les glints « percent » l'encre dorée jusqu'au
+ *   vélin ; en thème sombre (screen), ils brillent comme du métal chauffé.
  * Fix Safari : `filter` sur div interne, `position:fixed` sur div externe.
  * ----------------------------------------------------------------------------
  */
@@ -60,6 +68,7 @@ const BLOB_ATTRACT_R   = 380;   // rayon attraction inter-bulles (px)
 const BLOB_ATTRACT_STR = 0.012; // force attraction entre bulles
 const BOUNDARY_PUSH    = 0.07;  // rebond bords
 const BREATH_AMP       = 0.05;  // amplitude respiration (scale ±5%)
+const LIGHT_Z          = 300;   // hauteur de la lumière ponctuelle (px) — taille du glint
 
 // Vignette : bulles atténuées au centre (zone de contenu), pleines en périphérie
 const VIGNETTE_MASK =
@@ -76,9 +85,11 @@ export default function MetaballFond() {
   const innerRef = useRef(null);
   const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
   // Toujours hors écran au départ : l'attraction ne commence qu'après le 1er vrai mouvement souris
-  const mouseRef = useRef({ x: -10, y: -10 });
-  const blobEls  = useRef([]);
-  const stateRef = useRef(null);
+  const mouseRef   = useRef({ x: -10, y: -10 });
+  const hasPointer = useRef(false); // vrai après le 1er vrai mouvement → le glint suit le curseur
+  const lightRef   = useRef(null);  // fePointLight du glint spéculaire
+  const blobEls    = useRef([]);
+  const stateRef   = useRef(null);
 
   useEffect(() => {
     const inner = innerRef.current;
@@ -98,7 +109,7 @@ export default function MetaballFond() {
         border-radius: 50%;
         background: radial-gradient(circle at 38% 30%,
           ${tone.hi} 0%,
-          ${tone.base} 40%,
+          ${tone.base} 42%,
           ${tone.edge} 58%,
           transparent 72%
         );
@@ -123,6 +134,11 @@ export default function MetaballFond() {
         const el = blobEls.current[i];
         if (el) el.style.transform = `translate(${s.x - s.size * 0.5}px, ${s.y - s.size * 0.5}px)`;
       });
+      // Lumière fixe, alignée sur le reflet des dégradés (38% 30%)
+      if (lightRef.current) {
+        lightRef.current.setAttribute('x', (width * 0.38).toFixed(1));
+        lightRef.current.setAttribute('y', (height * 0.30).toFixed(1));
+      }
       return () => {
         blobEls.current.forEach((el) => el.remove());
         blobEls.current  = [];
@@ -144,6 +160,7 @@ export default function MetaballFond() {
     const onMouseMove = (e) => {
       mouseRef.current.x = e.clientX / width;
       mouseRef.current.y = e.clientY / height;
+      hasPointer.current = true;
     };
     const onResize = () => {
       width  = window.innerWidth;
@@ -168,6 +185,21 @@ export default function MetaballFond() {
       const my   = mouseRef.current.y * height;
       const damp = Math.pow(DAMPING, dtN);
       const blobs = stateRef.current;
+
+      // --- Glint spéculaire : suit le curseur ; sinon balayage lent autonome ---
+      const light = lightRef.current;
+      if (light) {
+        let lx, ly;
+        if (localIsMouseDevice && hasPointer.current) {
+          lx = mx;
+          ly = my;
+        } else {
+          lx = width  * (0.50 + 0.34 * Math.sin(t * 0.00011));
+          ly = height * (0.32 + 0.20 * Math.cos(t * 0.000085));
+        }
+        light.setAttribute('x', lx.toFixed(1));
+        light.setAttribute('y', ly.toFixed(1));
+      }
 
       // Pré-calcul des distances (moitié haute, symétrie, zéro alloc)
       for (let i = 0; i < BLOB_N; i++) {
@@ -287,8 +319,8 @@ export default function MetaballFond() {
       <style>{`
         .metaball-fond { mix-blend-mode: multiply; }
         [data-theme="dark"] .metaball-fond { mix-blend-mode: screen; }
-        .metaball-fond-inner { opacity: 0.32; }
-        [data-theme="dark"] .metaball-fond-inner { opacity: 0.36; }
+        .metaball-fond-inner { opacity: 0.42; }
+        [data-theme="dark"] .metaball-fond-inner { opacity: 0.50; }
       `}</style>
 
       <svg
@@ -301,12 +333,55 @@ export default function MetaballFond() {
             colorInterpolationFilters="sRGB"
             x="-50%" y="-50%" width="200%" height="200%"
           >
+            {/* 1. Goo — fusion des bulles */}
             <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur" />
             <feColorMatrix
               in="blur"
               type="matrix"
               values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 22 -8"
+              result="goo"
             />
+
+            {/* 2. Ombrage diffus — l'alpha flouté (pré-seuil) sert de relief :
+                les bords des bulles s'assombrissent comme un métal bombé.
+                diffuseConstant 1.18 ≈ 1/sin(55°) → les zones plates gardent leur ton. */}
+            <feDiffuseLighting
+              in="blur"
+              surfaceScale="6"
+              diffuseConstant="1.18"
+              lightingColor="#FFF4DC"
+              result="diffuse"
+            >
+              <feDistantLight azimuth="225" elevation="55" />
+            </feDiffuseLighting>
+            <feComposite
+              in="diffuse" in2="goo"
+              operator="arithmetic" k1="1" k2="0" k3="0" k4="0"
+              result="lit"
+            />
+
+            {/* 3. Glint — éclat spéculaire net, lumière ponctuelle pilotée par la souris.
+                (Une passe « lustre large » distante a été testée puis retirée :
+                redondante avec le diffus chaud + les dégradés, pour ~30% du coût GPU.) */}
+            <feSpecularLighting
+              in="blur"
+              surfaceScale="6"
+              specularConstant="0.85"
+              specularExponent="55"
+              lightingColor="#FFF7DD"
+              result="glint"
+            >
+              <fePointLight ref={lightRef} x="-9999" y="-9999" z={LIGHT_Z} />
+            </feSpecularLighting>
+            <feComposite in="glint" in2="goo" operator="in" result="glintClip" />
+            <feComposite
+              in="glintClip" in2="lit"
+              operator="arithmetic" k1="0" k2="1" k3="1" k4="0"
+              result="metal"
+            />
+
+            {/* 5. Resaturation — la lumière additive délave l'or, on le ravive */}
+            <feColorMatrix in="metal" type="saturate" values="1.55" />
           </filter>
         </defs>
       </svg>
