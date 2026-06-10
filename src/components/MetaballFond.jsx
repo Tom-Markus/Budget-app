@@ -9,26 +9,46 @@
  *   - Attraction inter-bulles (rayon 380 px) → les bulles se "cherchent"
  *     et fusionnent visuellement quand elles se rapprochent
  *
+ * Esthétique « or liquide » :
+ *   - 4 tons d'or (champagne → or → or profond → bronze) assignés par taille :
+ *     les grandes bulles sont sombres (fond), les petites claires (lumière)
+ *   - Reflet radial décentré (38% 30%) → rendu métal en fusion après le goo
+ *   - Respiration lente par bulle (scale ±5%, phases décalées)
+ *   - Thème clair : mix-blend multiply → encre dorée imprimée sur le vélin
+ *     Thème sombre : mix-blend screen  → l'or luit sur la nuit
+ *   - Vignette douce au centre (mask) pour préserver la lisibilité du contenu
+ *   - prefers-reduced-motion : composition statique, aucune animation
+ *
  * Filtre SVG : feGaussianBlur σ=18 + feColorMatrix seuil α≈0.36.
  * Fix Safari : `filter` sur div interne, `position:fixed` sur div externe.
  * ----------------------------------------------------------------------------
  */
 import { useEffect, useRef } from 'react';
 
+// Gamme tonale — hi = reflet, base = corps, edge = halo de fusion
+const TONES = [
+  { hi: '#EDD9A3', base: '#D9B873', edge: 'rgba(217,184,115,0.32)' }, // 0 champagne
+  { hi: '#D4B16A', base: '#B8954A', edge: 'rgba(184,149,74,0.32)'  }, // 1 or
+  { hi: '#C2A055', base: '#9A7A38', edge: 'rgba(154,122,56,0.30)'  }, // 2 or profond
+  { hi: '#A98A42', base: '#8E6F2F', edge: 'rgba(142,111,47,0.28)'  }, // 3 bronze
+];
+
+// tone : grandes bulles = tons profonds (arrière-plan), petites = champagne (lumière)
+// brF/brP : fréquence + phase de respiration (période ~20-35 s)
 const BLOB_DEFS = [
-  { size: 380, x0: 0.28, y0: 0.38, freqX: 0.000898, freqY: 0.000628, phX: 0.0, phY: 0.6,  vx0:  0.4, vy0: -0.2 },
-  { size: 340, x0: 0.72, y0: 0.26, freqX: 0.000698, freqY: 0.000524, phX: 1.4, phY: 2.2,  vx0: -0.3, vy0:  0.5 },
-  { size: 420, x0: 0.52, y0: 0.74, freqX: 0.000524, freqY: 0.000419, phX: 2.7, phY: 1.1,  vx0:  0.2, vy0: -0.4 },
-  { size: 310, x0: 0.16, y0: 0.58, freqX: 0.000785, freqY: 0.000628, phX: 4.0, phY: 4.3,  vx0:  0.5, vy0:  0.3 },
-  { size: 360, x0: 0.84, y0: 0.64, freqX: 0.000449, freqY: 0.000698, phX: 5.2, phY: 3.6,  vx0: -0.4, vy0: -0.3 },
-  { size: 330, x0: 0.45, y0: 0.15, freqX: 0.000628, freqY: 0.000898, phX: 3.1, phY: 5.5,  vx0:  0.3, vy0:  0.6 },
-  { size: 370, x0: 0.60, y0: 0.48, freqX: 0.000571, freqY: 0.000449, phX: 0.8, phY: 3.0,  vx0: -0.2, vy0:  0.4 },
-  { size: 320, x0: 0.35, y0: 0.82, freqX: 0.000726, freqY: 0.000571, phX: 2.0, phY: 1.8,  vx0:  0.4, vy0: -0.5 },
-  { size: 350, x0: 0.80, y0: 0.14, freqX: 0.000419, freqY: 0.000785, phX: 4.8, phY: 0.3,  vx0: -0.5, vy0:  0.2 },
-  { size: 300, x0: 0.08, y0: 0.20, freqX: 0.000612, freqY: 0.000502, phX: 1.9, phY: 0.9,  vx0:  0.3, vy0:  0.4 },
-  { size: 345, x0: 0.90, y0: 0.42, freqX: 0.000480, freqY: 0.000660, phX: 3.6, phY: 2.7,  vx0: -0.2, vy0: -0.4 },
-  { size: 315, x0: 0.22, y0: 0.92, freqX: 0.000550, freqY: 0.000380, phX: 5.8, phY: 4.1,  vx0:  0.5, vy0: -0.3 },
-  { size: 390, x0: 0.68, y0: 0.88, freqX: 0.000730, freqY: 0.000590, phX: 2.4, phY: 6.1,  vx0: -0.3, vy0:  0.3 },
+  { size: 380, tone: 2, x0: 0.28, y0: 0.38, freqX: 0.000898, freqY: 0.000628, phX: 0.0, phY: 0.6,  vx0:  0.4, vy0: -0.2, brF: 0.00022, brP: 0.0 },
+  { size: 340, tone: 1, x0: 0.72, y0: 0.26, freqX: 0.000698, freqY: 0.000524, phX: 1.4, phY: 2.2,  vx0: -0.3, vy0:  0.5, brF: 0.00027, brP: 1.1 },
+  { size: 420, tone: 3, x0: 0.52, y0: 0.74, freqX: 0.000524, freqY: 0.000419, phX: 2.7, phY: 1.1,  vx0:  0.2, vy0: -0.4, brF: 0.00018, brP: 2.3 },
+  { size: 310, tone: 0, x0: 0.16, y0: 0.58, freqX: 0.000785, freqY: 0.000628, phX: 4.0, phY: 4.3,  vx0:  0.5, vy0:  0.3, brF: 0.00031, brP: 3.4 },
+  { size: 360, tone: 2, x0: 0.84, y0: 0.64, freqX: 0.000449, freqY: 0.000698, phX: 5.2, phY: 3.6,  vx0: -0.4, vy0: -0.3, brF: 0.00024, brP: 4.6 },
+  { size: 330, tone: 1, x0: 0.45, y0: 0.15, freqX: 0.000628, freqY: 0.000898, phX: 3.1, phY: 5.5,  vx0:  0.3, vy0:  0.6, brF: 0.00029, brP: 5.7 },
+  { size: 370, tone: 2, x0: 0.60, y0: 0.48, freqX: 0.000571, freqY: 0.000449, phX: 0.8, phY: 3.0,  vx0: -0.2, vy0:  0.4, brF: 0.00021, brP: 0.9 },
+  { size: 320, tone: 0, x0: 0.35, y0: 0.82, freqX: 0.000726, freqY: 0.000571, phX: 2.0, phY: 1.8,  vx0:  0.4, vy0: -0.5, brF: 0.00030, brP: 2.0 },
+  { size: 350, tone: 1, x0: 0.80, y0: 0.14, freqX: 0.000419, freqY: 0.000785, phX: 4.8, phY: 0.3,  vx0: -0.5, vy0:  0.2, brF: 0.00025, brP: 3.1 },
+  { size: 300, tone: 0, x0: 0.08, y0: 0.20, freqX: 0.000612, freqY: 0.000502, phX: 1.9, phY: 0.9,  vx0:  0.3, vy0:  0.4, brF: 0.00032, brP: 4.2 },
+  { size: 345, tone: 1, x0: 0.90, y0: 0.42, freqX: 0.000480, freqY: 0.000660, phX: 3.6, phY: 2.7,  vx0: -0.2, vy0: -0.4, brF: 0.00026, brP: 5.3 },
+  { size: 315, tone: 0, x0: 0.22, y0: 0.92, freqX: 0.000550, freqY: 0.000380, phX: 5.8, phY: 4.1,  vx0:  0.5, vy0: -0.3, brF: 0.00028, brP: 0.4 },
+  { size: 390, tone: 3, x0: 0.68, y0: 0.88, freqX: 0.000730, freqY: 0.000590, phX: 2.4, phY: 6.1,  vx0: -0.3, vy0:  0.3, brF: 0.00019, brP: 1.6 },
 ];
 
 const DRIFT            = 0.044; // amplitude force sinusoïdale
@@ -39,6 +59,17 @@ const ATTRACT_STR      = 0.62;  // force attraction souris
 const BLOB_ATTRACT_R   = 380;   // rayon attraction inter-bulles (px)
 const BLOB_ATTRACT_STR = 0.012; // force attraction entre bulles
 const BOUNDARY_PUSH    = 0.07;  // rebond bords
+const BREATH_AMP       = 0.05;  // amplitude respiration (scale ±5%)
+
+// Vignette : bulles atténuées au centre (zone de contenu), pleines en périphérie
+const VIGNETTE_MASK =
+  'radial-gradient(ellipse 140% 110% at 50% 38%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.85) 45%, #000 78%)';
+
+// Halos d'ambiance statiques (hors filtre goo) — profondeur atmosphérique
+const AMBIENT_BG = `
+  radial-gradient(900px 600px at 12% 8%, rgba(212,177,106,0.10), transparent 70%),
+  radial-gradient(1000px 700px at 88% 92%, rgba(142,111,47,0.10), transparent 70%)
+`;
 
 export default function MetaballFond() {
   const wrapRef  = useRef(null);
@@ -57,6 +88,7 @@ export default function MetaballFond() {
     let height = window.innerHeight;
 
     BLOB_DEFS.forEach((b) => {
+      const tone = TONES[b.tone];
       const el = document.createElement('div');
       el.style.cssText = `
         position: absolute;
@@ -64,10 +96,10 @@ export default function MetaballFond() {
         width: ${b.size}px;
         height: ${b.size}px;
         border-radius: 50%;
-        background: radial-gradient(circle at center,
-          #B8954A 0%,
-          #B8954A 36%,
-          rgba(184,149,74,0.35) 58%,
+        background: radial-gradient(circle at 38% 30%,
+          ${tone.hi} 0%,
+          ${tone.base} 40%,
+          ${tone.edge} 58%,
           transparent 72%
         );
         will-change: transform;
@@ -83,6 +115,20 @@ export default function MetaballFond() {
       vx: b.vx0,
       vy: b.vy0,
     }));
+
+    // Accessibilité : composition statique élégante, aucune boucle d'animation
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced) {
+      stateRef.current.forEach((s, i) => {
+        const el = blobEls.current[i];
+        if (el) el.style.transform = `translate(${s.x - s.size * 0.5}px, ${s.y - s.size * 0.5}px)`;
+      });
+      return () => {
+        blobEls.current.forEach((el) => el.remove());
+        blobEls.current  = [];
+        stateRef.current = null;
+      };
+    }
 
     let t      = 0;
     let lastTs = 0;
@@ -138,10 +184,10 @@ export default function MetaballFond() {
 
         // --- Attraction souris (uniquement sur desktop) ---
         let mfx = 0, mfy = 0, extraDamp = 0;
-        
+
         // Drift autonome : base sans atténuation (on l'atténue seulement si souris + en zone)
         let driftScale = 1;
-        
+
         if (localIsMouseDevice) {
           const dx     = mx - s.x;
           const dy     = my - s.y;
@@ -209,7 +255,10 @@ export default function MetaballFond() {
         if (s.y > height - mg && s.vy > 0)
           s.vy -= BOUNDARY_PUSH * (1 - (height - s.y) / mg) * dtN;
 
-        el.style.transform = `translate(${s.x - s.size * 0.5}px, ${s.y - s.size * 0.5}px)`;
+        // --- Respiration organique (scale autour du centre de la bulle) ---
+        const breath = 1 + Math.sin(t * s.brF + s.brP) * BREATH_AMP;
+        el.style.transform =
+          `translate(${s.x - s.size * 0.5}px, ${s.y - s.size * 0.5}px) scale(${breath})`;
       });
     }
 
@@ -229,6 +278,19 @@ export default function MetaballFond() {
 
   return (
     <>
+      {/*
+        Blend adaptatif au thème :
+        - clair  : multiply → l'or s'imprègne du vélin et de son grain (encre dorée)
+        - sombre : screen   → l'or devient lumière sur la nuit
+        Fallback : si le blend est isolé par le navigateur, rendu normal ≈ ancien visuel.
+      */}
+      <style>{`
+        .metaball-fond { mix-blend-mode: multiply; }
+        [data-theme="dark"] .metaball-fond { mix-blend-mode: screen; }
+        .metaball-fond-inner { opacity: 0.32; }
+        [data-theme="dark"] .metaball-fond-inner { opacity: 0.36; }
+      `}</style>
+
       <svg
         aria-hidden="true"
         style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
@@ -252,11 +314,26 @@ export default function MetaballFond() {
       <div
         ref={wrapRef}
         aria-hidden="true"
-        style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', overflow: 'hidden' }}
+        className="metaball-fond"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          WebkitMaskImage: VIGNETTE_MASK,
+          maskImage: VIGNETTE_MASK,
+        }}
       >
+        {/* Halos d'ambiance — nappes statiques très douces, hors filtre goo */}
+        <div
+          aria-hidden="true"
+          style={{ position: 'absolute', inset: 0, background: AMBIENT_BG }}
+        />
         <div
           ref={innerRef}
-          style={{ position: 'absolute', inset: 0, filter: 'url(#metaball-fond)', opacity: 0.30 }}
+          className="metaball-fond-inner"
+          style={{ position: 'absolute', inset: 0, filter: 'url(#metaball-fond)' }}
         />
       </div>
     </>
