@@ -24,8 +24,9 @@
  *   2. L'alpha flouté (pré-seuil) sert de bump map → relief bombé des bulles
  *   3. feDiffuseLighting (distant, haut-gauche) × goo → ombrage 3D des bords
  *   4. feSpecularLighting large (distant) → lustre directionnel du métal
- *   5. feSpecularLighting net (fePointLight) → glint qui SUIT LE CURSEUR ;
- *      sans souris (tactile), la lumière balaie lentement l'écran en autonomie
+ *   5. feSpecularLighting net (fePointLight) → glint qui balaie lentement
+ *      l'écran en autonomie (Lissajous ~1 min — jamais lié au curseur,
+ *      le suivi souris testé puis retiré : trop perturbant)
  *   En thème clair (multiply), les glints « percent » l'encre dorée jusqu'au
  *   vélin ; en thème sombre (screen), ils brillent comme du métal chauffé.
  * Fix Safari : `filter` sur div interne, `position:fixed` sur div externe.
@@ -86,7 +87,6 @@ export default function MetaballFond() {
   const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
   // Toujours hors écran au départ : l'attraction ne commence qu'après le 1er vrai mouvement souris
   const mouseRef   = useRef({ x: -10, y: -10 });
-  const hasPointer = useRef(false); // vrai après le 1er vrai mouvement → le glint suit le curseur
   const lightRef   = useRef(null);  // fePointLight du glint spéculaire
   const blobEls    = useRef([]);
   const stateRef   = useRef(null);
@@ -160,7 +160,6 @@ export default function MetaballFond() {
     const onMouseMove = (e) => {
       mouseRef.current.x = e.clientX / width;
       mouseRef.current.y = e.clientY / height;
-      hasPointer.current = true;
     };
     const onResize = () => {
       width  = window.innerWidth;
@@ -186,17 +185,11 @@ export default function MetaballFond() {
       const damp = Math.pow(DAMPING, dtN);
       const blobs = stateRef.current;
 
-      // --- Glint spéculaire : suit le curseur ; sinon balayage lent autonome ---
+      // --- Glint spéculaire : balayage lent autonome (Lissajous ~1 min) ---
       const light = lightRef.current;
       if (light) {
-        let lx, ly;
-        if (localIsMouseDevice && hasPointer.current) {
-          lx = mx;
-          ly = my;
-        } else {
-          lx = width  * (0.50 + 0.34 * Math.sin(t * 0.00011));
-          ly = height * (0.32 + 0.20 * Math.cos(t * 0.000085));
-        }
+        const lx = width  * (0.50 + 0.34 * Math.sin(t * 0.00011));
+        const ly = height * (0.32 + 0.20 * Math.cos(t * 0.000085));
         light.setAttribute('x', lx.toFixed(1));
         light.setAttribute('y', ly.toFixed(1));
       }
@@ -360,7 +353,7 @@ export default function MetaballFond() {
               result="lit"
             />
 
-            {/* 3. Glint — éclat spéculaire net, lumière ponctuelle pilotée par la souris.
+            {/* 3. Glint — éclat spéculaire net, lumière ponctuelle en balayage lent autonome.
                 (Une passe « lustre large » distante a été testée puis retirée :
                 redondante avec le diffus chaud + les dégradés, pour ~30% du coût GPU.) */}
             <feSpecularLighting
