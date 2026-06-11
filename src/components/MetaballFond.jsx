@@ -76,7 +76,7 @@ const LIGHT_Z          = 300;   // hauteur de la lumière ponctuelle (px) — ta
 
 // Sur mobile : 6 blobs, filtre simplifié, throttle 50ms ; desktop : complet
 const ACTIVE_BLOB_DEFS = isTouchDevice ? BLOB_DEFS.slice(0, 6) : BLOB_DEFS;
-const FRAME_BUDGET     = isTouchDevice ? 50 : 30; // ms entre frames
+const FRAME_BUDGET     = isTouchDevice ? 33 : 30; // ms entre frames (~30fps partout)
 const BLUR_SIGMA       = isTouchDevice ? 12 : 18; // stdDeviation feGaussianBlur
 
 // Vignette : bulles atténuées au centre (zone de contenu), pleines en périphérie
