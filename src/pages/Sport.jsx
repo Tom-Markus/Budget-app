@@ -649,7 +649,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
 
   async function handleDeletePerf(id) {
     setDeletingId(id)
-    const { error } = await supabase.from('sport_performances').delete().eq('id', id)
+    const { error } = await supabase.from('sport_performances').delete().eq('id', id).eq('user_id', user.id)
     if (!error) setPerfHistory(prev => prev.filter(h => h.id !== id))
     setDeletingId(null)
   }

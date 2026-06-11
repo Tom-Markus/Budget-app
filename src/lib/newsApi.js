@@ -5,11 +5,10 @@
  *   News    : RSS via rss2json.com (sans clé, 10k req/jour)
  *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (sans clé)
  *   Indices : Yahoo Finance via /api/markets (Vercel proxy, pas de CORS)
- *   Forex   : Alpha Vantage FX_DAILY — EUR/USD avec variation 24h
+ *   Forex   : Alpha Vantage FX_DAILY via /api/fx-eurusd (Vercel proxy, clé côté serveur)
  * ----------------------------------------------------------------------------
  */
 
-const AV_KEY    = import.meta.env.VITE_ALPHA_VANTAGE_KEY
 const CACHE_TTL = 15 * 60 * 1000
 
 // ── Cache ──────────────────────────────────────────────────────────────────
@@ -92,30 +91,29 @@ async function fetchCoinGecko() {
   return data
 }
 
-// ── Forex — Alpha Vantage FX_DAILY ────────────────────────────────────────
+// ── Forex — Alpha Vantage via proxy Vercel /api/fx-eurusd ─────────────────
 
 async function fetchEURUSD() {
   const cacheKey = 'av_eurusd_daily'
   const cached = getCached(cacheKey)
   if (cached) return cached
 
-  const res = await fetch(
-    `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=EUR&to_symbol=USD&outputsize=compact&apikey=${AV_KEY}`
-  )
+  let res
+  try {
+    res = await fetch('/api/fx-eurusd')
+  } catch {
+    return null
+  }
   if (!res.ok) return null
 
-  const json = await res.json()
-  const series = json['Time Series FX (Daily)']
-  if (!series) return null
-
-  const dates = Object.keys(series).sort().reverse()
-  if (dates.length < 2) return null
-
-  const c0 = parseFloat(series[dates[0]]['4. close'])
-  const c1 = parseFloat(series[dates[1]]['4. close'])
-  const data = { rate: c0, change: ((c0 - c1) / c1) * 100 }
-  setCache(cacheKey, data)
-  return data
+  try {
+    const data = await res.json()
+    if (!data || data.error) return null
+    setCache(cacheKey, data)
+    return data
+  } catch {
+    return null
+  }
 }
 
 // ── Indices boursiers — Yahoo Finance via Vercel proxy ────────────────────
