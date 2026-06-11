@@ -34,6 +34,9 @@
  */
 import { useEffect, useRef } from 'react';
 
+// Détection tactile — false sur desktop, true sur téléphone/tablette
+const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+
 // Gamme tonale — hi = reflet, base = corps, edge = halo de fusion
 const TONES = [
   { hi: '#EDD9A3', base: '#D9B873', edge: 'rgba(217,184,115,0.32)' }, // 0 champagne
@@ -71,6 +74,11 @@ const BOUNDARY_PUSH    = 0.07;  // rebond bords
 const BREATH_AMP       = 0.05;  // amplitude respiration (scale ±5%)
 const LIGHT_Z          = 300;   // hauteur de la lumière ponctuelle (px) — taille du glint
 
+// Sur mobile : 6 blobs, filtre simplifié, throttle 50ms ; desktop : complet
+const ACTIVE_BLOB_DEFS = isTouchDevice ? BLOB_DEFS.slice(0, 6) : BLOB_DEFS;
+const FRAME_BUDGET     = isTouchDevice ? 50 : 30; // ms entre frames
+const BLUR_SIGMA       = isTouchDevice ? 12 : 18; // stdDeviation feGaussianBlur
+
 // Vignette : bulles atténuées au centre (zone de contenu), pleines en périphérie
 const VIGNETTE_MASK =
   'radial-gradient(ellipse 140% 110% at 50% 38%, rgba(0,0,0,0.62) 0%, rgba(0,0,0,0.85) 45%, #000 78%)';
@@ -98,7 +106,7 @@ export default function MetaballFond() {
     let width  = window.innerWidth;
     let height = window.innerHeight;
 
-    BLOB_DEFS.forEach((b) => {
+    ACTIVE_BLOB_DEFS.forEach((b) => {
       const tone = TONES[b.tone];
       const el = document.createElement('div');
       el.style.cssText = `
@@ -119,7 +127,7 @@ export default function MetaballFond() {
       blobEls.current.push(el);
     });
 
-    stateRef.current = BLOB_DEFS.map((b) => ({
+    stateRef.current = ACTIVE_BLOB_DEFS.map((b) => ({
       ...b,
       x:  b.x0 * width,
       y:  b.y0 * height,
@@ -151,7 +159,7 @@ export default function MetaballFond() {
     let rafId;
 
     // Matrice de distances pré-allouée (réutilisée chaque frame, zéro GC)
-    const BLOB_N = BLOB_DEFS.length;
+    const BLOB_N = ACTIVE_BLOB_DEFS.length;
     const dist2  = new Float32Array(BLOB_N * BLOB_N);
 
     // isMouseDevice est déjà déclaré au niveau du composant, on la récupère via la closure
@@ -173,8 +181,7 @@ export default function MetaballFond() {
 
     function tick(ts) {
       rafId = requestAnimationFrame(tick);
-      // Throttle à ~30fps — fond animé, pas besoin de 60fps
-      if (lastTs && ts - lastTs < 30) return;
+      if (lastTs && ts - lastTs < FRAME_BUDGET) return;
       const dt  = lastTs ? Math.min(ts - lastTs, 50) : 16;
       lastTs    = ts;
       const dtN = dt / 16;
@@ -185,13 +192,15 @@ export default function MetaballFond() {
       const damp = Math.pow(DAMPING, dtN);
       const blobs = stateRef.current;
 
-      // --- Glint spéculaire : balayage lent autonome (Lissajous ~1 min) ---
-      const light = lightRef.current;
-      if (light) {
-        const lx = width  * (0.50 + 0.34 * Math.sin(t * 0.00011));
-        const ly = height * (0.32 + 0.20 * Math.cos(t * 0.000085));
-        light.setAttribute('x', lx.toFixed(1));
-        light.setAttribute('y', ly.toFixed(1));
+      // Glint spéculaire : balayage lent autonome (desktop uniquement)
+      if (!isTouchDevice) {
+        const light = lightRef.current;
+        if (light) {
+          const lx = width  * (0.50 + 0.34 * Math.sin(t * 0.00011));
+          const ly = height * (0.32 + 0.20 * Math.cos(t * 0.000085));
+          light.setAttribute('x', lx.toFixed(1));
+          light.setAttribute('y', ly.toFixed(1));
+        }
       }
 
       // Pré-calcul des distances (moitié haute, symétrie, zéro alloc)
@@ -321,13 +330,17 @@ export default function MetaballFond() {
         style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}
       >
         <defs>
+          {/*
+            Région réduite : 10% de débordement suffit pour l'effet goo (blur σ≤18 → ~54px,
+            10% de 1920px = 192px). Précédemment à 50%, on traitait 4× l'écran inutilement.
+          */}
           <filter
             id="metaball-fond"
             colorInterpolationFilters="sRGB"
-            x="-50%" y="-50%" width="200%" height="200%"
+            x="-10%" y="-10%" width="120%" height="120%"
           >
             {/* 1. Goo — fusion des bulles */}
-            <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation={BLUR_SIGMA} result="blur" />
             <feColorMatrix
               in="blur"
               type="matrix"
@@ -335,46 +348,45 @@ export default function MetaballFond() {
               result="goo"
             />
 
-            {/* 2. Ombrage diffus — l'alpha flouté (pré-seuil) sert de relief :
-                les bords des bulles s'assombrissent comme un métal bombé.
-                diffuseConstant 1.18 ≈ 1/sin(55°) → les zones plates gardent leur ton. */}
-            <feDiffuseLighting
-              in="blur"
-              surfaceScale="6"
-              diffuseConstant="1.18"
-              lightingColor="#FFF4DC"
-              result="diffuse"
-            >
-              <feDistantLight azimuth="225" elevation="55" />
-            </feDiffuseLighting>
-            <feComposite
-              in="diffuse" in2="goo"
-              operator="arithmetic" k1="1" k2="0" k3="0" k4="0"
-              result="lit"
-            />
+            {/* 2-4. Éclairage 3D — desktop uniquement (trop coûteux sur mobile) */}
+            {!isTouchDevice && (<>
+              <feDiffuseLighting
+                in="blur"
+                surfaceScale="6"
+                diffuseConstant="1.18"
+                lightingColor="#FFF4DC"
+                result="diffuse"
+              >
+                <feDistantLight azimuth="225" elevation="55" />
+              </feDiffuseLighting>
+              <feComposite
+                in="diffuse" in2="goo"
+                operator="arithmetic" k1="1" k2="0" k3="0" k4="0"
+                result="lit"
+              />
+              <feSpecularLighting
+                in="blur"
+                surfaceScale="6"
+                specularConstant="0.85"
+                specularExponent="55"
+                lightingColor="#FFF7DD"
+                result="glint"
+              >
+                <fePointLight ref={lightRef} x="-9999" y="-9999" z={LIGHT_Z} />
+              </feSpecularLighting>
+              <feComposite in="glint" in2="goo" operator="in" result="glintClip" />
+              <feComposite
+                in="glintClip" in2="lit"
+                operator="arithmetic" k1="0" k2="1" k3="1" k4="0"
+                result="metal"
+              />
+              <feColorMatrix in="metal" type="saturate" values="1.55" />
+            </>)}
 
-            {/* 3. Glint — éclat spéculaire net, lumière ponctuelle en balayage lent autonome.
-                (Une passe « lustre large » distante a été testée puis retirée :
-                redondante avec le diffus chaud + les dégradés, pour ~30% du coût GPU.) */}
-            <feSpecularLighting
-              in="blur"
-              surfaceScale="6"
-              specularConstant="0.85"
-              specularExponent="55"
-              lightingColor="#FFF7DD"
-              result="glint"
-            >
-              <fePointLight ref={lightRef} x="-9999" y="-9999" z={LIGHT_Z} />
-            </feSpecularLighting>
-            <feComposite in="glint" in2="goo" operator="in" result="glintClip" />
-            <feComposite
-              in="glintClip" in2="lit"
-              operator="arithmetic" k1="0" k2="1" k3="1" k4="0"
-              result="metal"
-            />
-
-            {/* 5. Resaturation — la lumière additive délave l'or, on le ravive */}
-            <feColorMatrix in="metal" type="saturate" values="1.55" />
+            {/* Mobile : juste le goo + saturation */}
+            {isTouchDevice && (
+              <feColorMatrix in="goo" type="saturate" values="1.55" />
+            )}
           </filter>
         </defs>
       </svg>
