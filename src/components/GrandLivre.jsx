@@ -72,6 +72,8 @@ function construireLignes(envelopes, mouvements, { recherche, envFiltre, typeFil
 
   return mouvements
     .filter(m => !m.is_undone)
+    // Les comptes épargne sont indépendants : ils n'apparaissent pas au Grand Livre.
+    .filter(m => m.type !== 'savings_add' && m.type !== 'savings_withdraw')
     .filter(m => cutoff === null || new Date(m.created_at).getTime() >= cutoff)
     .filter(m => !envFiltre || m.envelope_id === envFiltre)
     .filter(m => matchFamille(m.type, typeFiltre))

@@ -67,6 +67,14 @@ export function calculerSoldes(envelopes, mouvements, clipper = true) {
         if (m.type === 'creance_add')         s += Number(m.amount)
         else if (m.type === 'creance_repaid') s -= Number(m.amount)
       }
+    } else if (env.type === 'savings') {
+      // Compte épargne : totalement indépendant (n'affecte ni le Patrimoine
+      // ni « à répartir »). Solde = versements - retraits.
+      const mvs = mouvPar.get(envId) || []
+      for (const m of mvs) {
+        if (m.type === 'savings_add')           s += Number(m.amount)
+        else if (m.type === 'savings_withdraw') s -= Number(m.amount)
+      }
     } else if (env.type === 'normal') {
       if (enfants.length > 0) {
         for (const id of enfants) s += pour(id)
@@ -115,6 +123,7 @@ export function simulerAnnulationSure(envId, envelopes, mouvements) {
   const types =
     env.type === 'total'   ? ['income'] :
     env.type === 'creance' ? ['creance_add', 'creance_repaid'] :
+    env.type === 'savings' ? ['savings_add', 'savings_withdraw'] :
                               ['allocate', 'spend', 'unallocate']
 
   const candidats = mouvements
@@ -200,7 +209,7 @@ export function reconstruireHistorique(envId, envelopes, mouvements) {
   const points = []
   let solde = 0
   for (const m of pertinents) {
-    if (['income', 'allocate', 'creance_add'].includes(m.type)) solde += Number(m.amount)
+    if (['income', 'allocate', 'creance_add', 'savings_add'].includes(m.type)) solde += Number(m.amount)
     else solde -= Number(m.amount)
     if (solde < 0) solde = 0
     points.push({ date: new Date(m.created_at), solde })

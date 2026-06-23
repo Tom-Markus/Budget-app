@@ -38,6 +38,12 @@ const LABELS = {
     descPlaceholder: null,
     hasDescription: false,
   },
+  epargne: {
+    bouton: 'Nouveau compte épargne',
+    titrePlaceholder: 'Nom du compte épargne',
+    descPlaceholder: null,
+    hasDescription: false,
+  },
 };
 
 export default function BoutonNouvelleEnveloppe({

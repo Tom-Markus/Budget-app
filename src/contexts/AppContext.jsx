@@ -66,6 +66,18 @@ export function AppProvider({ children }) {
         if (mvRes.error) throw mvRes.error
         setEnvelopes(envRes.data ?? [])
         setMouvements(mvRes.data ?? [])
+
+        // Rattrapage des versements automatiques d'épargne échus.
+        // Best-effort : un échec ici ne doit pas bloquer le chargement.
+        try {
+          const epargnesAvecRecurrence = (envRes.data ?? [])
+            .filter(e => e.type === 'savings' && Number(e.recurring_amount) > 0)
+          if (epargnesAvecRecurrence.length > 0) {
+            await mutations.executerRecurrencesDues(epargnesAvecRecurrence)
+          }
+        } catch (errRec) {
+          console.error('Rattrapage récurrences épargne :', errRec)
+        }
       } catch (err) {
         if (!mounted) return
         console.error('Fetch initial :', err)
@@ -103,6 +115,10 @@ export function AppProvider({ children }) {
   )
   const creances = useMemo(
     () => envelopes.filter(e => e.type === 'creance').sort((a, b) => a.position - b.position),
+    [envelopes]
+  )
+  const epargnes = useMemo(
+    () => envelopes.filter(e => e.type === 'savings').sort((a, b) => a.position - b.position),
     [envelopes]
   )
 
@@ -207,6 +223,30 @@ export function AppProvider({ children }) {
         await mutations.creerCreance(user.id, { title })
       }),
 
+    // --- Comptes épargne (indépendants du Patrimoine) ---
+    creerEpargne: ({ title }) =>
+      wrap(null, async () => {
+        if (envelopes.length >= LIMITE_ENVELOPPES) {
+          throw new Error('Limite atteinte, contactez le développeur.')
+        }
+        await mutations.creerEpargne(user.id, { title })
+      }),
+
+    ajouterEpargne: (envId, montant, note) =>
+      wrap(envId, () => mutations.ajouterEpargne(envId, montant, note)),
+
+    retirerEpargne: (envId, montant, note) =>
+      wrap(envId, async () => {
+        const solde = soldeDe(envId)
+        if (montant > solde) {
+          throw new Error(`Montant trop élevé : il ne reste que ${formatEuros(solde)} sur ce compte.`)
+        }
+        await mutations.retirerEpargne(envId, montant, note)
+      }),
+
+    definirRecurrenceEpargne: (envId, montant, interval) =>
+      wrap(envId, () => mutations.definirRecurrenceEpargne(envId, montant, interval)),
+
     modifierEnveloppe: (envId, patch) =>
       wrap(envId, async () => {
         const snapshot = envelopes
@@ -253,7 +293,7 @@ export function AppProvider({ children }) {
 
   const value = {
     envelopes, mouvements, loading, error,
-    patrimoine, racines, creances,
+    patrimoine, racines, creances, epargnes,
     soldes, soldeDe, aRepartir,
     enfantsDe, aDesEnfants,
     marquerSync, estSyncing,

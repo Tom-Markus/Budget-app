@@ -23,6 +23,7 @@ import { CSS } from '@dnd-kit/utilities'
 import { useApp } from '../hooks/useApp'
 import Camembert from '../components/Camembert'
 import EnveloppeCreance from '../components/EnveloppeCreance'
+import EnveloppeEpargne from '../components/EnveloppeEpargne'
 import GrandLivre from '../components/GrandLivre'
 import Graphique from '../components/Graphique'
 import BoutonNouvelleEnveloppe from '../components/BoutonNouvelleEnveloppe'
@@ -97,9 +98,52 @@ function CreanceDraggable({ creanceId, disabled, syncing, children }) {
   )
 }
 
+// ----- Wrapper sortable d'un compte épargne (même mécanique que les créances) -----
+function EpargneDraggable({ epargneId, disabled, syncing, children }) {
+  const {
+    attributes, listeners, setNodeRef, transform, transition, isDragging,
+  } = useSortable({ id: epargneId, disabled })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    position: 'relative',
+    zIndex: isDragging ? 20 : 'auto',
+    boxShadow: isDragging ? 'var(--shadow-lg)' : undefined,
+    borderRadius: isDragging ? 'var(--radius-lg)' : undefined,
+  }
+
+  return (
+    <div ref={setNodeRef} style={style} data-epargne-id={epargneId}>
+      <button
+        type="button"
+        disabled={disabled}
+        {...attributes}
+        {...listeners}
+        aria-label="Réordonner par glisser-déposer"
+        className={`
+          w-full flex justify-center py-1 rounded-t-md
+          text-encre-tertiaire transition-colors duration-200
+          ${disabled
+            ? 'opacity-0 pointer-events-none'
+            : 'cursor-grab active:cursor-grabbing hover:text-vert hover:bg-vert/5'}
+        `}
+      >
+        <GripHorizontal size={16} strokeWidth={1.5} aria-hidden="true" />
+      </button>
+      {syncing && (
+        <span className="absolute top-2.5 right-2.5 z-30">
+          <SyncingDot active />
+        </span>
+      )}
+      {children}
+    </div>
+  )
+}
+
 export default function GraphesEtDettes() {
   const {
-    loading, patrimoine, racines, creances,
+    loading, patrimoine, racines, creances, epargnes,
     envelopes, mouvements,
     soldeDe, actions, estSyncing,
   } = useApp()
@@ -113,6 +157,11 @@ export default function GraphesEtDettes() {
   const [editCreance, setEditCreance] = useState({})
   const [popupDelCreance, setPopupDelCreance] = useState(null)
   const [graphCreanceId, setGraphCreanceId] = useState(null)
+
+  const [inputEpargne, setInputEpargne] = useState({})
+  const [editEpargne, setEditEpargne] = useState({})
+  const [popupDelEpargne, setPopupDelEpargne] = useState(null)
+  const [graphEpargneId, setGraphEpargneId] = useState(null)
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -182,6 +231,92 @@ export default function GraphesEtDettes() {
     const nouvelOrdre = arrayMove(creances, oldIndex, newIndex)
     actions.reordonner(nouvelOrdre.map(c => c.id))
   }, [creances, actions])
+
+  // ----- Helpers comptes épargne -----
+  const hasUndoableEpargne = useCallback((envId) => {
+    return mouvements.some(m =>
+      m.envelope_id === envId && !m.is_undone &&
+      ['savings_add', 'savings_withdraw'].includes(m.type)
+    )
+  }, [mouvements])
+
+  const dirEpargne = useCallback((env) => {
+    const mv = dernierMouvement(env.id, envelopes, mouvements)
+    if (!mv) return { direction: 'transfert', signeMontant: 0 }
+    if (mv.type === 'savings_add')      return { direction: 'up',   signeMontant: Number(mv.amount) }
+    if (mv.type === 'savings_withdraw') return { direction: 'down', signeMontant: -Number(mv.amount) }
+    return { direction: 'up', signeMontant: 0 }
+  }, [envelopes, mouvements])
+
+  const historiqueEpargne = useCallback((envId) => {
+    return mouvements
+      .filter(m => !m.is_undone && m.envelope_id === envId
+                   && ['savings_add', 'savings_withdraw'].includes(m.type))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      .map(m => ({
+        date: m.created_at,
+        montant: m.type === 'savings_add' ? Number(m.amount) : -Number(m.amount),
+        note: m.note,
+      }))
+  }, [mouvements])
+
+  const toggleEditEpargne = useCallback((env) => {
+    const wasEditing = !!editEpargne[env.id]
+    if (wasEditing) {
+      const wrapper = document.querySelector(`[data-epargne-id="${env.id}"]`)
+      const titreInput = wrapper?.querySelector('input[aria-label="Nom du compte épargne"]')
+      if (titreInput && titreInput.value.trim() && titreInput.value.trim() !== env.title) {
+        actions.modifierEnveloppe(env.id, { title: titreInput.value.trim() })
+      }
+    }
+    setEditEpargne(s => {
+      const next = { ...s }
+      if (wasEditing) delete next[env.id]
+      else next[env.id] = true
+      return next
+    })
+  }, [editEpargne, actions])
+
+  const onValidateInputEpargne = useCallback((envId) => (type, { amount, note }) => {
+    if (type === '+')      actions.ajouterEpargne(envId, amount, note)
+    else if (type === '-') actions.retirerEpargne(envId, amount, note)
+    setInputEpargne(s => ({ ...s, [envId]: null }))
+  }, [actions])
+
+  const handleDragEndEpargne = useCallback((event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = epargnes.findIndex(e => e.id === active.id)
+    const newIndex = epargnes.findIndex(e => e.id === over.id)
+    if (oldIndex === -1 || newIndex === -1) return
+    const nouvelOrdre = arrayMove(epargnes, oldIndex, newIndex)
+    actions.reordonner(nouvelOrdre.map(e => e.id))
+  }, [epargnes, actions])
+
+  // ----- Données graphique épargne -----
+  let graphEpData = []
+  let graphEpMouvements = []
+  let graphEpTitre = ''
+  let graphEpSigne = 'positif'
+  if (graphEpargneId) {
+    const env = envelopes.find(e => e.id === graphEpargneId)
+    if (env) {
+      graphEpTitre = env.title
+      const pts = reconstruireHistorique(graphEpargneId, envelopes, mouvements)
+      graphEpData = pts.map(p => ({ date: p.date.toISOString(), valeur: p.solde }))
+      const mvsBruts = mouvements
+        .filter(m => !m.is_undone && m.envelope_id === graphEpargneId
+          && ['savings_add', 'savings_withdraw'].includes(m.type))
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      graphEpMouvements = mvsBruts.map(m => ({
+        date: m.created_at,
+        montant: m.type === 'savings_add' ? Number(m.amount) : -Number(m.amount),
+        note: m.note,
+      }))
+      const last = mvsBruts[0]
+      if (last) graphEpSigne = last.type === 'savings_add' ? 'positif' : 'negatif'
+    }
+  }
 
   // ----- Données graphique créance -----
   let graphData = []
@@ -398,6 +533,86 @@ export default function GraphesEtDettes() {
         />
       </section>
 
+      {/* === 5. Comptes épargne (indépendants — drag & drop) === */}
+      <section className="flex flex-col gap-4">
+        <h2 className="t-label-noble px-1">Comptes épargne</h2>
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEndEpargne}
+        >
+          <SortableContext
+            items={epargnes.map(e => e.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            {epargnes.map(ep => {
+              const { direction, signeMontant } = dirEpargne(ep)
+              const enEdition = !!editEpargne[ep.id]
+              const solde = soldeDe(ep.id)
+              const recurrence = ep.recurring_amount != null
+                ? { amount: Number(ep.recurring_amount), interval: ep.recurring_interval }
+                : null
+              return (
+                <EpargneDraggable
+                  key={ep.id}
+                  epargneId={ep.id}
+                  disabled={enEdition}
+                  syncing={estSyncing(ep.id)}
+                >
+                  <div className="flex flex-col gap-2">
+                    <EnveloppeEpargne
+                      nom={ep.title}
+                      montant={solde}
+                      dernierMouvement={signeMontant}
+                      direction={direction}
+                      historique={historiqueEpargne(ep.id)}
+                      modeEdition={enEdition}
+                      canAnnuler={hasUndoableEpargne(ep.id)}
+                      recurrence={recurrence}
+                      onPlus={()  => setInputEpargne(s => ({ ...s, [ep.id]: '+' }))}
+                      onMinus={() => setInputEpargne(s => ({ ...s, [ep.id]: '-' }))}
+                      onUndo={()  => actions.annulerDernier(ep.id)}
+                      onEdit={()  => toggleEditEpargne(ep)}
+                      onGraphique={() => setGraphEpargneId(ep.id)}
+                      onSaveRecurrence={(amount, interval) => actions.definirRecurrenceEpargne(ep.id, amount, interval)}
+                      onDisableRecurrence={() => actions.definirRecurrenceEpargne(ep.id, null, null)}
+                      actionInputActive={inputEpargne[ep.id] || null}
+                      onValidateInput={onValidateInputEpargne(ep.id)}
+                      onCancelInput={() => setInputEpargne(s => ({ ...s, [ep.id]: null }))}
+                    />
+                    {enEdition && (
+                      <button
+                        type="button"
+                        onClick={() => setPopupDelEpargne({ env: ep, solde })}
+                        className="
+                          self-end inline-flex items-center gap-2 px-3 h-9 rounded-md
+                          bg-transparent border border-rouge/40 text-rouge
+                          hover:bg-rouge/10 transition-colors duration-200
+                          text-sm font-medium
+                          focus-visible:outline-2 focus-visible:outline-rouge focus-visible:outline-offset-2
+                        "
+                      >
+                        <Trash2 size={16} strokeWidth={1.75} />
+                        Supprimer ce compte épargne
+                      </button>
+                    )}
+                  </div>
+                </EpargneDraggable>
+              )
+            })}
+          </SortableContext>
+        </DndContext>
+
+        <BoutonNouvelleEnveloppe
+          variant="epargne"
+          onCreate={async ({ titre }) => {
+            await actions.creerEpargne({ title: titre })
+          }}
+        />
+      </section>
+
       <Graphique
         isOpen={!!graphCreanceId}
         onClose={() => setGraphCreanceId(null)}
@@ -406,6 +621,37 @@ export default function GraphesEtDettes() {
         mouvements={graphMouvements}
         dernierMvtSigne={graphSigne}
       />
+
+      <Graphique
+        isOpen={!!graphEpargneId}
+        onClose={() => setGraphEpargneId(null)}
+        titre={graphEpTitre}
+        data={graphEpData}
+        mouvements={graphEpMouvements}
+        dernierMvtSigne={graphEpSigne}
+      />
+
+      {popupDelEpargne && (
+        <PopupConfirmation
+          isOpen={true}
+          onClose={() => setPopupDelEpargne(null)}
+          title={`Supprimer « ${popupDelEpargne.env.title} » ?`}
+          tone="destructive"
+          message={popupDelEpargne.solde > 0
+            ? <>Ce compte épargne contient <strong>{formatEuros(popupDelEpargne.solde)}</strong>. La suppression effacera ce compte et tout son historique. (Ce montant n'est lié à rien d'autre sur le site.)</>
+            : `Ce compte épargne est vide. Tu peux le supprimer sans conséquence.`}
+          actions={[
+            { label: 'Annuler', variant: 'ghost', onClick: () => setPopupDelEpargne(null) },
+            {
+              label: 'Supprimer', variant: 'destructive',
+              onClick: async () => {
+                await actions.supprimerEnveloppe(popupDelEpargne.env.id, 'cascade')
+                setPopupDelEpargne(null)
+              },
+            },
+          ]}
+        />
+      )}
 
       {popupDelCreance && (
         <PopupConfirmation

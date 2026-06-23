@@ -38,7 +38,7 @@ export function validerImport(data) {
     throw new Error("Ce fichier n'a pas le format d'une sauvegarde Tom's Cabinet.")
   }
 
-  const typesEnv = ['total', 'normal', 'creance']
+  const typesEnv = ['total', 'normal', 'creance', 'savings']
   const totaux = data.envelopes.filter(e => e?.type === 'total')
   if (totaux.length !== 1) {
     throw new Error('Le fichier doit contenir exactement un Patrimoine.')
@@ -49,7 +49,7 @@ export function validerImport(data) {
     if (typeof e.title !== 'string' || !e.title.trim()) throw new Error('Une enveloppe a un titre vide.')
   }
 
-  const typesMv = ['income', 'spend', 'allocate', 'unallocate', 'creance_add', 'creance_repaid']
+  const typesMv = ['income', 'spend', 'allocate', 'unallocate', 'creance_add', 'creance_repaid', 'savings_add', 'savings_withdraw']
   const envIds = new Set(data.envelopes.map(e => e.id))
   for (const m of data.movements) {
     if (!m || typeof m.id !== 'string') throw new Error('Un mouvement a un identifiant invalide.')
@@ -145,6 +145,10 @@ export async function appliquerImport(data, userId) {
       title: e.title,
       description: e.description ?? null,
       goal_amount: e.type === 'normal' ? e.goal_amount ?? null : null,
+      // Récurrence : uniquement sur les comptes épargne (le schéma le contraint)
+      recurring_amount:   e.type === 'savings' ? e.recurring_amount ?? null : null,
+      recurring_interval: e.type === 'savings' ? e.recurring_interval ?? null : null,
+      recurring_last_run: e.type === 'savings' ? e.recurring_last_run ?? null : null,
       position: Number.isFinite(e.position) ? e.position : 0,
       created_at: e.created_at ?? new Date().toISOString(),
       updated_at: e.updated_at ?? new Date().toISOString(),

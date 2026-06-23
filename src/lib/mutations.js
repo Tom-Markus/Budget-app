@@ -138,6 +138,7 @@ export async function annulerDernier(envId) {
   const typesAnnulables =
     env.type === 'total'   ? ['income'] :
     env.type === 'creance' ? ['creance_add', 'creance_repaid'] :
+    env.type === 'savings' ? ['savings_add', 'savings_withdraw'] :
                              ['allocate', 'spend', 'unallocate']
 
   const { data: derniers, error: e1 } = await supabase
@@ -255,6 +256,142 @@ export async function creerCreance(userId, { title }) {
     position: nextPos,
   })
   if (error) throw new Error(error.message)
+}
+
+/** Compte épargne — enveloppe indépendante (ni parent, ni objectif, ni lien Patrimoine). */
+export async function creerEpargne(userId, { title }) {
+  if (!title || !title.trim()) throw new Error('Le nom du compte épargne est obligatoire.')
+
+  const { data: lastPos, error: e0 } = await supabase
+    .from('envelopes').select('position')
+    .eq('user_id', userId).eq('type', 'savings')
+    .order('position', { ascending: false }).limit(1)
+  if (e0) throw new Error(e0.message)
+  const nextPos = (lastPos[0]?.position ?? -1) + 1
+
+  const { error } = await supabase.from('envelopes').insert({
+    user_id: userId,
+    parent_id: null,
+    type: 'savings',
+    title: title.trim(),
+    position: nextPos,
+  })
+  if (error) throw new Error(error.message)
+}
+
+// ===========================================================================
+// MOUVEMENTS — Épargne
+// ===========================================================================
+
+/** Versement sur un compte épargne (note facultative). */
+export async function ajouterEpargne(envId, montant, note = null) {
+  if (!(montant > 0)) throw new Error('Le montant doit être supérieur à 0.')
+  const { error } = await supabase.from('movements').insert({
+    envelope_id: envId,
+    amount: montant,
+    type: 'savings_add',
+    note: note?.trim() || null,
+  })
+  if (error) throw new Error(error.message)
+}
+
+/** Retrait d'un compte épargne (note facultative). */
+export async function retirerEpargne(envId, montant, note = null) {
+  if (!(montant > 0)) throw new Error('Le montant doit être supérieur à 0.')
+  const { error } = await supabase.from('movements').insert({
+    envelope_id: envId,
+    amount: montant,
+    type: 'savings_withdraw',
+    note: note?.trim() || null,
+  })
+  if (error) throw new Error(error.message)
+}
+
+// ===========================================================================
+// ÉPARGNE — Récurrence (versement automatique)
+// ===========================================================================
+
+const INTERVALLES_VALIDES = ['daily', 'weekly', 'monthly', 'yearly']
+
+/** Avance une date d'un intervalle (gestion calendaire pour mensuel/annuel). */
+export function avancerDate(date, interval) {
+  const d = new Date(date)
+  switch (interval) {
+    case 'daily':   d.setDate(d.getDate() + 1); break
+    case 'weekly':  d.setDate(d.getDate() + 7); break
+    case 'monthly': d.setMonth(d.getMonth() + 1); break
+    case 'yearly':  d.setFullYear(d.getFullYear() + 1); break
+    default: throw new Error('Cadence inconnue.')
+  }
+  return d
+}
+
+/**
+ * Active / met à jour / désactive la récurrence d'un compte épargne.
+ *   - amount > 0 + interval valide → active (le 1er versement auto aura lieu
+ *     un intervalle après maintenant ; recurring_last_run = maintenant)
+ *   - amount null/0 → désactive (remet les 3 colonnes à null)
+ */
+export async function definirRecurrenceEpargne(envId, amount, interval) {
+  let patch
+  if (amount == null || amount === '' || Number(amount) === 0) {
+    patch = { recurring_amount: null, recurring_interval: null, recurring_last_run: null }
+  } else {
+    if (!(Number(amount) > 0)) throw new Error('Le montant récurrent doit être supérieur à 0.')
+    if (!INTERVALLES_VALIDES.includes(interval)) throw new Error('Cadence invalide.')
+    patch = {
+      recurring_amount: Number(amount),
+      recurring_interval: interval,
+      recurring_last_run: new Date().toISOString(),
+    }
+  }
+  const { error } = await supabase.from('envelopes').update(patch).eq('id', envId)
+  if (error) throw new Error(error.message)
+}
+
+/**
+ * Rattrapage des versements automatiques dus (appelé au chargement).
+ * Pour chaque compte épargne avec récurrence active, on insère un
+ * 'savings_add' par échéance écoulée depuis recurring_last_run, puis on
+ * avance recurring_last_run à la dernière échéance traitée.
+ *
+ * @param epargnes Array<enveloppe type 'savings'>
+ */
+export async function executerRecurrencesDues(epargnes) {
+  const now = new Date()
+  for (const env of epargnes || []) {
+    const montant = Number(env.recurring_amount)
+    if (!(montant > 0) || !env.recurring_interval) continue
+    const base = env.recurring_last_run
+    if (!base) continue
+
+    let prochaine = avancerDate(base, env.recurring_interval)
+    const echeances = []
+    let garde = 0
+    while (prochaine <= now && garde < 1200) {
+      echeances.push(new Date(prochaine))
+      prochaine = avancerDate(prochaine, env.recurring_interval)
+      garde++
+    }
+    if (echeances.length === 0) continue
+
+    const rows = echeances.map(d => ({
+      envelope_id: env.id,
+      amount: montant,
+      type: 'savings_add',
+      note: 'Versement automatique',
+      created_at: d.toISOString(),
+    }))
+    const { error } = await supabase.from('movements').insert(rows)
+    if (error) throw new Error(error.message)
+
+    const derniere = echeances[echeances.length - 1]
+    const { error: e2 } = await supabase
+      .from('envelopes')
+      .update({ recurring_last_run: derniere.toISOString() })
+      .eq('id', env.id)
+    if (e2) throw new Error(e2.message)
+  }
 }
 
 // ===========================================================================
