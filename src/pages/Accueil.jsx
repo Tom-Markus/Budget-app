@@ -444,6 +444,7 @@ export default function Accueil() {
       const mvsBruts = [...mouvementsDeLArbre(graphEnvId, envelopes, mouvements)]
         .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       graphMouvements = mvsBruts.map(m => ({
+        id: m.id,
         date: m.created_at,
         montant: ['income', 'allocate', 'creance_add'].includes(m.type)
           ? Number(m.amount) : -Number(m.amount),
@@ -576,6 +577,7 @@ export default function Accueil() {
         data={graphData}
         mouvements={graphMouvements}
         dernierMvtSigne={graphSigne}
+        onEditNote={(mouvementId, note) => actions.modifierNoteMouvement(mouvementId, note)}
       />
 
       {/* === Popup suppression === */}

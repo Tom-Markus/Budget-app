@@ -23,7 +23,7 @@
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, Pencil, Check } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import {
   ResponsiveContainer,
@@ -94,12 +94,30 @@ export default function Graphique({
   data = [],
   mouvements = [],
   dernierMvtSigne = 'positif',
+  onEditNote,
 }) {
   const { theme } = useTheme();
   const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)';
   const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)';
 
   const [periode, setPeriode] = useState('30J');
+  const [editingId, setEditingId] = useState(null);
+  const [editValue, setEditValue] = useState('');
+
+  function startEdit(m) {
+    setEditingId(m.id);
+    setEditValue(m.note || '');
+  }
+
+  function saveEdit(m) {
+    setEditingId(null);
+    if (editValue.trim() === (m.note || '')) return;
+    onEditNote?.(m.id, editValue);
+  }
+
+  useEffect(() => {
+    setEditingId(null);
+  }, [isOpen]);
 
   // preparerCourbe étend l'axe à toute la fenêtre de période choisie et
   // agrège par jour pour 3M / TOUT (cf. src/lib/calculs.js).
@@ -280,7 +298,7 @@ export default function Graphique({
                 ) : (
                   mouvements.map((m, i) => (
                     <div
-                      key={i}
+                      key={m.id ?? i}
                       className="flex items-center gap-3 py-1.5 border-b border-[rgba(31,24,16,0.06)] last:border-0"
                     >
                       <span className="t-meta tabular-nums w-24 shrink-0">
@@ -297,10 +315,60 @@ export default function Graphique({
                           maximumFractionDigits: 2,
                         })}{'\u202F'}€
                       </span>
-                      {m.note && (
-                        <span className="t-body-secondaire flex-1 italic truncate">
-                          {m.note}
-                        </span>
+                      {editingId === m.id ? (
+                        <>
+                          <input
+                            type="text"
+                            autoFocus
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') saveEdit(m);
+                              if (e.key === 'Escape') setEditingId(null);
+                            }}
+                            onBlur={() => saveEdit(m)}
+                            placeholder="Note"
+                            className="
+                              flex-1 min-w-0 bg-transparent italic text-sm
+                              border-b border-or/40 focus:border-or focus:outline-none
+                              t-body-secondaire
+                            "
+                            aria-label="Modifier la note du mouvement"
+                          />
+                          <button
+                            type="button"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => saveEdit(m)}
+                            aria-label="Valider la note"
+                            className="shrink-0 p-1 rounded-md text-or hover:bg-or/10 transition-colors duration-200"
+                          >
+                            <Check size={14} strokeWidth={2} aria-hidden="true" />
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          {m.note ? (
+                            <span className="t-body-secondaire flex-1 italic truncate">
+                              {m.note}
+                            </span>
+                          ) : (
+                            <span className="flex-1" />
+                          )}
+                          {onEditNote && m.id != null && (
+                            <button
+                              type="button"
+                              onClick={() => startEdit(m)}
+                              aria-label={m.note ? 'Modifier la note' : 'Ajouter une note'}
+                              className="
+                                shrink-0 p-1 rounded-md
+                                text-encre-tertiaire hover:text-encre hover:bg-velin-fonce
+                                transition-colors duration-200
+                              "
+                            >
+                              <Pencil size={13} strokeWidth={1.5} aria-hidden="true" />
+                            </button>
+                          )}
+                        </>
                       )}
                     </div>
                   ))

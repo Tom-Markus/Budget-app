@@ -259,6 +259,18 @@ export function AppProvider({ children }) {
         }
       }),
 
+    modifierNoteMouvement: (mouvementId, note) =>
+      wrap(null, async () => {
+        const snapshot = mouvements
+        setMouvements(prev => prev.map(m => m.id === mouvementId ? { ...m, note: note?.trim() || null } : m))
+        try {
+          await mutations.modifierNoteMouvement(mouvementId, note)
+        } catch (err) {
+          setMouvements(snapshot)
+          throw err
+        }
+      }),
+
     supprimerEnveloppe: (envId, modeAvecEnfants = 'cascade') =>
       wrap(envId, async () => {
         const env = envelopes.find(e => e.id === envId)

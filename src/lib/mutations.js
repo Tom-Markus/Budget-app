@@ -421,6 +421,19 @@ export async function modifierEnveloppe(envId, { title, description, goal_amount
 }
 
 // ===========================================================================
+// MOUVEMENTS — Édition
+// ===========================================================================
+
+/** Modifie la note d'un mouvement existant (historique). */
+export async function modifierNoteMouvement(mouvementId, note) {
+  const { error } = await supabase
+    .from('movements')
+    .update({ note: note?.trim() || null })
+    .eq('id', mouvementId)
+  if (error) throw new Error(error.message)
+}
+
+// ===========================================================================
 // ENVELOPPES — Suppression (4 scénarios du brief)
 // ===========================================================================
 
