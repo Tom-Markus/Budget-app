@@ -85,12 +85,21 @@ VITE_TWELVE_DATA_KEY=                 # twelvedata.com — réservé usage futur
 
 Les migrations se trouvent dans `migrations/` et se lancent dans l'ordre dans le **SQL Editor** de Supabase.
 
+**Comment appliquer une migration** : Supabase → ton projet → **SQL Editor** →
+*New query* → colle le contenu du fichier → **Run**. Une par une, dans l'ordre
+des numéros. Chaque migration ne se lance qu'une seule fois (sauf mention
+« idempotent » dans son en-tête).
+
 | Fichier | Contenu |
 |---|---|
 | `001_initial.sql` | Tables `envelopes` et `movements`, trigger Patrimoine, politiques RLS, Realtime |
 | `002_investments.sql` | Table `investments` (portefeuille d'investissements) |
 | `003_exercise_images_storage.sql` | Bucket Supabase Storage pour les photos d'exercices |
-| `004_sport_custom_exos.sql` | Table `sport_custom_exercises` (exercices personnalisés) |
+| `004_sport_custom_exos.sql` | Table `sport_custom_exos` (personnalisations d'exercices) |
+| `005_sport_performances.sql` | RLS + index sur `sport_performances` (idempotent) |
+| `006_savings.sql` | Comptes épargne : type `savings`, mouvements `savings_add`/`savings_withdraw`, colonnes de récurrence |
+| `007_hardening.sql` | Garde-fous d'intégrité : anti-cycle `parent_id`, cohérence type de mouvement/enveloppe (idempotent) |
+| `008_sport_sync.sql` | Sport : coches de séance synchronisées (`sport_checks`) + exercices ajoutés (`sport_extra_exos`) |
 
 ### Tables principales
 
