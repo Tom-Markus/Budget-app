@@ -200,39 +200,49 @@ function scoreImportance(title, source, isAICategory = false) {
 
 function decodeEntities(str) {
   return str
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
     .replace(/&#x27;/g, "'")
+    // Entités numériques (&#8217; &#x2019; …) — apostrophes typographiques,
+    // tirets cadratins, etc. fréquents dans les titres de presse
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+    // &amp; en dernier pour ne pas décoder deux fois (&amp;#39; → &#39; → ')
+    .replace(/&amp;/g, '&')
 }
 
 async function parseFeed({ url, source }, isAICategory = false) {
   const r = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (compatible; RSSReader/1.0)',
-      Accept: 'application/rss+xml, application/xml, text/xml, */*',
+      Accept: 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
     },
   })
   if (!r.ok) throw new Error(`${source}: HTTP ${r.status}`)
   const xml = await r.text()
 
   const items = []
-  const itemRe = /<item[^>]*>([\s\S]*?)<\/item>/gi
+  // RSS 2.0 (<item>) et Atom (<entry>) : certaines sources (blogs IA
+  // notamment) publient en Atom — sans ce support elles étaient muettes.
+  const itemRe = /<(item|entry)[^>]*>([\s\S]*?)<\/\1>/gi
   let match
   while ((match = itemRe.exec(xml)) !== null && items.length < 10) {
-    const chunk = match[1]
+    const chunk = match[2]
     const title = extractTag(chunk, 'title')
     const link =
       (/<link>([^<]+)<\/link>/i.exec(chunk) || [])[1]?.trim() ||
       (/<link[^>]+href="([^"]+)"/i.exec(chunk) || [])[1]?.trim()
+    // pubDate = RSS ; published/updated = Atom
     const pubDate = extractTag(chunk, 'pubDate')
+      || extractTag(chunk, 'published')
+      || extractTag(chunk, 'updated')
     if (title && link) {
       const cleanTitle = decodeEntities(title)
       items.push({
         title:       cleanTitle,
-        url:         link,
+        url:         decodeEntities(link),
         source,
         publishedAt: pubDate || new Date().toISOString(),
         importance:  scoreImportance(cleanTitle, source, isAICategory),
@@ -243,7 +253,6 @@ async function parseFeed({ url, source }, isAICategory = false) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=900')
 
   const { category } = req.query

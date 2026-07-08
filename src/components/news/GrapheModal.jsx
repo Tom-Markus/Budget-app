@@ -296,21 +296,26 @@ export function GrapheModal({ item, onClose }) {
     return () => document.removeEventListener('keydown', fn)
   }, [onClose])
 
-  // Réinitialiser le mode et les données OHLC quand l'actif ou le TF change
-  useEffect(() => {
+  // Réinitialiser le mode/les données quand l'actif ou le TF change —
+  // ajustement d'état pendant le rendu (pattern React) plutôt qu'un effet.
+  const cleActif = `${item.coinId ?? ''}|${item.indexSymbol ?? ''}|${tf}`
+  const [prevCle, setPrevCle] = useState(null)
+  if (prevCle !== cleActif) {
+    setPrevCle(cleActif)
     if (item.coinId && tf === '5A') setTf('1A')
     setChartMode('line')
     setOhlcData(null)
     setOhlcError(false)
-    ohlcKeyRef.current = null
-  }, [item.coinId, item.indexSymbol, tf])
-
-  // Charger les données de la courbe
-  useEffect(() => {
     setChartData(null)
     setError(null)
-    setLoading(true)
-    if (!item.coinId && !item.indexSymbol) { setLoading(false); return }
+    setLoading(!!(item.coinId || item.indexSymbol))
+  }
+
+  // Charger les données de la courbe (les resets d'état sont faits ci-dessus)
+  useEffect(() => {
+    // Invalide le cache OHLC quand l'actif/le TF change (ref : pas pendant le rendu)
+    ohlcKeyRef.current = null
+    if (!item.coinId && !item.indexSymbol) return
     let cancelled = false
     const controller = new AbortController()
     const url = item.coinId

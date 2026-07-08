@@ -160,12 +160,18 @@ export function simulerAnnulationSure(envId, envelopes, mouvements) {
   return { ok: true }
 }
 
-/** Tous les ids descendants d'une enveloppe (récursif, tous niveaux). */
-export function descendantsIds(envId, envelopes) {
+/**
+ * Tous les ids descendants d'une enveloppe (récursif, tous niveaux).
+ * Garde anti-cycle : si des données corrompues créent une boucle de
+ * parent_id, on s'arrête au lieu de boucler à l'infini.
+ */
+export function descendantsIds(envId, envelopes, _vus = new Set()) {
   const out = []
   for (const child of envelopes.filter(e => e.parent_id === envId)) {
+    if (_vus.has(child.id)) continue
+    _vus.add(child.id)
     out.push(child.id)
-    out.push(...descendantsIds(child.id, envelopes))
+    out.push(...descendantsIds(child.id, envelopes, _vus))
   }
   return out
 }
@@ -260,12 +266,17 @@ export function preparerCourbe(points, jours, agregerParJour) {
   const derniereValeur = serie[serie.length - 1].valeur
   serie.push({ t: now, valeur: derniereValeur })
 
-  // Agrégation par jour : on garde le dernier point de chaque jour
+  // Agrégation par jour : on garde le dernier point de chaque jour.
+  // Clé en date LOCALE (pas UTC) : un mouvement à 00h30 heure belge
+  // appartient bien au jour courant, pas à la veille.
   if (agregerParJour) {
+    const cleJourLocal = (t) => {
+      const d = new Date(t)
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    }
     const parJour = new Map()
     for (const pt of serie) {
-      const cle = new Date(pt.t).toISOString().slice(0, 10)
-      parJour.set(cle, pt)
+      parJour.set(cleJourLocal(pt.t), pt)
     }
     serie = Array.from(parJour.values()).sort((a, b) => a.t - b.t)
   }

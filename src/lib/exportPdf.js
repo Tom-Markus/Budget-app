@@ -77,10 +77,12 @@ export function exporterPdf(envelopes, mouvements) {
   doc.text('PATRIMOINE', MARGE + 6, y + 8)
   doc.text('A REPARTIR', MARGE + blocW + 12, y + 8)
   doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  // Un solde nul est neutre (encre), pas « en négatif » (rouge) — cohérent
+  // avec le traitement du zéro dans l'app.
   const sp = patrimoine ? soldeDe(patrimoine.id) : 0
-  doc.setTextColor(sp > 0 ? C.vert : C.rouge)
+  doc.setTextColor(sp > 0 ? C.vert : sp === 0 ? C.encre : C.rouge)
   doc.text(eur(sp), MARGE + 6, y + 18)
-  doc.setTextColor(aRepartir > 0 ? C.vert : C.rouge)
+  doc.setTextColor(aRepartir > 0 ? C.vert : aRepartir === 0 ? C.encre : C.rouge)
   doc.text(eur(aRepartir), MARGE + blocW + 12, y + 18)
   y += 34
 
@@ -130,7 +132,7 @@ export function exporterPdf(envelopes, mouvements) {
     doc.setTextColor(C.encre)
     doc.text(env.title, MARGE + indent, y)
     const solde = soldeDe(env.id)
-    doc.setTextColor(solde > 0 ? C.vert : C.rouge)
+    doc.setTextColor(solde > 0 ? C.vert : solde === 0 ? C.encre : C.rouge)
     doc.text(eur(solde), PAGE_W - MARGE, y, { align: 'right' })
     y += 5
 

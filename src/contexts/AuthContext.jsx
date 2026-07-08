@@ -12,10 +12,9 @@
  *   - loading: false, user: {…}  → connecté, on affichera l'app
  * ----------------------------------------------------------------------------
  */
-import { createContext, useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-
-export const AuthContext = createContext(null)
+import { AuthContext } from '../hooks/useAuth'
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(null)

@@ -70,8 +70,6 @@ export default function GrandeEnveloppe({
   patrimoineDernierMouvement = 0,
   patrimoineDirection = 'up',
   aRepartir = 0,
-  aRepartirDernierMouvement = 0,
-  aRepartirDirection = 'up',
   onRecevoir,
   onAnnuler,
   canAnnuler = true,
@@ -89,13 +87,6 @@ export default function GrandeEnveloppe({
       : 'negatif';
 
   const couleurARepartir = aRepartir > 0 ? 'positif' : 'zero';
-
-  const couleurMvtARepartir =
-    aRepartirDirection === 'transfert'
-      ? 'neutre'
-      : aRepartirDirection === 'up'
-      ? 'positif'
-      : 'negatif';
 
   return (
     <section aria-labelledby="patrimoine-titre" className="w-full">
@@ -146,7 +137,7 @@ export default function GrandeEnveloppe({
         </div>
 
         {/* Ligne 2 : boutons d'action OU champ de saisie si actif */}
-        <div className="flex items-center justify-end gap-3 pt-3 border-t border-[rgba(31,24,16,0.06)]">
+        <div className="flex items-center justify-end gap-3 pt-3 border-t border-encre/[0.06]">
           <AnimatePresence mode="wait">
             {isInputActive ? (
               <motion.div
@@ -207,7 +198,7 @@ export default function GrandeEnveloppe({
                   border transition-colors duration-500
                   ${aRepartir > 0
                     ? 'bg-or/10 border-or/25'
-                    : 'bg-velin-fonce border-[rgba(31,24,16,0.07)]'}
+                    : 'bg-velin-fonce border-encre/[0.07]'}
                 `}
               >
                 <span className="t-label-noble">À répartir</span>

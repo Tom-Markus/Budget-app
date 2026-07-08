@@ -89,10 +89,13 @@ const AMBIENT_BG = `
   radial-gradient(1000px 700px at 88% 92%, rgba(142,111,47,0.10), transparent 70%)
 `;
 
+// Détection souris — constante au niveau module (même durée de vie que la
+// page, comme isTouchDevice) : plus de dépendance manquante dans l'effet.
+const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
+
 export default function MetaballFond() {
   const wrapRef  = useRef(null);
   const innerRef = useRef(null);
-  const isMouseDevice = typeof window !== 'undefined' && window.matchMedia('(pointer: fine)').matches;
   // Toujours hors écran au départ : l'attraction ne commence qu'après le 1er vrai mouvement souris
   const mouseRef   = useRef({ x: -10, y: -10 });
   const lightRef   = useRef(null);  // fePointLight du glint spéculaire

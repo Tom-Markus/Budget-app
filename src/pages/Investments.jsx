@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react'
-import { useTheme } from '../hooks/useTheme'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
@@ -163,7 +162,7 @@ function buildPortfolioHistory(investissements, liveMarkets, liveStocks) {
 // Primitives UI
 // ============================================================================
 const inputCls =
-  'w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-10 ' +
+  'w-full bg-velin-clair border border-encre/[0.12] rounded-md px-3 h-10 ' +
   'text-encre placeholder:text-encre-tertiaire font-sans text-sm ' +
   'focus:outline-none focus:border-or/40 transition-colors duration-200'
 
@@ -192,9 +191,13 @@ function DatePicker({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
   const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
-  useEffect(() => {
+  // Aligne le mois affiché sur la valeur sélectionnée — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevValue, setPrevValue] = useState(value)
+  if (prevValue !== value) {
+    setPrevValue(value)
     if (value) setView(new Date(value + 'T00:00:00'))
-  }, [value])
+  }
 
   useEffect(() => {
     if (!open) return
@@ -434,9 +437,13 @@ const FORM_VIDE = { type: 'action', nom: '', ticker: '', date_achat: '', cours_a
 function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
   const [form, setForm] = useState(FORM_VIDE)
 
-  useEffect(() => {
+  // Réinitialise le formulaire à chaque ouverture — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevOpen, setPrevOpen] = useState(isOpen)
+  if (prevOpen !== isOpen) {
+    setPrevOpen(isOpen)
     if (isOpen) setForm(FORM_VIDE)
-  }, [isOpen])
+  }
 
   const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
 
@@ -480,7 +487,7 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
                     'h-10 rounded-md text-sm font-medium font-sans transition-colors duration-150 border',
                     selected
                       ? `${t.bg} ${t.text} border-current/30`
-                      : 'bg-transparent text-encre-tertiaire border-[rgba(31,24,16,0.10)] hover:bg-velin-fonce hover:text-encre',
+                      : 'bg-transparent text-encre-tertiaire border-encre/[0.10] hover:bg-velin-fonce hover:text-encre',
                   ].join(' ')}
                 >
                   {t.label}
@@ -559,12 +566,19 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
 function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
   const [form, setForm] = useState({ date_vente: '', prix_vente: '' })
 
-  useEffect(() => {
+  // Réinitialise le formulaire quand la cible change — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevInv, setPrevInv] = useState(investissement)
+  if (prevInv !== investissement) {
+    setPrevInv(investissement)
     if (investissement) setForm({ date_vente: '', prix_vente: '' })
-  }, [investissement])
+  }
 
   const prixVente = Number(form.prix_vente)
-  const valide = form.date_vente && prixVente > 0
+  // La vente ne peut pas être antérieure à l'achat (dates ISO comparables)
+  const dateInvalide = !!(form.date_vente && investissement?.date_achat
+    && form.date_vente < investissement.date_achat)
+  const valide = form.date_vente && prixVente > 0 && !dateInvalide
 
   const pnl = investissement && prixVente > 0
     ? (prixVente - investissement.prix_achat) * investissement.quantite
@@ -589,6 +603,12 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
         <Champ label="Date de vente *">
           <DatePicker value={form.date_vente} onChange={(v) => setForm((f) => ({ ...f, date_vente: v }))} />
         </Champ>
+        {dateInvalide && (
+          <p className="text-xs text-rouge -mt-2" role="alert">
+            La date de vente ne peut pas être antérieure à la date d'achat
+            ({formatDate(investissement.date_achat)}).
+          </p>
+        )}
 
         <Champ label="Cours de vente *">
           <input
@@ -699,9 +719,8 @@ function LiveTooltip({ active, payload }) {
 
 // ── Graphe portefeuille (modal) ───────────────────────────────────────────────
 function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liveStocks }) {
-  const { theme } = useTheme()
-  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)'
-  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)'
+  const chartGrid = 'var(--chart-grid)'
+  const chartAxis = 'var(--chart-axis)'
 
   const points = useMemo(
     () => buildPortfolioHistory(investissements, liveMarkets, liveStocks),
@@ -1017,7 +1036,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
       )}
 
       {inv.notes && (
-        <p className="text-xs text-encre-tertiaire italic border-t border-[rgba(31,24,16,0.06)] pt-2 mt-1">
+        <p className="text-xs text-encre-tertiaire italic border-t border-encre/[0.06] pt-2 mt-1">
           {inv.notes}
         </p>
       )}
@@ -1029,10 +1048,6 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
 // Page principale
 // ============================================================================
 export default function Investments() {
-  const { theme } = useTheme()
-  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)'
-  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)'
-
   const { user } = useAuth()
   const { showToast } = useToast()
 
@@ -1047,11 +1062,13 @@ export default function Investments() {
   // Prix live
   const [liveMarkets, setLiveMarkets] = useState(null)
   const [liveStocks,  setLiveStocks]  = useState(null)
-  const [liveLoading, setLiveLoading] = useState(false)
+  const [liveLoading, setLiveLoading] = useState(true)
 
+  // loading démarre à true et ne repasse jamais à true : les rechargements
+  // après ajout/clôture rafraîchissent la liste en place, sans flash de
+  // spinner qui remplacerait tout le contenu.
   const charger = useCallback(async () => {
     if (!user) return
-    setLoading(true)
     try {
       setInvestissements(await chargerInvestissements(user.id))
     } catch (err) {
@@ -1061,13 +1078,17 @@ export default function Investments() {
     }
   }, [user, showToast])
 
+  // Fetch au montage : le setState a lieu après l'await (asynchrone) —
+  // faux positif de set-state-in-effect.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { charger() }, [charger])
 
   // Chargement des prix live (sessionStorage cache 15 min, donc rapide si News a déjà chargé)
   useEffect(() => {
     let mounted = true
     async function fetchLive() {
-      setLiveLoading(true)
+      // liveLoading démarre à true (useState) — pas besoin de le re-lever ici,
+      // les refresh périodiques mettent à jour les prix sans état de chargement.
       try {
         const [m, s] = await Promise.all([fetchMarkets(), fetchStocks()])
         if (!mounted) return

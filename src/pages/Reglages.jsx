@@ -17,6 +17,7 @@ import { exporterPdf } from '../lib/exportPdf'
 import { lireFichierJson, validerImport, appliquerImport } from '../lib/importJson'
 import { remettreAZero } from '../lib/mutations'
 import { formatEuros } from '../lib/formatters'
+import { version as APP_VERSION } from '../../package.json'
 
 // Bouton réutilisable, style cohérent design system
 function BoutonReglage({ onClick, disabled, children, icon: Icon, danger }) {
@@ -31,7 +32,7 @@ function BoutonReglage({ onClick, disabled, children, icon: Icon, danger }) {
         transition-all duration-300 ease-noble
         ${danger
           ? 'border-rouge/30 text-rouge hover:bg-rouge/10'
-          : 'border-[rgba(31,24,16,0.12)] text-encre hover:bg-velin-fonce hover:shadow-md'}
+          : 'border-encre/[0.12] text-encre hover:bg-velin-fonce hover:shadow-md'}
         ${disabled ? 'opacity-60 cursor-wait' : ''}
         focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2
       `}
@@ -88,9 +89,13 @@ export default function Reglages() {
   const [pwaInstalled, setPwaInstalled] = useState(false)
   useEffect(() => {
     const handler = (e) => { e.preventDefault(); setPwaPrompt(e) }
+    const installedHandler = () => { setPwaInstalled(true); setPwaPrompt(null) }
     window.addEventListener('beforeinstallprompt', handler)
-    window.addEventListener('appinstalled', () => { setPwaInstalled(true); setPwaPrompt(null) })
-    return () => window.removeEventListener('beforeinstallprompt', handler)
+    window.addEventListener('appinstalled', installedHandler)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handler)
+      window.removeEventListener('appinstalled', installedHandler)
+    }
   }, [])
 
   const handleInstallPwa = async () => {
@@ -208,7 +213,7 @@ export default function Reglages() {
                 onClick={toggleTheme}
                 aria-label={theme === 'dark' ? 'Passer en mode clair' : 'Passer en mode sombre'}
                 className="relative inline-flex h-9 w-[4.5rem] shrink-0 items-center rounded-full
-                  border border-[rgba(31,24,16,0.14)] bg-velin-fonce
+                  border border-encre/[0.14] bg-velin-fonce
                   transition-colors duration-300 focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2"
                 style={theme === 'dark' ? {
                   background: 'rgba(11,22,40,0.85)',
@@ -383,7 +388,7 @@ export default function Reglages() {
             <p className="t-label">À propos</p>
             <h2 className="t-h2 mt-2">Tom's Cabinet</h2>
             <p className="t-body-secondaire mt-4">
-              Budget personnel par enveloppes. Version 1.0.1.
+              Budget personnel par enveloppes. Version {APP_VERSION}.
             </p>
             <div className="mt-5">
               <div className="h-px w-full" style={{ background: 'var(--gradient-signature-fin)' }} />
@@ -394,7 +399,7 @@ export default function Reglages() {
 
             {/* Bouton installer PWA — n'apparaît que si le navigateur le propose */}
             {(pwaPrompt || pwaInstalled) && (
-              <div className="mt-5 pt-5 border-t border-[rgba(31,24,16,0.08)]">
+              <div className="mt-5 pt-5 border-t border-encre/[0.08]">
                 {pwaInstalled ? (
                   <p className="font-sans text-sm flex items-center gap-2"
                     style={{ color: 'var(--encre-secondaire)' }}>
@@ -462,7 +467,7 @@ export default function Reglages() {
             </div>
 
             {/* Import */}
-            <div className="mt-8 pt-6 border-t border-[rgba(31,24,16,0.08)]">
+            <div className="mt-8 pt-6 border-t border-encre/[0.08]">
               <p className="t-body-secondaire">
                 Réimporte une sauvegarde JSON. Cela <strong>remplacera</strong> toutes
                 tes données actuelles — garde toujours ton fichier de côté.

@@ -30,6 +30,7 @@
 import { motion } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
 import { Check, X, MessageSquare } from 'lucide-react';
+import { parseMontant } from '../lib/formatters';
 
 export default function ChampSaisie({
   onValidate,
@@ -54,23 +55,25 @@ export default function ChampSaisie({
 
   function handleChange(e) {
     const v = e.target.value;
-    if (/^-?[0-9]*[,.]?[0-9]*$/.test(v)) {
+    // Chiffres + séparateurs uniquement (pas de signe : les montants sont
+    // toujours positifs ici). Tolère « 1.234,56 » comme parseMontant.
+    if (/^[0-9.,]*$/.test(v)) {
       setRaw(v);
     }
   }
 
   function parseValue() {
-    const normalized = raw.replace(',', '.');
-    const n = parseFloat(normalized);
-    return isNaN(n) ? null : n;
+    if (raw.trim() === '') return null;
+    const n = parseMontant(raw);
+    return Number.isFinite(n) ? n : null;
   }
 
   const parsed = parseValue();
 
-  // Validations
+  // Validations (petite tolérance flottante sur le plafond : 0.1+0.2 ≠ 0.3)
   const isEmpty = raw.trim() === '' || parsed === null;
   const isNonPositive = !isEmpty && parsed <= 0;
-  const isOverMax = !isEmpty && maxAmount !== null && parsed > maxAmount;
+  const isOverMax = !isEmpty && maxAmount !== null && parsed > maxAmount + 0.005;
   const isNoteMissing = noteMode === 'required' && note.trim() === '';
 
   const isInvalid = isEmpty || isNonPositive || isOverMax || isNoteMissing;
@@ -122,7 +125,7 @@ export default function ChampSaisie({
       className="flex flex-col gap-2 w-full"
     >
       {/* Ligne principale : montant + sigle € + boutons */}
-      <div className="flex items-center gap-2 w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-11 min-h-[44px]">
+      <div className="flex items-center gap-2 w-full bg-velin-clair border border-encre/[0.12] rounded-md px-3 h-11 min-h-[44px]">
         <input
           ref={inputRef}
           type="text"
@@ -217,7 +220,7 @@ export default function ChampSaisie({
             onKeyDown={handleKey}
             placeholder={noteMode === 'required' ? 'Note (obligatoire)' : 'Note'}
             className="
-              w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md
+              w-full bg-velin-clair border border-encre/[0.12] rounded-md
               px-3 h-10 min-h-[40px]
               text-encre placeholder:text-encre-tertiaire
               font-serif italic text-base

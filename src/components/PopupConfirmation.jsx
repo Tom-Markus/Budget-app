@@ -104,7 +104,7 @@ export default function PopupConfirmation({
               // Liseré bordeaux si tone destructive
               boxShadow:
                 tone === 'destructive'
-                  ? '0 0 0 1px rgba(229, 57, 53, 0.3), 0 12px 32px rgba(31, 24, 16, 0.18)'
+                  ? '0 0 0 1px rgba(229, 57, 53, 0.3), 0 12px 32px color-mix(in srgb, var(--encre) 18%, transparent)'
                   : 'var(--shadow-lg)',
             }}
           >

@@ -11,7 +11,6 @@ const TF_DAYS = { '24h': 1, '7j': 7, '3M': 90, '1A': 365, '5A': 1825 }
 const CACHE_S = { '24h': 300, '7j': 3600, '3M': 86400, '1A': 86400, '5A': 86400 }
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
 
   const { coinId, tf, type } = req.query
 

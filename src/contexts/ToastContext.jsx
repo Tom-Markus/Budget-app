@@ -12,10 +12,9 @@
  *   showToast({ message: 'Erreur réseau', type: 'erreur', duration: 3000 })
  * ----------------------------------------------------------------------------
  */
-import { createContext, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Toast } from '../components/Toast'
-
-export const ToastContext = createContext(null)
+import { ToastContext } from '../hooks/useToast'
 
 export function ToastProvider({ children }) {
   // current = { message, type, duration, key } | null

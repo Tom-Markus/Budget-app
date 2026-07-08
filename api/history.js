@@ -25,7 +25,6 @@ const TF_YF = {
 const round2 = v => v != null ? Math.round(v * 100) / 100 : null
 
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
 
   const { symbol, tf = '7j' } = req.query
 

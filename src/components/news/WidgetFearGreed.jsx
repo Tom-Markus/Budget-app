@@ -22,19 +22,6 @@ function getFgLabelColor(value) {
   return 'var(--encre-secondaire)'
 }
 
-export async function fetchFearGreed() {
-  try {
-    const res = await fetch('https://api.alternative.me/fng/?limit=1')
-    if (!res.ok) return null
-    const { data } = await res.json()
-    if (!data?.[0]) return null
-    return {
-      value:          parseInt(data[0].value, 10),
-      classification: data[0].value_classification,
-    }
-  } catch { return null }
-}
-
 export function WidgetFearGreed({ fg }) {
 
   if (fg === undefined) {

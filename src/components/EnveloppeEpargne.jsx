@@ -81,6 +81,7 @@ export default function EnveloppeEpargne({
   onUndo,
   onEdit,
   onGraphique,
+  onTitreChange,
   actionInputActive = null,
   onValidateInput,
   onCancelInput,
@@ -120,7 +121,7 @@ export default function EnveloppeEpargne({
     <article
       className="relative overflow-hidden bg-velin-clair rounded-lg shadow-sm"
       style={{
-        boxShadow: '0 0 0 1px rgba(14, 163, 113, 0.3), 0 2px 6px rgba(31, 24, 16, 0.06)',
+        boxShadow: '0 0 0 1px rgba(14, 163, 113, 0.3), 0 2px 6px color-mix(in srgb, var(--encre) 6%, transparent)',
       }}
       aria-label={`Compte épargne — ${nom}`}
     >
@@ -152,6 +153,7 @@ export default function EnveloppeEpargne({
               <input
                 type="text"
                 defaultValue={nom}
+                onChange={(e) => onTitreChange?.(e.target.value)}
                 className="
                   font-serif font-medium text-xl
                   flex-1 bg-transparent
@@ -255,7 +257,7 @@ export default function EnveloppeEpargne({
                 )}
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1 bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-11 min-h-[44px] flex-1 min-w-[120px]">
+                  <div className="flex items-center gap-1 bg-velin-clair border border-encre/[0.12] rounded-md px-3 h-11 min-h-[44px] flex-1 min-w-[120px]">
                     <input
                       type="text"
                       inputMode="decimal"
@@ -277,7 +279,7 @@ export default function EnveloppeEpargne({
                       value={recInterval}
                       onChange={(e) => setRecInterval(e.target.value)}
                       className="
-                        h-11 min-h-[44px] bg-velin-clair border border-[rgba(31,24,16,0.12)]
+                        h-11 min-h-[44px] bg-velin-clair border border-encre/[0.12]
                         rounded-md px-2 text-sm text-encre
                         focus:outline-none focus:border-vert/50
                       "
@@ -341,7 +343,7 @@ export default function EnveloppeEpargne({
                 className="relative rounded-md p-4 border border-vert/20"
                 style={{
                   background:
-                    'linear-gradient(180deg, rgba(229,245,238,0.6) 0%, rgba(250,246,238,0.8) 50%, rgba(229,245,238,0.6) 100%)',
+                    'linear-gradient(180deg, color-mix(in srgb, var(--vert) 8%, transparent) 0%, color-mix(in srgb, var(--velin-clair) 80%, transparent) 50%, color-mix(in srgb, var(--vert) 8%, transparent) 100%)',
                 }}
               >
                 <span

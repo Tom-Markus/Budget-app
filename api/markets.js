@@ -1,7 +1,6 @@
 // Vercel serverless — proxy Yahoo Finance pour les indices boursiers
 // CAC 40 (^FCHI), S&P 500 (^GSPC), BEL 20 (^BFX) bloquent les requêtes CORS navigateur.
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=300')
 
   const TICKERS = { cac40: '^FCHI', sp500: '^GSPC', bel20: '^BFX', oil: 'CL=F', brent: 'BZ=F' }

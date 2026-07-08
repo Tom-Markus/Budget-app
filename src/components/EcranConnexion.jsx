@@ -142,7 +142,7 @@ export default function EcranConnexion({ onLogin, loading = false, error = null 
               w-full max-w-xs h-12 min-h-[48px] px-5 rounded-md
               inline-flex items-center justify-center gap-3
               bg-velin-clair text-encre
-              border border-[rgba(31,24,16,0.12)]
+              border border-encre/[0.12]
               hover:bg-velin-fonce hover:shadow-md
               transition-all duration-300 ease-noble
               font-sans text-base font-medium

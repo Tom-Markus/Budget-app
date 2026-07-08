@@ -1,5 +1,9 @@
 import { Landmark } from 'lucide-react'
 
+// Calendrier indicatif des décisions de politique monétaire.
+// ⚠️ À mettre à jour chaque année (sources : ecb.europa.eu / federalreserve.gov).
+// Si toutes les dates sont passées, le widget affiche un message explicite
+// au lieu de disparaître silencieusement.
 const REUNIONS = {
   bce: [
     '2026-06-11', '2026-07-23', '2026-09-10', '2026-10-29', '2026-12-17',
@@ -21,6 +25,52 @@ function joursAvant(dateStr) {
 const BCE_INFO = { nom: 'Banque Centrale Européenne', type: 'bce' }
 const FED_INFO = { nom: 'Réserve Fédérale',           type: 'fed' }
 
+// Composant défini au niveau module (pas dans le rendu du parent : un
+// composant recréé à chaque render perd état et animations).
+// Couleurs via --nuit-clair (remappée en thème sombre) pour rester lisibles.
+function Row({ sigle, info, dateStr, restant }) {
+  if (!dateStr) return null
+  const jours = joursAvant(dateStr)
+  const date = new Date(dateStr).toLocaleDateString('fr-BE', {
+    weekday: 'short', day: 'numeric', month: 'long',
+  })
+  const teinte = info.type === 'bce' ? 'var(--nuit-clair)' : 'var(--bordeaux-clair)'
+  return (
+    <div className="py-2.5 border-b border-encre/6 last:border-b-0">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-2">
+          <span
+            className="font-sans font-semibold uppercase"
+            style={{
+              background:   `color-mix(in srgb, ${teinte} 12%, transparent)`,
+              color:        teinte,
+              border:       `1px solid color-mix(in srgb, ${teinte} 20%, transparent)`,
+              borderRadius: 'var(--radius-sm, 6px)',
+              fontSize:     '12px',
+              letterSpacing:'0.06em',
+              padding:      '2px 6px',
+            }}
+          >
+            {sigle}
+          </span>
+          <span className="font-sans text-[12px] text-encre-tertiaire/60 hidden sm:inline">
+            {info.nom}
+          </span>
+        </div>
+        <span className="font-serif font-semibold text-[23px] text-encre tabular-nums leading-none">
+          J-{jours}
+        </span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="font-sans text-[14px] text-encre-secondaire tabular-nums capitalize">{date}</span>
+        <span className="font-sans text-[11px] text-encre-tertiaire/40">
+          {restant} réunion{restant > 1 ? 's' : ''} restante{restant > 1 ? 's' : ''}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export function WidgetBceFed() {
   const nextBce = prochaine(REUNIONS.bce)
   const nextFed = prochaine(REUNIONS.fed)
@@ -28,49 +78,6 @@ export function WidgetBceFed() {
   const today = new Date(); today.setHours(0, 0, 0, 0)
   const restantBce = REUNIONS.bce.filter(d => new Date(d) >= today).length
   const restantFed = REUNIONS.fed.filter(d => new Date(d) >= today).length
-
-  const Row = ({ sigle, info, dateStr }) => {
-    if (!dateStr) return null
-    const jours = joursAvant(dateStr)
-    const date = new Date(dateStr).toLocaleDateString('fr-BE', {
-      weekday: 'short', day: 'numeric', month: 'long',
-    })
-    const restant = sigle === 'BCE' ? restantBce : restantFed
-    return (
-      <div className="py-2.5 border-b border-encre/6 last:border-b-0">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-2">
-            <span
-              className="font-sans font-semibold uppercase"
-              style={{
-                background:   info.type === 'bce' ? 'rgba(14,31,58,0.12)'  : 'rgba(92,26,36,0.10)',
-                color:        info.type === 'bce' ? 'var(--nuit)'           : 'var(--bordeaux)',
-                border:       info.type === 'bce' ? '1px solid rgba(14,31,58,0.2)' : '1px solid rgba(92,26,36,0.2)',
-                borderRadius: 'var(--radius-sm, 6px)',
-                fontSize:     '12px',
-                letterSpacing:'0.06em',
-                padding:      '2px 6px',
-              }}
-            >
-              {sigle}
-            </span>
-            <span className="font-sans text-[12px] text-encre-tertiaire/60 hidden sm:inline">
-              {info.nom}
-            </span>
-          </div>
-          <span className="font-serif font-semibold text-[23px] text-encre tabular-nums leading-none">
-            J-{jours}
-          </span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="font-sans text-[14px] text-encre-secondaire tabular-nums capitalize">{date}</span>
-          <span className="font-sans text-[11px] text-encre-tertiaire/40">
-            {restant} réunion{restant > 1 ? 's' : ''} restante{restant > 1 ? 's' : ''}
-          </span>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="surface-velin liserer-signature p-5 h-full flex flex-col justify-center">
@@ -80,8 +87,16 @@ export function WidgetBceFed() {
           Décisions de politique monétaire
         </span>
       </div>
-      <Row sigle="BCE" info={BCE_INFO} dateStr={nextBce} />
-      <Row sigle="FED" info={FED_INFO} dateStr={nextFed} />
+      {!nextBce && !nextFed ? (
+        <p className="font-sans text-[13px] text-encre-tertiaire py-3">
+          Calendrier épuisé — les dates des réunions {new Date().getFullYear() + 1} restent à renseigner.
+        </p>
+      ) : (
+        <>
+          <Row sigle="BCE" info={BCE_INFO} dateStr={nextBce} restant={restantBce} />
+          <Row sigle="FED" info={FED_INFO} dateStr={nextFed} restant={restantFed} />
+        </>
+      )}
       <p className="text-[10px] font-sans text-encre-tertiaire/35 mt-2.5">
         Calendrier indicatif {new Date().getFullYear()} · dates de décision
       </p>

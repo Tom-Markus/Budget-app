@@ -17,7 +17,7 @@
  */
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
-import { Plus, Check, X } from 'lucide-react';
+import { Plus, Check } from 'lucide-react';
 
 const LABELS = {
   enveloppe: {
@@ -87,7 +87,7 @@ export default function BoutonNouvelleEnveloppe({
       setTitre('');
       setDescription('');
       setIsOpen(false);
-    } catch (err) {
+    } catch {
       // L'erreur est gérée par le parent via toast
     } finally {
       setLoading(false);

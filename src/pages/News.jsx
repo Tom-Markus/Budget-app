@@ -10,9 +10,10 @@ import { fetchNewsCategory, fetchMarkets, fetchStocks, clearNewsCache } from '..
 import { supabase } from '../lib/supabase'
 
 import { GrapheModal }      from '../components/news/GrapheModal'
-import { WidgetMeteo,      fetchWeather }    from '../components/news/WidgetMeteo'
-import { WidgetFearGreed,  fetchFearGreed }  from '../components/news/WidgetFearGreed'
-import { WidgetFx,         fetchFx }         from '../components/news/WidgetFx'
+import { WidgetMeteo }     from '../components/news/WidgetMeteo'
+import { WidgetFearGreed } from '../components/news/WidgetFearGreed'
+import { WidgetFx }        from '../components/news/WidgetFx'
+import { fetchWeather, fetchFearGreed, fetchFx } from '../lib/widgetsApi'
 import { WidgetBceFed }    from '../components/news/WidgetBceFed'
 import { WidgetPortfolio } from '../components/news/WidgetPortfolio'
 import { WidgetMarche, SepGroupe } from '../components/news/BarreMarches'
@@ -65,7 +66,10 @@ export default function News() {
   const [fx,             setFx]             = useState(undefined)
   const [stocks,         setStocks]         = useState(null)
 
-  // ── Favoris (localStorage + Supabase user_metadata pour sync multi-appareils) ─
+  // ── Favoris (localStorage + Supabase user_metadata pour sync multi-appareils)
+  // Chaque écriture est horodatée (news_favoris_updated_at) : au chargement,
+  // la version la plus RÉCENTE gagne — y compris une liste vide. Sans ça,
+  // des favoris supprimés sur un appareil ressuscitaient depuis un autre.
   const [savedArticles, setSavedArticles] = useState(() => {
     try {
       const raw = localStorage.getItem('news_favoris')
@@ -75,15 +79,20 @@ export default function News() {
 
   const savedUrls = useMemo(() => new Set(savedArticles.map(a => a.url)), [savedArticles])
 
-  // Chargement Supabase au montage — écrase le localStorage si des données remotees existent
   useEffect(() => {
     async function loadFavorisRemote() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         const remote = user?.user_metadata?.news_favoris
-        if (Array.isArray(remote) && remote.length > 0) {
+        const remoteTs = Number(user?.user_metadata?.news_favoris_updated_at) || 0
+        let localTs = 0
+        try { localTs = Number(localStorage.getItem('news_favoris_updated_at')) || 0 } catch { /* ignore */ }
+        if (Array.isArray(remote) && remoteTs > localTs) {
           setSavedArticles(remote)
-          try { localStorage.setItem('news_favoris', JSON.stringify(remote)) } catch {}
+          try {
+            localStorage.setItem('news_favoris', JSON.stringify(remote))
+            localStorage.setItem('news_favoris_updated_at', String(remoteTs))
+          } catch { /* stockage indisponible */ }
         }
       } catch { /* silencieux */ }
     }
@@ -95,10 +104,16 @@ export default function News() {
       const next = prev.some(a => a.url === article.url)
         ? prev.filter(a => a.url !== article.url)
         : [...prev, article]
+      const ts = Date.now()
       // Persistance locale (instantanée)
-      try { localStorage.setItem('news_favoris', JSON.stringify(next)) } catch {}
+      try {
+        localStorage.setItem('news_favoris', JSON.stringify(next))
+        localStorage.setItem('news_favoris_updated_at', String(ts))
+      } catch { /* stockage indisponible */ }
       // Sync Supabase (cross-device) — asynchrone et silencieuse
-      supabase.auth.updateUser({ data: { news_favoris: next } }).catch(() => {})
+      supabase.auth.updateUser({
+        data: { news_favoris: next, news_favoris_updated_at: ts },
+      }).catch(() => {})
       return next
     })
   }, [])

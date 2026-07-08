@@ -2,7 +2,7 @@
  * src/lib/newsApi.js
  * ----------------------------------------------------------------------------
  * Sources :
- *   News    : RSS via rss2json.com (sans clé, 10k req/jour)
+ *   News    : flux RSS via /api/news (proxy Vercel, parsing côté serveur)
  *   Crypto  : CoinGecko — BTC, ETH, Or via PAXG (sans clé)
  *   Indices : Yahoo Finance via /api/markets (Vercel proxy, pas de CORS)
  *   Forex   : Alpha Vantage FX_DAILY via /api/fx-eurusd (Vercel proxy, clé côté serveur)
@@ -17,14 +17,14 @@ function getCached(key) {
   try {
     const item = JSON.parse(sessionStorage.getItem(key) || 'null')
     if (item && Date.now() - item.ts < CACHE_TTL) return item.data
-  } catch {}
+  } catch { /* cache illisible → on refetch */ }
   return null
 }
 
 function setCache(key, data) {
   try {
     sessionStorage.setItem(key, JSON.stringify({ ts: Date.now(), data }))
-  } catch {}
+  } catch { /* stockage plein/indisponible → pas de cache, pas grave */ }
 }
 
 export function clearNewsCache() {

@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef, useContext } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { AuthContext } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
+import { useToast } from '../hooks/useToast'
 
 function getTodayIndex() {
   const map = { 0: 6, 1: 0, 2: 1, 3: 2, 4: 3, 5: 4, 6: 5 }
@@ -11,12 +12,12 @@ function getTodayIndex() {
 }
 
 const JOURS = [
-  { id: 'lundi',    court: 'Lun', label: 'Repos',  session: null,   bg: 'rgba(31,24,16,0.07)',    border: 'rgba(31,24,16,0.20)',   text: 'var(--encre)' },
-  { id: 'mardi',    court: 'Mar', label: 'Home',   session: 'home', bg: 'rgba(26,45,82,0.10)',    border: 'rgba(26,45,82,0.35)',   text: 'var(--nuit-clair)' },
+  { id: 'lundi',    court: 'Lun', label: 'Repos',  session: null,   bg: 'color-mix(in srgb, var(--encre) 7%, transparent)',    border: 'color-mix(in srgb, var(--encre) 20%, transparent)',   text: 'var(--encre)' },
+  { id: 'mardi',    court: 'Mar', label: 'Home',   session: 'home', bg: 'color-mix(in srgb, var(--nuit-clair) 10%, transparent)',    border: 'color-mix(in srgb, var(--nuit-clair) 35%, transparent)',   text: 'var(--nuit-clair)' },
   { id: 'mercredi', court: 'Mer', label: 'Push',   session: 'push', bg: 'rgba(184,149,74,0.12)',  border: 'rgba(184,149,74,0.45)', text: 'var(--or)' },
-  { id: 'jeudi',    court: 'Jeu', label: 'Home',   session: 'home', bg: 'rgba(26,45,82,0.10)',    border: 'rgba(26,45,82,0.35)',   text: 'var(--nuit-clair)' },
+  { id: 'jeudi',    court: 'Jeu', label: 'Home',   session: 'home', bg: 'color-mix(in srgb, var(--nuit-clair) 10%, transparent)',    border: 'color-mix(in srgb, var(--nuit-clair) 35%, transparent)',   text: 'var(--nuit-clair)' },
   { id: 'vendredi', court: 'Ven', label: 'Legs',   session: 'legs', bg: 'rgba(14,163,113,0.10)',  border: 'rgba(14,163,113,0.45)', text: 'var(--vert)' },
-  { id: 'samedi',   court: 'Sam', label: 'Marche', session: null,   bg: 'rgba(31,24,16,0.05)',    border: 'rgba(31,24,16,0.15)',   text: 'var(--encre-secondaire)' },
+  { id: 'samedi',   court: 'Sam', label: 'Marche', session: null,   bg: 'color-mix(in srgb, var(--encre) 5%, transparent)',    border: 'color-mix(in srgb, var(--encre) 15%, transparent)',   text: 'var(--encre-secondaire)' },
   { id: 'dimanche', court: 'Dim', label: 'Pull',   session: 'pull', bg: 'rgba(122,38,50,0.10)',   border: 'rgba(122,38,50,0.40)',  text: 'var(--bordeaux-clair)' },
 ]
 
@@ -218,9 +219,13 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
   const triggerRef = useRef(null)
   const [pos, setPos] = useState({ top: 0, left: 0, width: 0 })
 
-  useEffect(() => {
+  // Aligne le mois affiché sur la valeur sélectionnée — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevValue, setPrevValue] = useState(value)
+  if (prevValue !== value) {
+    setPrevValue(value)
     if (value) setView(new Date(value + 'T00:00:00'))
-  }, [value])
+  }
 
   useEffect(() => {
     if (!open) return
@@ -267,7 +272,7 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
         type="button"
         onClick={handleOpen}
         className="w-full flex items-center justify-between gap-2 cursor-pointer font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-        style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: display ? 'var(--encre)' : 'var(--encre-tertiaire)' }}
+        style={{ background: 'color-mix(in srgb, var(--encre) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--encre) 10%, transparent)', color: display ? 'var(--encre)' : 'var(--encre-tertiaire)' }}
       >
         <span>{display || placeholder}</span>
         <Calendar size={13} strokeWidth={1.75} style={{ color: 'var(--encre-tertiaire)', flexShrink: 0 }} />
@@ -340,7 +345,7 @@ function DatePickerSport({ value, onChange, placeholder = 'JJ / MM / AAAA' }) {
                         <button key={i} type="button" onClick={() => { d.toLocaleDateString && onChange(d.toLocaleDateString('fr-CA')); setOpen(false) }}
                           className="h-10 w-full rounded-md text-xs font-sans transition-colors duration-100 flex items-center justify-center"
                           style={{
-                            color: other ? 'rgba(31,24,16,0.25)' : isSel ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
+                            color: other ? 'color-mix(in srgb, var(--encre) 25%, transparent)' : isSel ? 'var(--velin-clair)' : 'var(--encre-secondaire)',
                             background: isSel ? 'var(--bordeaux)' : isToday ? 'rgba(184,149,74,0.20)' : 'transparent',
                             fontWeight: isSel || isToday ? '600' : 'normal',
                           }}>
@@ -364,7 +369,7 @@ function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
   const date = new Intl.DateTimeFormat('fr-BE', { day: '2-digit', month: '2-digit', year: '2-digit' })
     .format(new Date(perf.date + 'T00:00:00'))
   return (
-    <div className="relative group px-3 py-2.5 rounded-xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `2px solid ${couleur}` }}>
+    <div className="relative group px-3 py-2.5 rounded-xl" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)', borderLeft: `2px solid ${couleur}` }}>
       <div className="flex items-baseline justify-between gap-1 pr-4">
         <span className="font-sans font-bold text-sm tabular-nums" style={{ color: couleur }}>
           {perf.poids} kg
@@ -379,7 +384,7 @@ function CartePerfHisto({ perf, couleur, onDelete, isDeleting }) {
       <button
         onClick={() => onDelete(perf.id)}
         disabled={isDeleting}
-        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-30 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 hover:bg-[rgba(31,24,16,0.12)] hover:!translate-y-0"
+        className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full flex items-center justify-center opacity-30 hover:opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-150 hover:bg-encre/[0.12] hover:!translate-y-0"
         style={{ color: 'var(--encre-tertiaire)' }}
         aria-label="Supprimer"
       >
@@ -410,13 +415,15 @@ function PoidsChart({ data, couleur, type, onClose }) {
     return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`
   }
 
-  const evolution = n >= 2 ? sorted[n - 1].poids - sorted[0].poids : 0
+  // Arrondi à 1 décimale : les soustractions de flottants produisent des
+  // artefacts (« +2.5000000000000004 kg »)
+  const evolution = n >= 2 ? Math.round((sorted[n - 1].poids - sorted[0].poids) * 10) / 10 : 0
   const evolutionLabel = evolution > 0 ? `+${evolution} kg` : evolution < 0 ? `${evolution} kg` : '='
 
-  let pts = [], linePath = '', fillPath = '', yLabels = [], minW = 0, maxW = 0
+  let pts = [], linePath = '', fillPath = '', yLabels = []
   if (n >= 2) {
     const weights = sorted.map(d => d.poids)
-    minW = Math.min(...weights); maxW = Math.max(...weights)
+    const minW = Math.min(...weights), maxW = Math.max(...weights)
     const range = maxW - minW
     const getY = (w) => range === 0 ? PAD.t + innerH / 2 : PAD.t + (1 - (w - minW) / range) * innerH
     pts = sorted.map((d, i) => ({ x: PAD.l + (i / (n - 1)) * innerW, y: getY(d.poids), ...d }))
@@ -493,7 +500,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
               </p>
               {n >= 2 && (
                 <div className="flex items-center gap-3 mt-2" style={{ height: '2rem' }}>
-                  <span className="font-serif italic text-2xl tabular-nums" style={{ color: hp ? couleur : 'rgba(31,24,16,0.18)' }}>
+                  <span className="font-serif italic text-2xl tabular-nums" style={{ color: hp ? couleur : 'color-mix(in srgb, var(--encre) 18%, transparent)' }}>
                     {hp ? `${hp.poids} kg` : '— kg'}
                   </span>
                   {hp && (
@@ -516,14 +523,14 @@ function PoidsChart({ data, couleur, type, onClose }) {
               )}
               <button onClick={onClose}
                 className="w-8 h-8 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-                style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+                style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>
                 <X size={13} strokeWidth={2} />
               </button>
             </div>
           </div>
 
           {/* Contenu */}
-          {n === 0 && <p className="font-sans text-sm text-center py-8" style={{ color: 'rgba(31,24,16,0.25)' }}>Aucune donnée enregistrée</p>}
+          {n === 0 && <p className="font-sans text-sm text-center py-8" style={{ color: 'color-mix(in srgb, var(--encre) 25%, transparent)' }}>Aucune donnée enregistrée</p>}
           {n === 1 && (
             <div className="text-center py-8">
               <p className="font-serif italic text-3xl" style={{ color: couleur }}>{sorted[0].poids} kg</p>
@@ -545,13 +552,13 @@ function PoidsChart({ data, couleur, type, onClose }) {
               {/* Lignes de grille horizontales */}
               {[0, 0.5, 1].map((t, i) => (
                 <line key={i} x1={PAD.l} y1={PAD.t + t * innerH} x2={PAD.l + innerW} y2={PAD.t + t * innerH}
-                  stroke="rgba(31,24,16,0.07)" strokeWidth="1" />
+                  stroke="color-mix(in srgb, var(--encre) 7%, transparent)" strokeWidth="1" />
               ))}
 
               {/* Axe Y — poids permanents à gauche */}
               {yLabels.map((l, i) => (
                 <text key={i} x={PAD.l - 7} y={l.y + 3.5} textAnchor="end"
-                  style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: 'rgba(31,24,16,0.38)', fontWeight: '500' }}>
+                  style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: 'color-mix(in srgb, var(--encre) 38%, transparent)', fontWeight: '500' }}>
                   {l.val} kg
                 </text>
               ))}
@@ -581,11 +588,11 @@ function PoidsChart({ data, couleur, type, onClose }) {
 
               {/* Dates X — toujours affichées */}
               <text x={pts[0].x} y={H - 10} textAnchor="start"
-                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
+                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === 0 ? couleur : 'color-mix(in srgb, var(--encre) 32%, transparent)', fontWeight: hp && hovered === 0 ? '600' : 'normal' }}>
                 {fmt(pts[0].date)}
               </text>
               <text x={pts[n - 1].x} y={H - 10} textAnchor="end"
-                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? couleur : 'rgba(31,24,16,0.32)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
+                style={{ fontSize: '13px', fontFamily: 'sans-serif', fill: hp && hovered === n - 1 ? couleur : 'color-mix(in srgb, var(--encre) 32%, transparent)', fontWeight: hp && hovered === n - 1 ? '600' : 'normal' }}>
                 {fmt(pts[n - 1].date)}
               </text>
 
@@ -605,6 +612,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
 }
 
 function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave, isPPL, user }) {
+  const { showToast } = useToast()
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
   const [editing, setEditing] = useState(false)
@@ -613,22 +621,27 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
   const [perfForm, setPerfForm] = useState({ poids: '', reps: '', series: '', date: '' })
   const [savingPerf, setSavingPerf] = useState(false)
   const [perfHistory, setPerfHistory] = useState([])
-  const [loadingHistory, setLoadingHistory] = useState(false)
+  // true dès le départ si l'historique va être chargé (modal remonté par
+  // exercice via key) — évite un setState synchrone dans l'effet de fetch
+  const [loadingHistory, setLoadingHistory] = useState(!!(isPPL && user))
   const [deletingId, setDeletingId] = useState(null)
   const [chartOpen, setChartOpen] = useState(null)
 
-  useEffect(() => {
+  // Réinitialise le modal quand on change d'exercice — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevNomCle, setPrevNomCle] = useState(nomCle)
+  if (prevNomCle !== nomCle) {
+    setPrevNomCle(nomCle)
     setDraft({ nom: ex.nom, notes: ex.notes || '', description: ex.description || '', series: ex.series || '' })
     setEditing(false)
     setPerfType(null)
     setPerfForm({ poids: '', reps: '', series: '', date: '' })
     setChartOpen(null)
-  }, [nomCle]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   useEffect(() => {
     if (!isPPL || !user) return
     let cancelled = false
-    setLoadingHistory(true)
     supabase
       .from('sport_performances')
       .select('id, type, poids, reps, series, date')
@@ -639,7 +652,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
         if (!cancelled) { setPerfHistory(data || []); setLoadingHistory(false) }
       })
     return () => { cancelled = true }
-  }, [nomCle, isPPL, user]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [nomCle, isPPL, user])
 
   const perfValide = !!perfType &&
     Number(perfForm.poids) > 0 &&
@@ -651,6 +664,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     setDeletingId(id)
     const { error } = await supabase.from('sport_performances').delete().eq('id', id).eq('user_id', user.id)
     if (!error) setPerfHistory(prev => prev.filter(h => h.id !== id))
+    else showToast({ type: 'erreur', message: 'Suppression impossible : ' + error.message, duration: 3000 })
     setDeletingId(null)
   }
 
@@ -674,6 +688,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       setPerfHistory(prev => [data, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
       setPerfType(null)
       setPerfForm({ poids: '', reps: '', series: '', date: '' })
+    } else if (error) {
+      showToast({ type: 'erreur', message: 'Enregistrement impossible : ' + error.message, duration: 3000 })
     }
     setSavingPerf(false)
   }
@@ -720,7 +736,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium transition-all hover:opacity-70 active:scale-[0.98]"
         style={{
           background: 'transparent',
-          border: '1.5px dashed rgba(31,24,16,0.18)',
+          border: '1.5px dashed color-mix(in srgb, var(--encre) 18%, transparent)',
           color: 'var(--encre-tertiaire)',
           cursor: isUploading ? 'default' : 'pointer',
         }}
@@ -749,12 +765,12 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
       </p>
 
       {perfType === null ? (
-        <div className="rounded-2xl p-3.5" style={{ background: 'rgba(31,24,16,0.04)' }}>
+        <div className="rounded-2xl p-3.5" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)' }}>
           <p className="font-sans font-medium mb-2.5"
             style={{ fontSize: '0.625rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--encre-tertiaire)' }}>
             Type
           </p>
-          <div className="flex p-1 rounded-2xl" style={{ background: 'rgba(31,24,16,0.07)', gap: '3px' }}>
+          <div className="flex p-1 rounded-2xl" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', gap: '3px' }}>
             {[['pr', 'PR'], ['serie', 'Série']].map(([id, label]) => (
               <motion.button
                 key={id}
@@ -778,7 +794,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   }}
                   transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                   className="absolute inset-0.5 rounded-[10px] pointer-events-none"
-                  style={{ background: 'rgba(255,255,255,0.58)' }}
+                  style={{ background: 'color-mix(in srgb, var(--velin-clair) 58%, transparent)' }}
                 />
                 <span className="relative z-10">{label}</span>
               </motion.button>
@@ -786,7 +802,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           </div>
         </div>
       ) : (
-        <div className="rounded-2xl p-3.5 space-y-3" style={{ background: 'rgba(31,24,16,0.04)' }}>
+        <div className="rounded-2xl p-3.5 space-y-3" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)' }}>
           <div className="flex items-center justify-between">
             <span className="font-sans text-xs font-bold" style={{ color: couleur }}>
               {perfType === 'pr' ? 'PR' : 'Série'}
@@ -794,7 +810,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             <button
               onClick={() => { setPerfType(null); setPerfForm({ poids: '', reps: '', series: '', date: '' }) }}
               className="w-6 h-6 rounded-full flex items-center justify-center transition-opacity hover:opacity-70"
-              style={{ background: 'rgba(31,24,16,0.08)', color: 'var(--encre-tertiaire)' }}>
+              style={{ background: 'color-mix(in srgb, var(--encre) 8%, transparent)', color: 'var(--encre-tertiaire)' }}>
               <X size={11} strokeWidth={2} />
             </button>
           </div>
@@ -807,7 +823,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <input type="number" step="0.5" min="0" value={perfForm.poids}
                 onChange={e => setPerfForm(f => ({ ...f, poids: e.target.value }))} placeholder="ex: 80"
                 className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+                style={{ background: 'color-mix(in srgb, var(--encre) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--encre) 10%, transparent)', color: 'var(--encre)' }} />
             </div>
             <div>
               <p className="font-sans font-medium mb-1"
@@ -817,7 +833,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <input type="number" min="1" value={perfForm.reps}
                 onChange={e => setPerfForm(f => ({ ...f, reps: e.target.value }))} placeholder="ex: 8"
                 className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+                style={{ background: 'color-mix(in srgb, var(--encre) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--encre) 10%, transparent)', color: 'var(--encre)' }} />
             </div>
           </div>
           {perfType === 'serie' && (
@@ -829,7 +845,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               <input type="number" min="1" value={perfForm.series}
                 onChange={e => setPerfForm(f => ({ ...f, series: e.target.value }))} placeholder="ex: 4"
                 className="w-full font-sans text-sm rounded-xl px-3 h-9 focus:outline-none transition-colors duration-200"
-                style={{ background: 'rgba(31,24,16,0.06)', border: '1px solid rgba(31,24,16,0.10)', color: 'var(--encre)' }} />
+                style={{ background: 'color-mix(in srgb, var(--encre) 6%, transparent)', border: '1px solid color-mix(in srgb, var(--encre) 10%, transparent)', color: 'var(--encre)' }} />
             </div>
           )}
           <div>
@@ -842,7 +858,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
           <button onClick={handleSavePerf} disabled={!perfValide || savingPerf}
             className="w-full h-9 rounded-xl text-xs font-semibold font-sans transition-all duration-150 active:scale-[0.98]"
             style={{
-              background: perfValide ? couleur : 'rgba(31,24,16,0.06)',
+              background: perfValide ? couleur : 'color-mix(in srgb, var(--encre) 6%, transparent)',
               color: perfValide ? '#fff' : 'var(--encre-tertiaire)',
               cursor: perfValide && !savingPerf ? 'pointer' : 'default',
             }}>
@@ -874,7 +890,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                     onClick={() => setChartOpen(prev => prev === 'pr' ? null : 'pr')}
                     className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
                     style={{
-                      background: chartOpen === 'pr' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                      background: chartOpen === 'pr' ? `${couleur}22` : 'color-mix(in srgb, var(--encre) 7%, transparent)',
                       color: chartOpen === 'pr' ? couleur : 'var(--encre-tertiaire)',
                     }}
                     title="Voir l'évolution"
@@ -883,7 +899,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   </button>
                 </div>
                 {perfHistory.filter(h => h.type === 'pr').length === 0
-                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'color-mix(in srgb, var(--encre) 20%, transparent)' }}>—</p>
                   : perfHistory.filter(h => h.type === 'pr').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
                 }
               </div>
@@ -897,7 +913,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                     onClick={() => setChartOpen(prev => prev === 'serie' ? null : 'serie')}
                     className="w-6 h-6 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-110 active:scale-95"
                     style={{
-                      background: chartOpen === 'serie' ? `${couleur}22` : 'rgba(31,24,16,0.07)',
+                      background: chartOpen === 'serie' ? `${couleur}22` : 'color-mix(in srgb, var(--encre) 7%, transparent)',
                       color: chartOpen === 'serie' ? couleur : 'var(--encre-tertiaire)',
                     }}
                     title="Voir l'évolution"
@@ -906,7 +922,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   </button>
                 </div>
                 {perfHistory.filter(h => h.type === 'serie').length === 0
-                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'rgba(31,24,16,0.20)' }}>—</p>
+                  ? <p className="font-sans text-xs text-center py-2" style={{ color: 'color-mix(in srgb, var(--encre) 20%, transparent)' }}>—</p>
                   : perfHistory.filter(h => h.type === 'serie').map(h => <CartePerfHisto key={h.id} perf={h} couleur={couleur} onDelete={handleDeletePerf} isDeleting={deletingId === h.id} />)
                 }
               </div>
@@ -998,15 +1014,15 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 </div>
                 {(ex.montagne || ex.optionnel) && (
                   <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
-                    {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
-                    {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
+                    {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
+                    {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
                   </div>
                 )}
-                <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+                <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--encre) 10%, transparent) 30%, color-mix(in srgb, var(--encre) 10%, transparent) 70%, transparent)' }} />
                 {ex.notes && (
                   <div className="mb-4">
                     <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
-                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
                   </div>
@@ -1022,7 +1038,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             </div>
 
             {/* Séparateur vertical */}
-            <div className="hidden sm:block w-px flex-shrink-0 self-stretch" style={{ background: 'linear-gradient(180deg, transparent, rgba(31,24,16,0.10) 15%, rgba(31,24,16,0.10) 85%, transparent)' }} />
+            <div className="hidden sm:block w-px flex-shrink-0 self-stretch" style={{ background: 'linear-gradient(180deg, transparent, color-mix(in srgb, var(--encre) 10%, transparent) 15%, color-mix(in srgb, var(--encre) 10%, transparent) 85%, transparent)' }} />
 
             {/* Colonne droite — performances + photo */}
             <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto px-4 pt-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
@@ -1069,14 +1085,14 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
               </div>
               {(ex.montagne || ex.optionnel) && (
                 <div className="flex gap-1.5 mt-2 mb-1 flex-wrap">
-                  {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
-                  {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
+                  {ex.montagne && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>🏔️ montagne</span>}
+                  {ex.optionnel && <span className="font-sans text-[10px] font-medium px-2 py-0.5 rounded-full" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>optionnel</span>}
                 </div>
               )}
-              <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, rgba(31,24,16,0.10) 30%, rgba(31,24,16,0.10) 70%, transparent)' }} />
+              <div className="h-px w-full mt-3 mb-4" style={{ background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--encre) 10%, transparent) 30%, color-mix(in srgb, var(--encre) 10%, transparent) 70%, transparent)' }} />
               <div className="mb-4">
                 {editing ? (
-                  <div className="px-4 py-3 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                  <div className="px-4 py-3 rounded-2xl" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)', borderLeft: `3px solid ${couleur}` }}>
                     <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
                     <textarea value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
                       rows={2} placeholder="Ajouter un conseil…" className="font-sans text-sm leading-relaxed"
@@ -1085,7 +1101,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 ) : ex.notes ? (
                   <div className="mb-4">
                     <p className="font-sans text-xs uppercase tracking-wide font-bold mb-2" style={{ color: 'var(--encre-secondaire)' }}>Muscles</p>
-                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'rgba(31,24,16,0.04)', borderLeft: `3px solid ${couleur}` }}>
+                    <div className="px-4 py-3.5 rounded-2xl" style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)', borderLeft: `3px solid ${couleur}` }}>
                       <p className="font-sans text-sm leading-relaxed" style={{ color: 'var(--encre-secondaire)' }}>{ex.notes}</p>
                     </div>
                   </div>
@@ -1096,7 +1112,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                 {editing ? (
                   <textarea value={draft.description} onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
                     rows={6} placeholder="Décris l'exécution…" className="font-sans text-sm leading-relaxed w-full px-3 py-2.5 rounded-xl"
-                    style={{ ...inputBase, color: 'var(--encre-secondaire)', background: 'rgba(31,24,16,0.04)', border: '1px solid rgba(31,24,16,0.10)' }} />
+                    style={{ ...inputBase, color: 'var(--encre-secondaire)', background: 'color-mix(in srgb, var(--encre) 4%, transparent)', border: '1px solid color-mix(in srgb, var(--encre) 10%, transparent)' }} />
                 ) : ex.description ? (
                   <p className="font-sans text-[0.875rem] leading-[1.65]" style={{ color: 'var(--encre-secondaire)' }}>{ex.description}</p>
                 ) : (
@@ -1139,14 +1155,14 @@ function BoutonCoche({ isChecked, couleur, onCheck, label }) {
       className="flex-shrink-0 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all duration-200 active:scale-90"
       style={{
         borderColor: couleur,
-        background: isChecked ? couleur : 'rgba(31,24,16,0.07)',
+        background: isChecked ? couleur : 'color-mix(in srgb, var(--encre) 7%, transparent)',
       }}
       aria-label={label}
     >
       <Check
         size={13}
         strokeWidth={3}
-        color={isChecked ? '#fff' : 'rgba(31,24,16,0.25)'}
+        color={isChecked ? '#fff' : 'color-mix(in srgb, var(--encre) 25%, transparent)'}
       />
     </button>
   )
@@ -1155,7 +1171,7 @@ function BoutonCoche({ isChecked, couleur, onCheck, label }) {
 function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
   if (ex.warmup) {
     return (
-      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 bg-[rgba(31,24,16,0.03)] hover:bg-[rgba(31,24,16,0.06)]"
+      <div className="flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 bg-encre/[0.03] hover:bg-encre/[0.06]"
         style={{ opacity: isChecked ? 0.5 : 1 }}>
         <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label="Cocher échauffement" />
         <span className="text-base leading-none">🔥</span>
@@ -1170,7 +1186,7 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
   }
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isChecked ? 'bg-[rgba(31,24,16,0.02)]' : 'bg-[rgba(31,24,16,0.035)] hover:bg-[rgba(31,24,16,0.07)]'}`}>
+    <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isChecked ? 'bg-encre/[0.02]' : 'bg-encre/[0.035] hover:bg-encre/[0.07]'}`}>
       <BoutonCoche isChecked={isChecked} couleur={couleur} onCheck={onCheck} label={`Cocher ${ex.nom}`} />
 
       <div className="flex-1 min-w-0 transition-opacity duration-300" style={{ opacity: isChecked ? 0.45 : 1 }}>
@@ -1182,7 +1198,7 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
           {ex.montagne && <span className="text-xs leading-none">🏔️</span>}
           {ex.optionnel && (
             <span className="font-sans text-[10px] px-1.5 py-0.5 rounded-md"
-              style={{ background: 'rgba(31,24,16,0.07)', color: 'var(--encre-tertiaire)' }}>
+              style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', color: 'var(--encre-tertiaire)' }}>
               optionnel
             </span>
           )}
@@ -1201,7 +1217,7 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
         </span>
         <button
           onClick={() => onInfo(ex)}
-          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 active:opacity-60 bg-[rgba(31,24,16,0.09)] hover:bg-[rgba(31,24,16,0.18)] hover:scale-110"
+          className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-150 active:opacity-60 bg-encre/[0.09] hover:bg-encre/[0.18] hover:scale-110"
           style={{ color: 'var(--encre-tertiaire)' }}
           aria-label={`Infos ${ex.nom}`}
         >
@@ -1213,7 +1229,8 @@ function CarteExercice({ ex, couleur, onInfo, isChecked, onCheck }) {
 }
 
 export default function Sport() {
-  const { user } = useContext(AuthContext)
+  const { user } = useAuth()
+  const { showToast } = useToast()
   const [jourActifId, setJourActifId] = useState(JOURS[getTodayIndex()].id)
   const [modal, setModal] = useState(null)
   const [customImages, setCustomImages] = useState({})
@@ -1249,16 +1266,12 @@ export default function Sport() {
     const next = { ...customExos, [nomCle]: merged }
     setCustomExos(next)
     localStorage.setItem('sport_custom_exos_cache', JSON.stringify(next))
-    await supabase.from('sport_custom_exos')
+    const { error } = await supabase.from('sport_custom_exos')
       .upsert({ user_id: user.id, nom: nomCle, changes: merged }, { onConflict: 'user_id,nom' })
+    if (error) {
+      showToast({ type: 'erreur', message: 'Sauvegarde impossible : ' + error.message, duration: 3000 })
+    }
   }
-
-  useEffect(() => {
-    if (!user) return
-    loadCustomExos()
-    loadImages()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user])
 
   async function loadCustomExos() {
     const { data, error } = await supabase
@@ -1316,8 +1329,30 @@ export default function Sport() {
     setCustomImages(map)
   }
 
+  // Effet déclaré APRÈS loadCustomExos/loadImages (règle react-hooks :
+  // pas d'accès à une fonction avant sa déclaration dans un hook).
+  // Fetch au montage : les setState ont lieu après les await (asynchrones) —
+  // faux positif de set-state-in-effect.
+  useEffect(() => {
+    if (!user) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    loadCustomExos()
+    loadImages()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  const TAILLE_MAX_IMAGE = 10 * 1024 * 1024 // 10 Mo
+
   async function handleUpload(exerciseName, file) {
     if (!user) return
+    if (file.size > TAILLE_MAX_IMAGE) {
+      showToast({ type: 'erreur', message: 'Image trop lourde (max 10 Mo).', duration: 3000 })
+      return
+    }
+    if (!file.type.startsWith('image/')) {
+      showToast({ type: 'erreur', message: 'Le fichier doit être une image.', duration: 3000 })
+      return
+    }
     setUploading(exerciseName)
 
     const ext = file.name.split('.').pop().toLowerCase()
@@ -1345,6 +1380,8 @@ export default function Sport() {
         ...prev,
         [exerciseName]: `${publicUrl}?t=${Date.now()}`,
       }))
+    } else {
+      showToast({ type: 'erreur', message: "Import de l'image impossible : " + error.message, duration: 3000 })
     }
 
     setUploading(null)
@@ -1381,7 +1418,7 @@ export default function Sport() {
           <Calendar size={11} style={{ color: 'var(--encre-tertiaire)' }} strokeWidth={2.5} />
           <p className="t-label">Cette semaine</p>
         </div>
-        <div className="flex rounded-2xl p-1" style={{ background: 'rgba(31,24,16,0.07)', gap: '2px' }}>
+        <div className="flex rounded-2xl p-1" style={{ background: 'color-mix(in srgb, var(--encre) 7%, transparent)', gap: '2px' }}>
           {JOURS.map((jour) => {
             const isActive = jour.id === jourActifId
             const isToday = jour.id === JOURS[getTodayIndex()].id
@@ -1397,7 +1434,7 @@ export default function Sport() {
                   <motion.div
                     layoutId="week-active-card"
                     className="absolute inset-0 rounded-xl"
-                    style={{ background: 'var(--velin)', boxShadow: '0 1px 6px rgba(31,24,16,0.12)' }}
+                    style={{ background: 'var(--velin)', boxShadow: '0 1px 6px color-mix(in srgb, var(--encre) 12%, transparent)' }}
                     transition={{ type: 'spring', bounce: 0.18, duration: 0.36 }}
                   />
                 )}
@@ -1420,7 +1457,7 @@ export default function Sport() {
                 <div className="relative z-10 h-1.5 flex items-center">
                   {isToday && (
                     <div className="w-1 h-1 rounded-full"
-                      style={{ background: isActive ? jour.border : 'rgba(31,24,16,0.22)' }} />
+                      style={{ background: isActive ? jour.border : 'color-mix(in srgb, var(--encre) 22%, transparent)' }} />
                   )}
                 </div>
               </button>
@@ -1433,7 +1470,7 @@ export default function Sport() {
       {session ? (
         <section className="surface-velin liserer-signature overflow-hidden">
           <div className="px-5 pt-5 pb-4 md:px-6 md:pt-6"
-            style={{ borderBottom: '1px solid rgba(31,24,16,0.07)' }}>
+            style={{ borderBottom: '1px solid color-mix(in srgb, var(--encre) 7%, transparent)' }}>
             <div className="flex items-start justify-between gap-4">
               <div className="flex items-center gap-3">
                 <span className="text-3xl leading-none">{session.emoji}</span>
@@ -1467,7 +1504,7 @@ export default function Sport() {
             <div className="px-5 md:px-6">
               <p className="font-sans text-xs px-4 py-3 rounded-xl"
                 style={{
-                  background: 'rgba(31,24,16,0.03)',
+                  background: 'color-mix(in srgb, var(--encre) 3%, transparent)',
                   borderLeft: `2px solid ${session.couleur}`,
                   color: 'var(--encre-tertiaire)',
                 }}>
@@ -1495,7 +1532,7 @@ export default function Sport() {
                   </span>
                 </div>
                 <div className="rounded-full" style={{ boxShadow: fini ? `0 0 10px 3px ${session.couleur}66` : 'none', transition: 'box-shadow 0.6s ease' }}>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(31,24,16,0.08)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'color-mix(in srgb, var(--encre) 8%, transparent)' }}>
                     <motion.div
                       className="h-full rounded-full"
                       style={{ background: session.couleur }}
@@ -1517,9 +1554,9 @@ export default function Sport() {
                 <button
                   onClick={() => resetDay(jourActifId)}
                   disabled={done === 0}
-                  className={`w-full py-2 rounded-xl font-sans text-xs transition-all duration-200 active:scale-[0.98] bg-[rgba(31,24,16,0.04)] ${done > 0 ? 'hover:bg-[rgba(31,24,16,0.09)]' : ''}`}
+                  className={`w-full py-2 rounded-xl font-sans text-xs transition-all duration-200 active:scale-[0.98] bg-encre/[0.04] ${done > 0 ? 'hover:bg-encre/[0.09]' : ''}`}
                   style={{
-                    color: done > 0 ? 'var(--encre-tertiaire)' : 'rgba(31,24,16,0.18)',
+                    color: done > 0 ? 'var(--encre-tertiaire)' : 'color-mix(in srgb, var(--encre) 18%, transparent)',
                     cursor: done > 0 ? 'pointer' : 'default',
                   }}
                 >
@@ -1555,7 +1592,7 @@ export default function Sport() {
           <p className="t-label mb-3">Règles d'or</p>
           <div className="space-y-2.5">
             {CONSEILS.map((c, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-[rgba(31,24,16,0.03)] hover:bg-[rgba(31,24,16,0.07)] transition-colors duration-200">
+              <div key={i} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-encre/[0.03] hover:bg-encre/[0.07] transition-colors duration-200">
                 <span className="text-xl leading-none flex-shrink-0 mt-0.5">{c.emoji}</span>
                 <div>
                   <p className="font-sans font-semibold text-sm" style={{ color: 'var(--encre)' }}>

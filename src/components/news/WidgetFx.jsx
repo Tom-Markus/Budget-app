@@ -8,15 +8,6 @@ const FX_PAIRS = [
   { key: 'CHF', label: 'CHF', flag: '🇨🇭' },
 ]
 
-export async function fetchFx() {
-  try {
-    const res = await fetch('/api/fx')
-    if (!res.ok) return null
-    const { rates, date } = await res.json()
-    return { rates, date }
-  } catch { return null }
-}
-
 export function WidgetFx({ fx }) {
   const [activeField, setActiveField] = useState('EUR')
   const [activeValue, setActiveValue] = useState('')

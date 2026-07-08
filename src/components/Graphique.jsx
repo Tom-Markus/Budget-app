@@ -24,7 +24,6 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
 import { X, Pencil, Check } from 'lucide-react';
-import { useTheme } from '../hooks/useTheme';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -96,9 +95,8 @@ export default function Graphique({
   dernierMvtSigne = 'positif',
   onEditNote,
 }) {
-  const { theme } = useTheme();
-  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(14,31,58,0.08)';
-  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(14,31,58,0.20)';
+  const chartGrid = 'var(--chart-grid)';
+  const chartAxis = 'var(--chart-axis)';
 
   const [periode, setPeriode] = useState('30J');
   const [editingId, setEditingId] = useState(null);
@@ -115,9 +113,13 @@ export default function Graphique({
     onEditNote?.(m.id, editValue);
   }
 
-  useEffect(() => {
+  // Ferme l'édition de note à l'ouverture/fermeture du modal — ajustement
+  // d'état pendant le rendu plutôt que dans un effet.
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  if (prevOpen !== isOpen) {
+    setPrevOpen(isOpen);
     setEditingId(null);
-  }, [isOpen]);
+  }
 
   // preparerCourbe étend l'axe à toute la fenêtre de période choisie et
   // agrège par jour pour 3M / TOUT (cf. src/lib/calculs.js).
@@ -287,7 +289,7 @@ export default function Graphique({
             </div>
 
             {/* Historique des 3 derniers mouvements */}
-            <div className="border-t border-[rgba(31,24,16,0.08)] pt-4">
+            <div className="border-t border-encre/[0.08] pt-4">
               <p className="t-label mb-3">Derniers mouvements</p>
               <div
                 className="max-h-40 overflow-y-auto flex flex-col gap-2 pr-2"
@@ -299,7 +301,7 @@ export default function Graphique({
                   mouvements.map((m, i) => (
                     <div
                       key={m.id ?? i}
-                      className="flex items-center gap-3 py-1.5 border-b border-[rgba(31,24,16,0.06)] last:border-0"
+                      className="flex items-center gap-3 py-1.5 border-b border-encre/[0.06] last:border-0"
                     >
                       <span className="t-meta tabular-nums w-24 shrink-0">
                         {formatDate(m.date)}

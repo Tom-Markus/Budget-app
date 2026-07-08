@@ -76,6 +76,7 @@ export default function EnveloppeCreance({
   onUndo,
   onEdit,
   onGraphique,
+  onTitreChange,
   actionInputActive = null,
   onValidateInput,
   onCancelInput,
@@ -99,7 +100,7 @@ export default function EnveloppeCreance({
       "
       style={{
         boxShadow:
-          '0 0 0 1px rgba(92, 26, 36, 0.3), 0 2px 6px rgba(31, 24, 16, 0.06)',
+          '0 0 0 1px rgba(92, 26, 36, 0.3), 0 2px 6px color-mix(in srgb, var(--encre) 6%, transparent)',
       }}
       aria-label={`Créance — ${nom}`}
     >
@@ -131,6 +132,7 @@ export default function EnveloppeCreance({
               <input
                 type="text"
                 defaultValue={nom}
+                onChange={(e) => onTitreChange?.(e.target.value)}
                 className="
                   font-serif font-medium text-xl
                   flex-1 bg-transparent
@@ -203,7 +205,7 @@ export default function EnveloppeCreance({
                 "
                 style={{
                   background:
-                    'linear-gradient(180deg, rgba(232,225,210,0.6) 0%, rgba(250,246,238,0.8) 50%, rgba(232,225,210,0.6) 100%)',
+                    'linear-gradient(180deg, color-mix(in srgb, var(--velin-fonce) 60%, transparent) 0%, color-mix(in srgb, var(--velin-clair) 80%, transparent) 50%, color-mix(in srgb, var(--velin-fonce) 60%, transparent) 100%)',
                 }}
               >
                 {/* Rouleaux haut et bas (effet parchemin) */}

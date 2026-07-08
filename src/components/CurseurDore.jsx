@@ -49,7 +49,9 @@ export default function CurseurDore() {
       document.removeEventListener('mouseleave', onLeave);
       document.removeEventListener('mouseenter', onEnter);
     };
-  }, []);
+    // Les MotionValues sont stables entre rendus : les inclure ne relance
+    // jamais l'effet mais satisfait la règle exhaustive-deps.
+  }, [mx, my, ringOpacityMv, ringSizeMv]);
 
   if (typeof window !== 'undefined' && !window.matchMedia('(pointer: fine)').matches) {
     return null;

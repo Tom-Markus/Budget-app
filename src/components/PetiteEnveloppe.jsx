@@ -31,7 +31,7 @@
  * Props complètes — voir la signature de la fonction.
  * ----------------------------------------------------------------------------
  */
-import { memo, useState, useEffect, useCallback } from 'react';
+import { memo, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -144,7 +144,8 @@ function BarreObjectif({ courant, cible }) {
 }
 
 function PetiteEnveloppe({
-  id,
+  // NB : la prop `id` existe (utilisée par le comparateur memo propsEgales)
+  // mais n'est pas consommée dans le rendu — on ne la déstructure pas.
   dragHandleProps = {},
   titre = 'Sans titre',
   description = '',
@@ -183,15 +184,14 @@ function PetiteEnveloppe({
   // Ordre local des sous-enveloppes pour le DnD (optimistic)
   const [ordreEnfants, setOrdreEnfants] = useState(() => sousEnveloppes.map(s => s.id));
 
-  // Sync si un enfant est ajouté ou supprimé
-  useEffect(() => {
+  // Sync si un enfant est ajouté ou supprimé — ajustement d'état pendant le
+  // rendu (pattern React) plutôt que dans un effet : pas de rendu intermédiaire.
+  {
     const extIds = sousEnveloppes.map(s => s.id);
-    setOrdreEnfants(prev => {
-      const prevSet = new Set(prev);
-      if (prev.length === extIds.length && extIds.every(id => prevSet.has(id))) return prev;
-      return extIds;
-    });
-  }, [sousEnveloppes]);
+    const prevSet = new Set(ordreEnfants);
+    const memeContenu = ordreEnfants.length === extIds.length && extIds.every(id => prevSet.has(id));
+    if (!memeContenu) setOrdreEnfants(extIds);
+  }
 
   const sousSensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -233,7 +233,7 @@ function PetiteEnveloppe({
         style={{ borderStyle: modeEdition ? 'dashed' : 'solid' }}
         whileHover={!modeEdition ? {
           y: -3,
-          boxShadow: '0 8px 24px rgba(31, 24, 16, 0.10), 0 3px 8px rgba(31, 24, 16, 0.06)',
+          boxShadow: '0 8px 24px color-mix(in srgb, var(--encre) 10%, transparent), 0 3px 8px color-mix(in srgb, var(--encre) 6%, transparent)',
         } : {}}
         transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
         aria-label={`Enveloppe ${titre}`}
@@ -410,7 +410,7 @@ function PetiteEnveloppe({
         </AnimatePresence>
 
         {/* ============ Ligne 3 : Boutons (action OU édition) ============ */}
-        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-[rgba(31,24,16,0.06)]">
+        <div className="flex items-center justify-between gap-2 mt-4 pt-3 border-t border-encre/[0.06]">
           <AnimatePresence mode="wait">
             {/* === Mode : champ de saisie actif === */}
             {actionInputActive ? (
@@ -465,7 +465,7 @@ function PetiteEnveloppe({
                     ${
                       objectif
                         ? 'bg-or/15 border-or/40 text-or-fonce'
-                        : 'bg-velin-clair border-[rgba(31,24,16,0.08)] text-encre hover:bg-velin-fonce'
+                        : 'bg-velin-clair border-encre/[0.08] text-encre hover:bg-velin-fonce'
                     }
                     text-sm font-medium
                     focus-visible:outline-2 focus-visible:outline-or focus-visible:outline-offset-2
@@ -506,7 +506,7 @@ function PetiteEnveloppe({
                     aria-label="Ajouter une sous-catégorie"
                     className="
                       inline-flex items-center gap-2 px-3 h-10 min-h-[40px] rounded-md
-                      bg-velin-clair border border-[rgba(31,24,16,0.08)] text-encre
+                      bg-velin-clair border border-encre/[0.08] text-encre
                       hover:bg-velin-fonce
                       transition-colors duration-200
                       text-sm font-medium
@@ -645,7 +645,7 @@ function SousEnveloppeSortable({ sous, niveauParent }) {
     transition: [transition, 'filter 0.2s ease'].filter(Boolean).join(', '),
     position: 'relative',
     zIndex: isDragging ? 10 : 'auto',
-    filter: isDragging ? 'drop-shadow(0 8px 16px rgba(31,24,16,0.15))' : undefined,
+    filter: isDragging ? 'drop-shadow(0 8px 16px color-mix(in srgb, var(--encre) 15%, transparent))' : undefined,
   };
 
   return (
@@ -676,18 +676,22 @@ function propsEgales(prev, next) {
     prev.canAnnuler === next.canAnnuler &&
     prev.niveauHierarchique === next.niveauHierarchique &&
     prev.maxAmountForMinus === next.maxAmountForMinus &&
+    prev.maxAmountForRenvoyer === next.maxAmountForRenvoyer &&
     (prev.objectif?.cible) === (next.objectif?.cible) &&
     prev.sousEnveloppes.length === next.sousEnveloppes.length &&
     prev.sousEnveloppes.every((s, i) => {
       const n = next.sousEnveloppes[i]
       return s.id === n.id &&
              s.titre === n.titre &&
+             s.description === n.description &&
              s.direction === n.direction &&
              s.montant === n.montant &&
+             s.dernierMouvement === n.dernierMouvement &&
              s.modeEdition === n.modeEdition &&
              s.actionInputActive === n.actionInputActive &&
              s.canAnnuler === n.canAnnuler &&
-             s.isDescriptionOpen === n.isDescriptionOpen
+             s.isDescriptionOpen === n.isDescriptionOpen &&
+             (s.objectif?.cible) === (n.objectif?.cible)
     })
   )
 }

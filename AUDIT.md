@@ -2,6 +2,22 @@
 
 Analyse de l'intégralité du code : `src/` (pages, composants, contextes, hooks, libs), `api/` (fonctions serverless Vercel), `migrations/` (SQL Supabase), configuration (Vite, Tailwind, PWA, Vercel), plus exécution d'ESLint, du build et de `npm audit`.
 
+> **État (mise à jour)** : les corrections sans impact sur l'expérience utilisateur
+> ont été appliquées (voir le commit « fix: corrections de l'audit »). Sont corrigés :
+> 1.1, 1.2, 1.3, 1.6 (vente < achat), 1.7 (compensation créance + annulation
+> idempotente), 1.8, 1.10, 1.11, 1.12, 1.13, 1.14, 1.15, la quasi-totalité de 1.16,
+> les 40 erreurs ESLint (section 2, lint désormais à 0), 3.1 (CORS retiré),
+> 3.3, 3.5 (via migration 007 — **à appliquer dans Supabase**), 3.6 (npm audit à 0),
+> 3.7 (headers de sécurité, erreurs génériques, user_id retiré de l'export),
+> plus le mode sombre (11) systématisé via tokens/color-mix.
+> Restent à décider (impact UX ou infra) : 1.4, 1.5, 1.9, 3.2 (atomicité RPC),
+> 3.4, et les améliorations de la section 4 — voir la liste soumise à approbation.
+>
+> ⚠️ Note bundle : le « 457 KB » mesuré initialement était un artefact de build
+> sans variables d'env (l'ancien `throw` rendait le code mort). En conditions
+> réelles le bundle principal fait ~1,7 MB avant comme après les corrections —
+> le code-splitting par route (section 4.20) reste pertinent.
+
 Légende de gravité : 🔴 critique · 🟠 important · 🟡 moyen · ⚪ mineur
 
 ---

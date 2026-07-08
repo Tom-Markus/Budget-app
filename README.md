@@ -28,7 +28,7 @@ appareils, avec authentification Google et base de données.
 | **Alpha Vantage** | Taux de change Forex (EUR/USD) pour la page Salon & marchés |
 | **CoinGecko** | Cours crypto BTC, ETH, etc. — sans clé |
 | **Yahoo Finance** | Indices boursiers via proxy Vercel — sans clé |
-| **RSS / rss2json** | Actualités financières — sans clé (10 k req/jour) |
+| **Flux RSS** | Actualités — parsés côté serveur via le proxy Vercel `/api/news` (sans clé) |
 
 ---
 

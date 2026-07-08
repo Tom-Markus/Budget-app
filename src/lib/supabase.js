@@ -19,16 +19,22 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
-if (!supabaseUrl || !supabaseAnonKey) {
-  // Garde-fou explicite si .env.local est mal configuré.
-  // Plutôt qu'un bug bizarre plus loin, on plante tôt avec un message clair.
-  throw new Error(
-    'Variables VITE_SUPABASE_URL et/ou VITE_SUPABASE_ANON_KEY manquantes. ' +
-    'Vérifie le fichier .env.local à la racine du projet.'
-  )
-}
+/**
+ * Garde-fou si .env.local est mal configuré. On ne throw PAS au chargement
+ * du module (ça donnerait un écran blanc sans explication) : main.jsx lit
+ * ce flag et affiche un écran d'erreur lisible à la place de l'app.
+ */
+export const supabaseConfigError = (!supabaseUrl || !supabaseAnonKey)
+  ? 'Variables VITE_SUPABASE_URL et/ou VITE_SUPABASE_ANON_KEY manquantes. ' +
+    'Vérifie le fichier .env.local à la racine du projet (ou les variables ' +
+    "d'environnement Vercel)."
+  : null
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+if (supabaseConfigError) console.error(supabaseConfigError)
+
+export const supabase = createClient(
+  supabaseUrl || 'https://config-manquante.supabase.co',
+  supabaseAnonKey || 'config-manquante', {
   auth: {
     persistSession: true,
     autoRefreshToken: true,

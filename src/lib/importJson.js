@@ -29,7 +29,15 @@ export function lireFichierJson(file) {
   })
 }
 
-/** Valide la structure. Throw une erreur explicite si invalide. */
+/**
+ * Valide la structure ET toutes les contraintes que la base impose.
+ * Throw une erreur explicite si invalide.
+ *
+ * IMPORTANT : cette validation doit rester le miroir exact des contraintes
+ * SQL (migrations 001 + 006). appliquerImport() SUPPRIME les données avant
+ * de réinsérer : tout fichier qui passerait ici mais serait refusé par la
+ * DB détruirait le compte. Ne jamais assouplir sans vérifier le schéma.
+ */
 export function validerImport(data) {
   if (!data || typeof data !== 'object') {
     throw new Error('Fichier vide ou invalide.')
@@ -39,23 +47,92 @@ export function validerImport(data) {
   }
 
   const typesEnv = ['total', 'normal', 'creance', 'savings']
+  const intervallesValides = ['daily', 'weekly', 'monthly', 'yearly']
   const totaux = data.envelopes.filter(e => e?.type === 'total')
   if (totaux.length !== 1) {
     throw new Error('Le fichier doit contenir exactement un Patrimoine.')
   }
+
+  const parId = new Map()
   for (const e of data.envelopes) {
     if (!e || typeof e.id !== 'string') throw new Error('Une enveloppe a un identifiant invalide.')
+    if (parId.has(e.id)) throw new Error(`Identifiant d'enveloppe en double : ${e.id}`)
+    parId.set(e.id, e)
     if (!typesEnv.includes(e.type)) throw new Error(`Type d'enveloppe inconnu : ${e?.type}`)
     if (typeof e.title !== 'string' || !e.title.trim()) throw new Error('Une enveloppe a un titre vide.')
+
+    // Parenté : seules les enveloppes normales peuvent avoir un parent
+    if (e.parent_id != null && e.type !== 'normal') {
+      throw new Error(`« ${e.title} » (${e.type}) ne peut pas avoir de parent.`)
+    }
+    // Description interdite sur les créances
+    if (e.type === 'creance' && e.description != null && String(e.description).trim() !== '') {
+      throw new Error(`La créance « ${e.title} » ne peut pas avoir de description.`)
+    }
+    // Objectif : uniquement sur 'normal' et strictement positif
+    if (e.goal_amount != null) {
+      if (e.type !== 'normal') throw new Error(`« ${e.title} » : objectif autorisé uniquement sur une enveloppe normale.`)
+      if (!(Number(e.goal_amount) > 0)) throw new Error(`« ${e.title} » : l'objectif doit être supérieur à 0.`)
+    }
+    // Récurrence : uniquement sur 'savings', montant positif, cadence valide
+    const aRecurrence = e.recurring_amount != null || e.recurring_interval != null || e.recurring_last_run != null
+    if (aRecurrence && e.type !== 'savings') {
+      throw new Error(`« ${e.title} » : la récurrence est réservée aux comptes épargne.`)
+    }
+    if (e.type === 'savings') {
+      if (e.recurring_amount != null && !(Number(e.recurring_amount) > 0)) {
+        throw new Error(`« ${e.title} » : montant récurrent invalide.`)
+      }
+      if (e.recurring_interval != null && !intervallesValides.includes(e.recurring_interval)) {
+        throw new Error(`« ${e.title} » : cadence de récurrence invalide (${e.recurring_interval}).`)
+      }
+    }
+  }
+
+  // Les parent_id doivent exister dans le fichier et ne pas former de cycle
+  for (const e of data.envelopes) {
+    if (e.parent_id == null) continue
+    if (!parId.has(e.parent_id)) {
+      throw new Error(`« ${e.title} » référence une enveloppe parente absente du fichier.`)
+    }
+    const vus = new Set([e.id])
+    let cur = parId.get(e.parent_id)
+    while (cur) {
+      if (vus.has(cur.id)) throw new Error(`Cycle de parenté détecté autour de « ${e.title} ».`)
+      vus.add(cur.id)
+      cur = cur.parent_id ? parId.get(cur.parent_id) : null
+    }
   }
 
   const typesMv = ['income', 'spend', 'allocate', 'unallocate', 'creance_add', 'creance_repaid', 'savings_add', 'savings_withdraw']
-  const envIds = new Set(data.envelopes.map(e => e.id))
+  // Types de mouvements autorisés par type d'enveloppe (miroir migration 007)
+  const typesParEnveloppe = {
+    total:   ['income'],
+    normal:  ['allocate', 'spend', 'unallocate'],
+    creance: ['creance_add', 'creance_repaid'],
+    savings: ['savings_add', 'savings_withdraw'],
+  }
+  const mvIds = new Set()
   for (const m of data.movements) {
     if (!m || typeof m.id !== 'string') throw new Error('Un mouvement a un identifiant invalide.')
+    if (mvIds.has(m.id)) throw new Error(`Identifiant de mouvement en double : ${m.id}`)
+    mvIds.add(m.id)
     if (!typesMv.includes(m.type)) throw new Error(`Type de mouvement inconnu : ${m?.type}`)
-    if (!envIds.has(m.envelope_id)) {
+    if (!parId.has(m.envelope_id)) {
       throw new Error('Un mouvement référence une enveloppe absente du fichier.')
+    }
+    const envDuMv = parId.get(m.envelope_id)
+    if (!typesParEnveloppe[envDuMv.type]?.includes(m.type)) {
+      throw new Error(`Mouvement « ${m.type} » invalide sur l'enveloppe « ${envDuMv.title} » (${envDuMv.type}).`)
+    }
+    // Montant strictement positif (contrainte SQL amount > 0)
+    if (!(Number(m.amount) > 0)) {
+      throw new Error(`Un mouvement a un montant invalide (${m.amount}).`)
+    }
+    // Note obligatoire sur les mouvements de créance (contrainte SQL)
+    if ((m.type === 'creance_add' || m.type === 'creance_repaid')
+        && (!m.note || !String(m.note).trim())) {
+      throw new Error("Un mouvement de créance du fichier n'a pas de note (obligatoire).")
     }
   }
   return true
@@ -113,16 +190,16 @@ export async function appliquerImport(data, userId) {
   }
 
   if (totalSauvegarde && totalIdExistant) {
+    // On garde l'id du Patrimoine existant (changer une clé primaire est
+    // risqué : realtime, caches, FK). Les références du fichier vers l'ancien
+    // id sont remappées plus bas via sourceTotalId → targetTotalId.
     const { error: updateTotalError } = await supabase
       .from('envelopes')
       .update({
-        id: totalSauvegarde.id,
         title: totalSauvegarde.title,
         description: totalSauvegarde.description ?? null,
         goal_amount: null,
         position: Number.isFinite(totalSauvegarde.position) ? totalSauvegarde.position : 0,
-        created_at: totalSauvegarde.created_at ?? new Date().toISOString(),
-        updated_at: totalSauvegarde.updated_at ?? new Date().toISOString(),
       })
       .eq('user_id', userId)
       .eq('type', 'total')
@@ -180,8 +257,10 @@ export async function appliquerImport(data, userId) {
     if (error) throw new Error('Échec de la restauration des mouvements : ' + error.message)
   }
 
-  // 4. 2e passe : rétablit les linked_movement_id
-  const lies = data.movements.filter(m => m.linked_movement_id)
+  // 4. 2e passe : rétablit les linked_movement_id (uniquement vers des
+  //    mouvements présents dans le fichier — un lien orphelin est ignoré)
+  const idsPresents = new Set(data.movements.map(m => m.id))
+  const lies = data.movements.filter(m => m.linked_movement_id && idsPresents.has(m.linked_movement_id))
   for (const m of lies) {
     const { error } = await supabase
       .from('movements')

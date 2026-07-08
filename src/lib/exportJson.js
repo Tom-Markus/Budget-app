@@ -7,11 +7,18 @@
  */
 
 export function exporterJson(envelopes, mouvements) {
+  // user_id retiré du fichier : l'import le réécrit de toute façon avec
+  // l'utilisateur courant, et ça évite de laisser un identifiant de compte
+  // dans un fichier qui peut circuler.
   const data = {
     format: 'toms-cabinet-export',
     version: 1,
     exported_at: new Date().toISOString(),
-    envelopes,
+    envelopes: envelopes.map((env) => {
+      const e = { ...env }
+      delete e.user_id
+      return e
+    }),
     movements: mouvements,
   }
 

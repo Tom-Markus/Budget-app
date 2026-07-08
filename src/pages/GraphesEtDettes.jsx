@@ -8,7 +8,6 @@
  * ----------------------------------------------------------------------------
  */
 import { useState, useCallback } from 'react'
-import { useTheme } from '../hooks/useTheme'
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
 import { Trash2, GripHorizontal } from 'lucide-react'
 import {
@@ -148,9 +147,8 @@ export default function GraphesEtDettes() {
     soldeDe, actions, estSyncing,
   } = useApp()
 
-  const { theme } = useTheme()
-  const chartGrid = theme === 'dark' ? 'rgba(241,236,224,0.07)' : 'rgba(31,24,16,0.08)'
-  const chartAxis = theme === 'dark' ? 'rgba(241,236,224,0.15)' : 'rgba(31,24,16,0.15)'
+  const chartGrid = 'var(--chart-grid)'
+  const chartAxis = 'var(--chart-axis)'
 
   const [periodeCourbe, setPeriodeCourbe] = useState('30J')
   const [inputCreance, setInputCreance] = useState({})
@@ -162,6 +160,13 @@ export default function GraphesEtDettes() {
   const [editEpargne, setEditEpargne] = useState({})
   const [popupDelEpargne, setPopupDelEpargne] = useState(null)
   const [graphEpargneId, setGraphEpargneId] = useState(null)
+
+  // Brouillons de titre en mode édition (remplis par onTitreChange des
+  // composants enfants — remplace l'ancienne lecture fragile du DOM)
+  const [draftTitres, setDraftTitres] = useState({})
+  const onTitreChange = useCallback((envId, value) => {
+    setDraftTitres(s => ({ ...s, [envId]: value }))
+  }, [])
 
   const sensors = useSensors(
     useSensor(MouseSensor, { activationConstraint: { distance: 8 } }),
@@ -198,11 +203,11 @@ export default function GraphesEtDettes() {
   const toggleEditCreance = useCallback((env) => {
     const wasEditing = !!editCreance[env.id]
     if (wasEditing) {
-      const wrapper = document.querySelector(`[data-creance-id="${env.id}"]`)
-      const titreInput = wrapper?.querySelector('input[aria-label="Nom de la personne"]')
-      if (titreInput && titreInput.value.trim() && titreInput.value.trim() !== env.title) {
-        actions.modifierEnveloppe(env.id, { title: titreInput.value.trim() })
+      const draft = draftTitres[env.id]
+      if (draft !== undefined && draft.trim() && draft.trim() !== env.title) {
+        actions.modifierEnveloppe(env.id, { title: draft.trim() })
       }
+      setDraftTitres(s => { const n = { ...s }; delete n[env.id]; return n })
     }
     setEditCreance(s => {
       const next = { ...s }
@@ -210,7 +215,7 @@ export default function GraphesEtDettes() {
       else next[env.id] = true
       return next
     })
-  }, [editCreance, actions])
+  }, [editCreance, draftTitres, actions])
 
   const onValidateInputCreance = useCallback((envId) => (type, { amount, note }) => {
     if (type === '+')      actions.ajouterCreance(envId, amount, note)
@@ -263,11 +268,11 @@ export default function GraphesEtDettes() {
   const toggleEditEpargne = useCallback((env) => {
     const wasEditing = !!editEpargne[env.id]
     if (wasEditing) {
-      const wrapper = document.querySelector(`[data-epargne-id="${env.id}"]`)
-      const titreInput = wrapper?.querySelector('input[aria-label="Nom du compte épargne"]')
-      if (titreInput && titreInput.value.trim() && titreInput.value.trim() !== env.title) {
-        actions.modifierEnveloppe(env.id, { title: titreInput.value.trim() })
+      const draft = draftTitres[env.id]
+      if (draft !== undefined && draft.trim() && draft.trim() !== env.title) {
+        actions.modifierEnveloppe(env.id, { title: draft.trim() })
       }
+      setDraftTitres(s => { const n = { ...s }; delete n[env.id]; return n })
     }
     setEditEpargne(s => {
       const next = { ...s }
@@ -275,7 +280,7 @@ export default function GraphesEtDettes() {
       else next[env.id] = true
       return next
     })
-  }, [editEpargne, actions])
+  }, [editEpargne, draftTitres, actions])
 
   const onValidateInputEpargne = useCallback((envId) => (type, { amount, note }) => {
     if (type === '+')      actions.ajouterEpargne(envId, amount, note)
@@ -344,6 +349,15 @@ export default function GraphesEtDettes() {
   }
 
   if (loading) return <LoaderNoble message="Lecture des dettes..." />
+  if (!patrimoine) {
+    return (
+      <div className="surface-velin p-6 max-w-2xl mx-auto">
+        <p style={{ color: 'var(--rouge)' }}>
+          Patrimoine introuvable — déconnecte-toi et reconnecte-toi, ou contacte le développeur.
+        </p>
+      </div>
+    )
+  }
 
   // Camembert
   const donneesCamembert = []
@@ -493,6 +507,7 @@ export default function GraphesEtDettes() {
                       historique={historiqueCreance(c.id)}
                       modeEdition={enEdition}
                       canAnnuler={hasUndoableCreance(c.id)}
+                      onTitreChange={(v) => onTitreChange(c.id, v)}
                       onPlus={()  => setInputCreance(s => ({ ...s, [c.id]: '+' }))}
                       onMinus={() => setInputCreance(s => ({ ...s, [c.id]: '-' }))}
                       onUndo={()  => actions.annulerDernier(c.id)}
@@ -571,6 +586,7 @@ export default function GraphesEtDettes() {
                       modeEdition={enEdition}
                       canAnnuler={hasUndoableEpargne(ep.id)}
                       recurrence={recurrence}
+                      onTitreChange={(v) => onTitreChange(ep.id, v)}
                       onPlus={()  => setInputEpargne(s => ({ ...s, [ep.id]: '+' }))}
                       onMinus={() => setInputEpargne(s => ({ ...s, [ep.id]: '-' }))}
                       onUndo={()  => actions.annulerDernier(ep.id)}

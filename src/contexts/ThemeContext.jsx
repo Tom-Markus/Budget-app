@@ -5,9 +5,8 @@
  * Applique data-theme="light"|"dark" sur <html> et persiste en localStorage.
  * ----------------------------------------------------------------------------
  */
-import { createContext, useState, useEffect } from 'react'
-
-export const ThemeContext = createContext(null)
+import { useState, useEffect } from 'react'
+import { ThemeContext } from '../hooks/useTheme'
 
 export function ThemeProvider({ children }) {
   const [theme, setTheme] = useState(() => {
@@ -16,7 +15,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
-    try { localStorage.setItem('theme', theme) } catch {}
+    try { localStorage.setItem('theme', theme) } catch { /* stockage indisponible */ }
   }, [theme])
 
   const toggleTheme = () => setTheme(t => t === 'light' ? 'dark' : 'light')

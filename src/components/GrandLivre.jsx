@@ -189,14 +189,14 @@ export default function GrandLivre({ envelopes, mouvements }) {
             onChange={e => appliquerFiltre(setRecherche)(e.target.value)}
             placeholder="Note, enveloppe ou montant…"
             aria-label="Rechercher dans le journal"
-            className="w-full h-9 pl-9 pr-3 rounded-md bg-velin-clair border border-[rgba(31,24,16,0.12)] text-sm text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic"
+            className="w-full h-9 pl-9 pr-3 rounded-md bg-velin-clair border border-encre/[0.12] text-sm text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic"
           />
         </div>
         <select
           value={envFiltre}
           onChange={e => appliquerFiltre(setEnvFiltre)(e.target.value)}
           aria-label="Filtrer par enveloppe"
-          className="h-9 max-w-[45%] px-2 rounded-md bg-velin-clair border border-[rgba(31,24,16,0.12)] text-sm text-encre focus:outline-none focus:border-or/40"
+          className="h-9 max-w-[45%] px-2 rounded-md bg-velin-clair border border-encre/[0.12] text-sm text-encre focus:outline-none focus:border-or/40"
         >
           <option value="">Toutes les enveloppes</option>
           {optionsEnveloppes.map(o => (
@@ -207,7 +207,7 @@ export default function GrandLivre({ envelopes, mouvements }) {
           value={typeFiltre}
           onChange={e => appliquerFiltre(setTypeFiltre)(e.target.value)}
           aria-label="Filtrer par type de mouvement"
-          className="h-9 px-2 rounded-md bg-velin-clair border border-[rgba(31,24,16,0.12)] text-sm text-encre focus:outline-none focus:border-or/40"
+          className="h-9 px-2 rounded-md bg-velin-clair border border-encre/[0.12] text-sm text-encre focus:outline-none focus:border-or/40"
         >
           {FAMILLES_TYPE.map(f => (
             <option key={f.id} value={f.id}>{f.label}</option>

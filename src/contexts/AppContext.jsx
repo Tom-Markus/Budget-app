@@ -5,8 +5,9 @@
  * mise à jour optimiste de l'ordre et rollback en cas d'échec serveur.
  * ----------------------------------------------------------------------------
  */
-import { createContext, useState, useEffect, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
+import { AppContext } from '../hooks/useApp'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import {
@@ -15,9 +16,11 @@ import {
 import { formatEuros } from '../lib/formatters'
 import * as mutations from '../lib/mutations'
 
-export const AppContext = createContext(null)
-
 const LIMITE_ENVELOPPES = 100
+
+// Tolérance flottante pour les comparaisons de montants (les montants sont
+// des numeric(12,2) mais transitent en float côté JS : 0.1 + 0.2 ≠ 0.3).
+const EPSILON = 0.005
 
 function appliquerDelta(prev, payload) {
   switch (payload.eventType) {
@@ -36,27 +39,37 @@ function appliquerDelta(prev, payload) {
 export function AppProvider({ children }) {
   const { user } = useAuth()
   const { showToast } = useToast()
+  const uid = user?.id ?? null
 
   const [envelopes, setEnvelopes] = useState([])
   const [mouvements, setMouvements] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!!uid)
   const [error, setError] = useState(null)
   const [syncingIds, setSyncingIds] = useState(() => new Set())
 
+  // Reset synchrone quand l'utilisateur change (login/logout) — fait pendant
+  // le rendu (pattern React « adjusting state during render ») plutôt que
+  // dans un effet, pour éviter un rendu intermédiaire avec les données de
+  // l'ancien utilisateur.
+  const [prevUid, setPrevUid] = useState(uid)
+  if (prevUid !== uid) {
+    setPrevUid(uid)
+    setEnvelopes([])
+    setMouvements([])
+    setError(null)
+    setLoading(!!uid)
+  }
+
   // Fetch initial + Realtime
   useEffect(() => {
-    if (!user) {
-      setEnvelopes([]); setMouvements([]); setLoading(false); setError(null)
-      return
-    }
+    if (!uid) return
     let mounted = true
-    setLoading(true); setError(null)
 
     ;(async () => {
       try {
         const [envRes, mvRes] = await Promise.all([
           supabase.from('envelopes').select('*')
-            .eq('user_id', user.id)
+            .eq('user_id', uid)
             .order('position', { ascending: true }),
           supabase.from('movements').select('*')
             .order('created_at', { ascending: true }),
@@ -87,12 +100,17 @@ export function AppProvider({ children }) {
       }
     })()
 
-    const envCh = supabase.channel(`envelopes-${user.id}`)
+    // Filtre user_id sur envelopes : la RLS couvre déjà INSERT/UPDATE, mais
+    // les événements DELETE de Postgres Changes ne sont PAS filtrés par la
+    // RLS — sans ce filtre on recevrait les suppressions de tous les comptes.
+    // (movements n'a pas de colonne user_id : pas de filtre possible, mais
+    // les payloads DELETE ne contiennent que l'id — sans impact.)
+    const envCh = supabase.channel(`envelopes-${uid}`)
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'envelopes' },
+        { event: '*', schema: 'public', table: 'envelopes', filter: `user_id=eq.${uid}` },
         (payload) => mounted && setEnvelopes(prev => appliquerDelta(prev, payload)))
       .subscribe()
-    const mvCh = supabase.channel(`movements-${user.id}`)
+    const mvCh = supabase.channel(`movements-${uid}`)
       .on('postgres_changes',
         { event: '*', schema: 'public', table: 'movements' },
         (payload) => mounted && setMouvements(prev => appliquerDelta(prev, payload)))
@@ -103,7 +121,7 @@ export function AppProvider({ children }) {
       supabase.removeChannel(envCh)
       supabase.removeChannel(mvCh)
     }
-  }, [user?.id])
+  }, [uid])
 
   // Calculs dérivés
   const soldes = useMemo(() => calculerSoldes(envelopes, mouvements), [envelopes, mouvements])
@@ -156,7 +174,7 @@ export function AppProvider({ children }) {
 
     allouer: (envId, montant, note) =>
       wrap(envId, async () => {
-        if (montant > aRepartir) {
+        if (montant > aRepartir + EPSILON) {
           throw new Error(`Montant trop élevé : il ne reste que ${formatEuros(aRepartir)} à répartir.`)
         }
         await mutations.allouer(envId, montant, note)
@@ -165,7 +183,7 @@ export function AppProvider({ children }) {
     depenser: (envId, montant, note) =>
       wrap(envId, async () => {
         const solde = soldeDe(envId)
-        if (montant > solde) {
+        if (montant > solde + EPSILON) {
           throw new Error(`Montant trop élevé : il ne reste que ${formatEuros(solde)} dans cette enveloppe.`)
         }
         await mutations.depenser(envId, montant, note)
@@ -174,7 +192,7 @@ export function AppProvider({ children }) {
     desallouer: (envId, montant, note) =>
       wrap(envId, async () => {
         const solde = soldeDe(envId)
-        if (montant > solde) {
+        if (montant > solde + EPSILON) {
           throw new Error(`Montant trop élevé : il ne reste que ${formatEuros(solde)} dans cette enveloppe.`)
         }
         await mutations.desallouer(envId, montant, note)
@@ -186,7 +204,7 @@ export function AppProvider({ children }) {
     rembourserCreance: (envId, montant, note) =>
       wrap(envId, async () => {
         const solde = soldeDe(envId)
-        if (montant > solde) {
+        if (montant > solde + EPSILON) {
           throw new Error(`Montant trop élevé : la dette n'est que de ${formatEuros(solde)}.`)
         }
         await mutations.rembourserCreance(envId, patrimoine.id, montant, note)
@@ -238,7 +256,7 @@ export function AppProvider({ children }) {
     retirerEpargne: (envId, montant, note) =>
       wrap(envId, async () => {
         const solde = soldeDe(envId)
-        if (montant > solde) {
+        if (montant > solde + EPSILON) {
           throw new Error(`Montant trop élevé : il ne reste que ${formatEuros(solde)} sur ce compte.`)
         }
         await mutations.retirerEpargne(envId, montant, note)

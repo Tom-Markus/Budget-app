@@ -115,7 +115,16 @@ export async function rembourserCreance(creanceId, patrimoineId, montant, note) 
     linked_movement_id: income.id,
   })
   if (e2) {
-    console.error('Income orphelin sur Patrimoine (id ' + income.id + ')')
+    // Compensation : on tente de supprimer l'income créé en (1) pour ne pas
+    // laisser un revenu orphelin sur le Patrimoine. Best-effort — si la
+    // suppression échoue aussi, on le signale dans l'erreur.
+    const { error: eComp } = await supabase.from('movements').delete().eq('id', income.id)
+    if (eComp) {
+      console.error('Income orphelin sur Patrimoine (id ' + income.id + ')')
+      throw new Error(
+        e2.message + ' (un revenu orphelin est resté sur le Patrimoine — annule-le manuellement)'
+      )
+    }
     throw new Error(e2.message)
   }
 }
@@ -168,8 +177,12 @@ export async function annulerDernier(envId) {
     for (const p of pointants) idsAAnnuler.push(p.id)
   }
 
+  // .eq('is_undone', false) rend l'opération idempotente : si un autre
+  // appareil vient d'annuler le même mouvement, on ne le « ré-annule » pas.
   const { error: e3 } = await supabase
-    .from('movements').update({ is_undone: true }).in('id', idsAAnnuler)
+    .from('movements').update({ is_undone: true })
+    .in('id', idsAAnnuler)
+    .eq('is_undone', false)
   if (e3) throw new Error(e3.message)
 }
 
@@ -352,8 +365,13 @@ export async function definirRecurrenceEpargne(envId, amount, interval) {
 /**
  * Rattrapage des versements automatiques dus (appelé au chargement).
  * Pour chaque compte épargne avec récurrence active, on insère un
- * 'savings_add' par échéance écoulée depuis recurring_last_run, puis on
- * avance recurring_last_run à la dernière échéance traitée.
+ * 'savings_add' par échéance écoulée depuis recurring_last_run.
+ *
+ * Anti-doublon multi-appareils : on « réserve » d'abord les échéances en
+ * avançant recurring_last_run avec une condition sur son ancienne valeur
+ * (verrou optimiste). Si un autre appareil a déjà avancé la valeur, l'UPDATE
+ * ne matche aucune ligne et on ne crée RIEN — c'est lui qui gère ces
+ * échéances. Seul l'appareil qui a « gagné » le verrou insère les mouvements.
  *
  * @param epargnes Array<enveloppe type 'savings'>
  */
@@ -375,6 +393,19 @@ export async function executerRecurrencesDues(epargnes) {
     }
     if (echeances.length === 0) continue
 
+    // 1. Verrou optimiste : avance recurring_last_run seulement s'il vaut
+    //    encore la valeur qu'on a lue. select() → sait si on a gagné.
+    const derniere = echeances[echeances.length - 1]
+    const { data: verrou, error: eLock } = await supabase
+      .from('envelopes')
+      .update({ recurring_last_run: derniere.toISOString() })
+      .eq('id', env.id)
+      .eq('recurring_last_run', base)
+      .select('id')
+    if (eLock) throw new Error(eLock.message)
+    if (!verrou || verrou.length === 0) continue // un autre appareil s'en occupe
+
+    // 2. On a le verrou : insère les versements dus.
     const rows = echeances.map(d => ({
       envelope_id: env.id,
       amount: montant,
@@ -384,13 +415,6 @@ export async function executerRecurrencesDues(epargnes) {
     }))
     const { error } = await supabase.from('movements').insert(rows)
     if (error) throw new Error(error.message)
-
-    const derniere = echeances[echeances.length - 1]
-    const { error: e2 } = await supabase
-      .from('envelopes')
-      .update({ recurring_last_run: derniere.toISOString() })
-      .eq('id', env.id)
-    if (e2) throw new Error(e2.message)
   }
 }
 

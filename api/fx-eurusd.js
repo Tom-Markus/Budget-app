@@ -1,7 +1,6 @@
 // Vercel serverless — proxy Alpha Vantage FX_DAILY pour EUR/USD
 // La clé API est dans ALPHA_VANTAGE_KEY (pas de préfixe VITE_) : jamais exposée au client.
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Cache-Control', 's-maxage=900, stale-while-revalidate=1800')
 
   const key = process.env.ALPHA_VANTAGE_KEY
@@ -23,6 +22,8 @@ export default async function handler(req, res) {
     const c1 = parseFloat(series[dates[1]]['4. close'])
     res.json({ rate: c0, change: ((c0 - c1) / c1) * 100 })
   } catch (e) {
-    res.status(502).json({ error: e.message })
+    // Message générique côté client — le détail reste dans les logs Vercel
+    console.error('fx-eurusd:', e)
+    res.status(502).json({ error: 'Source de données indisponible' })
   }
 }

@@ -12,6 +12,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import {
   DndContext, closestCenter,
   MouseSensor, TouchSensor, useSensor, useSensors,
+  useDroppable,
 } from '@dnd-kit/core'
 import {
   SortableContext, verticalListSortingStrategy,
@@ -60,7 +61,7 @@ function dirEtMontantARepartir(patrimoineId, mouvements) {
 }
 
 // ----- Wrapper sortable d'une enveloppe normale racine -----
-function EnveloppeDraggable({ envId, petiteProps, disabled, syncing, dndActive }) {
+function EnveloppeDraggable({ envId, petiteProps, disabled, syncing }) {
   const {
     attributes, listeners, setNodeRef, transform, transition, isDragging,
   } = useSortable({ id: envId, disabled })
@@ -70,7 +71,7 @@ function EnveloppeDraggable({ envId, petiteProps, disabled, syncing, dndActive }
     transition: [transition, 'filter 0.2s ease'].filter(Boolean).join(', '),
     position: 'relative',
     zIndex: isDragging ? 20 : 'auto',
-    filter: isDragging ? 'drop-shadow(0 12px 24px rgba(31,24,16,0.18))' : undefined,
+    filter: isDragging ? 'drop-shadow(0 12px 24px color-mix(in srgb, var(--encre) 18%, transparent))' : undefined,
   }
 
   return (
@@ -84,6 +85,17 @@ function EnveloppeDraggable({ envId, petiteProps, disabled, syncing, dndActive }
         {...petiteProps}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
+    </div>
+  )
+}
+
+// Colonne droppable : permet de déposer une enveloppe dans une colonne VIDE
+// (sans ça, dnd-kit exige de survoler un item de la colonne cible).
+function ColonneDroppable({ id, children }) {
+  const { setNodeRef } = useDroppable({ id })
+  return (
+    <div ref={setNodeRef} className="flex-1 flex flex-col gap-4 min-h-[40px]">
+      {children}
     </div>
   )
 }
@@ -130,13 +142,16 @@ export default function Accueil() {
   const colsRef = useRef({ left: [], right: [] })
   useEffect(() => { colsRef.current = cols }, [cols])
 
-  const [dndActive, setDndActive] = useState(false)
   const colsSnapshotRef = useRef(null)
   const startContainerRef = useRef(null)
 
-  // Synchronise les colonnes quand racines change (ajout / suppression / chargement initial)
-  useEffect(() => {
-    if (racines.length === 0) return
+  // Synchronise les colonnes quand racines change (ajout / suppression /
+  // chargement initial) — ajustement d'état pendant le rendu (pattern React),
+  // gardé par une clé de contenu pour ne s'exécuter qu'aux vrais changements.
+  const racinesKey = racines.map(r => r.id).join('|')
+  const [prevRacinesKey, setPrevRacinesKey] = useState(null)
+  if (racines.length > 0 && prevRacinesKey !== racinesKey) {
+    setPrevRacinesKey(racinesKey)
     setCols(prev => {
       const currentIds = new Set(racines.map(r => r.id))
       let left = prev.left.filter(id => currentIds.has(id))
@@ -178,9 +193,11 @@ export default function Accueil() {
       })
       return { left: [...left], right: [...right] }
     })
-  }, [racines, storageKey])
+  }
 
   const findContainer = useCallback((id) => {
+    // Les colonnes elles-mêmes sont droppables (dépôt en colonne vide)
+    if (id === 'left' || id === 'right') return id
     const c = colsRef.current
     if (c.left.includes(id)) return 'left'
     if (c.right.includes(id)) return 'right'
@@ -280,7 +297,10 @@ export default function Accueil() {
     setInputActif(s => ({ ...s, [envId]: null }))
   }, [envelopes, actions])
 
-  const buildPetiteProps = useCallback((env, niveau) => {
+  // Déclaration de fonction (hoistée) plutôt que useCallback : la fonction
+  // est récursive (sous-enveloppes) et ses dépendances changeaient à chaque
+  // rendu de toute façon — le useCallback ne mémorisait rien.
+  function buildPetiteProps(env, niveau) {
     const enfants = enfantsDe(env.id)
     const { direction, signeMontant } = dirEtMontant(env, envelopes, mouvements)
     const solde = soldeDe(env.id)
@@ -321,15 +341,16 @@ export default function Accueil() {
       onCancelInput: () => setInputActif(s => ({ ...s, [env.id]: null })),
       onReorderSousEnveloppes: (ids) => actions.reordonner(ids),
     }
-  }, [
-    envelopes, mouvements, modeEdition, inputActif, descOuverte,
-    enfantsDe, soldeDe, hasUndoable, actions,
-    toggleEdit, onSaveEditionFor, onValidateInputFor, ouvrirSuppression,
-  ])
+  }
+
+  // Nettoyage des timers de sauvegarde debouncée au démontage de la page
+  useEffect(() => {
+    const timers = saveTimerRef.current
+    return () => { Object.values(timers).forEach(clearTimeout) }
+  }, [])
 
   // ----- Drag handlers -----
   const handleDragStart = useCallback(({ active }) => {
-    setDndActive(true)
     colsSnapshotRef.current = colsRef.current
     startContainerRef.current = findContainer(active.id)
     if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(10)
@@ -359,7 +380,6 @@ export default function Accueil() {
   }, [findContainer])
 
   const handleDragEnd = useCallback(({ active, over }) => {
-    setDndActive(false)
     const startContainer = startContainerRef.current
     startContainerRef.current = null
     colsSnapshotRef.current = null
@@ -398,7 +418,6 @@ export default function Accueil() {
   }, [actions, storageKey])
 
   const handleDragCancel = useCallback(() => {
-    setDndActive(false)
     startContainerRef.current = null
     if (colsSnapshotRef.current) {
       setCols(colsSnapshotRef.current)
@@ -499,7 +518,7 @@ export default function Accueil() {
         >
           {isDesktop ? (
             <div className="flex gap-4 items-start">
-              <div className="flex-1 flex flex-col gap-4">
+              <ColonneDroppable id="left">
                 <SortableContext items={cols.left} strategy={verticalListSortingStrategy}>
                   {cols.left.map(id => {
                     const env = racines.find(r => r.id === id)
@@ -511,13 +530,12 @@ export default function Accueil() {
                         petiteProps={buildPetiteProps(env, 2)}
                         disabled={!!modeEdition[env.id]}
                         syncing={estSyncing(env.id)}
-                        dndActive={dndActive}
                       />
                     )
                   })}
                 </SortableContext>
-              </div>
-              <div className="flex-1 flex flex-col gap-4">
+              </ColonneDroppable>
+              <ColonneDroppable id="right">
                 <SortableContext items={cols.right} strategy={verticalListSortingStrategy}>
                   {cols.right.map(id => {
                     const env = racines.find(r => r.id === id)
@@ -529,12 +547,11 @@ export default function Accueil() {
                         petiteProps={buildPetiteProps(env, 2)}
                         disabled={!!modeEdition[env.id]}
                         syncing={estSyncing(env.id)}
-                        dndActive={dndActive}
                       />
                     )
                   })}
                 </SortableContext>
-              </div>
+              </ColonneDroppable>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
@@ -552,7 +569,6 @@ export default function Accueil() {
                       petiteProps={buildPetiteProps(env, 2)}
                       disabled={!!modeEdition[env.id]}
                       syncing={estSyncing(env.id)}
-                      dndActive={dndActive}
                     />
                   )
                 })}
@@ -602,14 +618,14 @@ export default function Accueil() {
               value={titreSousCat}
               onChange={e => setTitreSousCat(e.target.value)}
               placeholder="Nom de la sous-catégorie"
-              className="w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 h-10 text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic"
+              className="w-full bg-velin-clair border border-encre/[0.12] rounded-md px-3 h-10 text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic"
             />
             <textarea
               value={descSousCat}
               onChange={e => setDescSousCat(e.target.value)}
               placeholder="Description (optionnelle)"
               rows={2}
-              className="w-full bg-velin-clair border border-[rgba(31,24,16,0.12)] rounded-md px-3 py-2 text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic resize-none"
+              className="w-full bg-velin-clair border border-encre/[0.12] rounded-md px-3 py-2 text-encre placeholder:text-encre-tertiaire focus:outline-none focus:border-or/40 font-serif italic resize-none"
             />
           </div>
         }

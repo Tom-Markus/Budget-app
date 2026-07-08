@@ -35,7 +35,7 @@ const TONE_STYLES = {
     bg: 'bg-velin-clair',
     bgHover: 'hover:bg-velin-fonce',
     text: 'text-encre',
-    border: 'border border-[rgba(31,24,16,0.08)]',
+    border: 'border border-encre/[0.08]',
   },
   bordeaux: {
     bg: 'bg-bordeaux',
