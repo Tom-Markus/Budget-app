@@ -3,8 +3,9 @@
  * ----------------------------------------------------------------------------
  * Notifications "Toast" globales (bas d'écran).
  *
- * Un seul toast affiché à la fois (cohérent avec l'esprit feutré du design :
- * pas de spam de notifications). Un nouveau toast écrase le précédent.
+ * File de 3 toasts maximum, empilés discrètement (esprit feutré du design :
+ * pas de spam). Au-delà de 3, le plus ancien est évincé. Chaque toast se
+ * ferme seul après sa durée, ou d'un clic.
  *
  * Usage :
  *   const { showToast } = useToast()
@@ -12,35 +13,34 @@
  *   showToast({ message: 'Erreur réseau', type: 'erreur', duration: 3000 })
  * ----------------------------------------------------------------------------
  */
-import { useState, useCallback } from 'react'
-import { Toast } from '../components/Toast'
+import { useState, useCallback, useRef } from 'react'
+import { ToastStack } from '../components/Toast'
 import { ToastContext } from '../hooks/useToast'
 
-export function ToastProvider({ children }) {
-  // current = { message, type, duration, key } | null
-  // key = timestamp, sert à forcer un nouveau cycle d'animation à chaque toast.
-  const [current, setCurrent] = useState(null)
+const MAX_TOASTS = 3
 
-  const showToast = useCallback(({ message, type = 'info', duration = 2000 }) => {
-    setCurrent({ message, type, duration, key: Date.now() })
+export function ToastProvider({ children }) {
+  const [toasts, setToasts] = useState([])
+  const idRef = useRef(0)
+
+  const hideToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id))
   }, [])
 
-  const hideToast = useCallback(() => {
-    setCurrent(null)
+  const showToast = useCallback(({ message, type = 'info', duration = 2000 }) => {
+    setToasts(prev => {
+      // Déduplication : un toast identique déjà affiché n'est pas doublé
+      if (prev.some(t => t.message === message && t.type === type)) return prev
+      const next = [...prev, { id: ++idRef.current, message, type, duration }]
+      return next.slice(-MAX_TOASTS)
+    })
   }, [])
 
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      {/* Toast rendu au sommet de l'arbre → visible peu importe la page. */}
-      <Toast
-        key={current?.key}
-        message={current?.message ?? ''}
-        type={current?.type ?? 'info'}
-        duration={current?.duration ?? 2000}
-        isOpen={current !== null}
-        onClose={hideToast}
-      />
+      {/* Pile de toasts rendue au sommet de l'arbre → visible peu importe la page. */}
+      <ToastStack toasts={toasts} onClose={hideToast} />
     </ToastContext.Provider>
   )
 }

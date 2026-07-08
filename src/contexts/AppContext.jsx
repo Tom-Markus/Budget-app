@@ -224,6 +224,7 @@ export function AppProvider({ children }) {
           throw new Error('Limite atteinte, contactez le développeur.')
         }
         await mutations.creerEnveloppeRacine(user.id, { title, description })
+        showToast({ message: `« ${title.trim()} » créée`, type: 'succes' })
       }),
     creerSousEnveloppe: (parentId, { title, description }) =>
       wrap(parentId, async () => {
@@ -232,6 +233,7 @@ export function AppProvider({ children }) {
         }
         const soldeParente = soldeDe(parentId)
         await mutations.creerSousEnveloppe(user.id, parentId, soldeParente, { title, description })
+        showToast({ message: `Sous-catégorie « ${title.trim()} » créée`, type: 'succes' })
       }),
     creerCreance: ({ title }) =>
       wrap(null, async () => {
@@ -239,6 +241,7 @@ export function AppProvider({ children }) {
           throw new Error('Limite atteinte, contactez le développeur.')
         }
         await mutations.creerCreance(user.id, { title })
+        showToast({ message: `Créance « ${title.trim()} » créée`, type: 'succes' })
       }),
 
     // --- Comptes épargne (indépendants du Patrimoine) ---
@@ -248,6 +251,7 @@ export function AppProvider({ children }) {
           throw new Error('Limite atteinte, contactez le développeur.')
         }
         await mutations.creerEpargne(user.id, { title })
+        showToast({ message: `Compte épargne « ${title.trim()} » créé`, type: 'succes' })
       }),
 
     ajouterEpargne: (envId, montant, note) =>
@@ -263,7 +267,14 @@ export function AppProvider({ children }) {
       }),
 
     definirRecurrenceEpargne: (envId, montant, interval) =>
-      wrap(envId, () => mutations.definirRecurrenceEpargne(envId, montant, interval)),
+      wrap(envId, async () => {
+        await mutations.definirRecurrenceEpargne(envId, montant, interval)
+        const active = montant != null && montant !== '' && Number(montant) > 0
+        showToast({
+          message: active ? 'Versement automatique activé' : 'Versement automatique désactivé',
+          type: 'succes',
+        })
+      }),
 
     modifierEnveloppe: (envId, patch) =>
       wrap(envId, async () => {
@@ -296,6 +307,7 @@ export function AppProvider({ children }) {
         const solde = soldeDe(envId)
         const aEnfants = aDesEnfants(envId)
         await mutations.supprimerEnveloppe(env, solde, aEnfants, patrimoine?.id, modeAvecEnfants)
+        showToast({ message: `« ${env.title} » supprimée`, type: 'succes' })
       }),
 
     // --- Réorganisation (drag & drop) ---

@@ -2,7 +2,7 @@
  * Toast.jsx + Loader.jsx
  * ----------------------------------------------------------------------------
  * Composants utilitaires :
- *   - Toast : notification bas d'écran (erreur, annulé)
+ *   - ToastStack : pile de notifications bas d'écran (succès, info, erreur)
  *   - LoaderNoble : état de chargement initial
  * ----------------------------------------------------------------------------
  */
@@ -11,59 +11,66 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useEffect } from 'react';
 import { AlertCircle, CheckCircle } from 'lucide-react';
 
+/** Un toast de la pile — se ferme seul après `duration`, ou au clic. */
+function ToastItem({ toast, onClose }) {
+  const { id, message, type, duration } = toast;
+
+  useEffect(() => {
+    const t = setTimeout(() => onClose(id), duration ?? 2000);
+    return () => clearTimeout(t);
+  }, [id, duration, onClose]);
+
+  const isErreur = type === 'erreur';
+  const isSucces = type === 'succes';
+  const Icon = isErreur ? AlertCircle : CheckCircle;
+  const colorBorder = isErreur ? 'border-rouge/40' : isSucces ? 'border-vert/40' : 'border-or/40';
+  const colorIcon = isErreur ? 'text-rouge' : isSucces ? 'text-vert' : 'text-or';
+
+  return (
+    <motion.button
+      type="button"
+      layout
+      initial={{ y: 60, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      exit={{ y: 20, opacity: 0 }}
+      transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+      onClick={() => onClose(id)}
+      className={`
+        pointer-events-auto text-left cursor-pointer
+        flex items-center gap-3 px-5 py-3
+        bg-velin-clair text-encre
+        border ${colorBorder}
+        rounded-lg shadow-md
+        max-w-md
+      `}
+      role={isErreur ? 'alert' : 'status'}
+      aria-live={isErreur ? 'assertive' : 'polite'}
+    >
+      <Icon size={18} strokeWidth={1.75} className={colorIcon} aria-hidden="true" />
+      <span className="t-body-secondaire text-encre">{message}</span>
+    </motion.button>
+  );
+}
+
 /**
- * Toast d'erreur ou d'information bas d'écran.
+ * Pile de toasts (3 max, gérée par ToastProvider).
  *
  * Props :
- *   message    — string
- *   type       — 'erreur' | 'info' (défaut: 'info')
- *   isOpen     — bool
- *   onClose    — handler (appelé après duration)
- *   duration   — ms (défaut: 2000)
+ *   toasts   — Array<{ id, message, type: 'info'|'succes'|'erreur', duration }>
+ *   onClose  — handler(id)
  */
-export function Toast({ message, type = 'info', isOpen, onClose, duration = 2000 }) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const t = setTimeout(() => onClose?.(), duration);
-    return () => clearTimeout(t);
-  }, [isOpen, duration, onClose]);
-
-  const Icon = type === 'erreur' ? AlertCircle : CheckCircle;
-  const colorBorder = type === 'erreur' ? 'border-rouge/40' : 'border-or/40';
-
+export function ToastStack({ toasts, onClose }) {
   return createPortal(
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ y: 60, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 60, opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.32, 0.72, 0, 1] }}
-          className="fixed bottom-20 md:bottom-8 left-0 right-0 flex justify-center px-4 z-[1000] pointer-events-none"
-          role={type === 'erreur' ? 'alert' : 'status'}
-          aria-live={type === 'erreur' ? 'assertive' : 'polite'}
-        >
-          <div
-            className={`
-              pointer-events-auto
-              flex items-center gap-3 px-5 py-3
-              bg-velin-clair text-encre
-              border ${colorBorder}
-              rounded-lg shadow-md
-              max-w-md
-            `}
-          >
-            <Icon
-              size={18}
-              strokeWidth={1.75}
-              className={type === 'erreur' ? 'text-rouge' : 'text-or'}
-              aria-hidden="true"
-            />
-            <span className="t-body-secondaire text-encre">{message}</span>
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>,
+    <div
+      className="fixed bottom-20 md:bottom-8 left-0 right-0 flex flex-col items-center gap-2 px-4 z-[1000] pointer-events-none"
+      aria-label="Notifications"
+    >
+      <AnimatePresence>
+        {toasts.map((t) => (
+          <ToastItem key={t.id} toast={t} onClose={onClose} />
+        ))}
+      </AnimatePresence>
+    </div>,
     document.body
   );
 }

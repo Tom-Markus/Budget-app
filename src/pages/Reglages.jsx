@@ -130,7 +130,7 @@ export default function Reglages() {
   const handleExportJson = () => {
     try {
       exporterJson(envelopes, mouvements)
-      showToast({ message: 'Sauvegarde JSON téléchargée', type: 'info' })
+      showToast({ message: 'Sauvegarde JSON téléchargée', type: 'succes' })
     } catch (err) {
       showToast({ message: 'Erreur export : ' + err.message, type: 'erreur', duration: 3000 })
     }
@@ -141,7 +141,7 @@ export default function Reglages() {
     setExportLoading(true)
     try {
       exporterPdf(envelopes, mouvements)
-      showToast({ message: 'Rapport PDF téléchargé', type: 'info' })
+      showToast({ message: 'Rapport PDF téléchargé', type: 'succes' })
     } catch (err) {
       showToast({ message: 'Erreur PDF : ' + err.message, type: 'erreur', duration: 3000 })
     }

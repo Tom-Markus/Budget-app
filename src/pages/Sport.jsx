@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info } from 'lucide-react'
+import { Pencil, Check, X, Plus, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info, EyeOff } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
@@ -611,7 +611,7 @@ function PoidsChart({ data, couleur, type, onClose }) {
   )
 }
 
-function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave, isPPL, user }) {
+function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading, onUpload, onSave, onRetirer, isPPL, user }) {
   const { showToast } = useToast()
   const fileInputRef = useRef(null)
   const titleInputRef = useRef(null)
@@ -726,6 +726,23 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     width: '100%',
     fontFamily: 'inherit',
   }
+
+  // « Retirer de la séance » — masque un exercice du programme de base,
+  // ou supprime définitivement un exercice ajouté par l'utilisateur.
+  const retirerBouton = onRetirer && (
+    <button
+      onClick={onRetirer}
+      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium transition-all hover:opacity-70 active:scale-[0.98] mt-2"
+      style={{
+        background: 'transparent',
+        border: '1.5px dashed color-mix(in srgb, var(--rouge) 40%, transparent)',
+        color: 'var(--rouge)',
+      }}
+    >
+      <EyeOff size={13} strokeWidth={1.75} />
+      {ex.extra ? 'Supprimer cet exercice' : 'Retirer de la séance'}
+    </button>
+  )
 
   const photoBouton = (
     <>
@@ -1043,7 +1060,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {/* Colonne droite — performances + photo */}
             <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto px-4 pt-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
               {perfSection}
-              <div className="mt-4">{photoBouton}</div>
+              <div className="mt-4">{photoBouton}{retirerBouton}</div>
             </div>
           </div>
 
@@ -1119,7 +1136,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
                 )}
               </div>
-              {!editing && photoBouton}
+              {!editing && (<>{photoBouton}{retirerBouton}</>)}
             </div>
           </div>
         )}
@@ -1243,12 +1260,34 @@ export default function Sport() {
     try { return JSON.parse(localStorage.getItem('sport_checked_exos') || '{}') }
     catch { return {} }
   })
+  // Exercices ajoutés par l'utilisateur : { session: [rows de sport_extra_exos] }
+  const [extraExos, setExtraExos] = useState({})
+  const [ajoutExo, setAjoutExo] = useState(null) // { nom, series } quand le formulaire est ouvert
+  const saveChecksTimer = useRef(null)
+
+  // --- Coches synchronisées (localStorage = cache instantané, DB = vérité
+  //     partagée entre appareils via updated_at, écriture debouncée 800 ms) ---
+  function persisterChecks(next) {
+    const ts = Date.now()
+    try {
+      localStorage.setItem('sport_checked_exos', JSON.stringify(next))
+      localStorage.setItem('sport_checked_exos_ts', String(ts))
+    } catch { /* stockage indisponible */ }
+    clearTimeout(saveChecksTimer.current)
+    saveChecksTimer.current = setTimeout(async () => {
+      const { error } = await supabase.from('sport_checks')
+        .upsert({ user_id: user.id, state: next }, { onConflict: 'user_id' })
+      if (error) {
+        showToast({ type: 'erreur', message: 'Synchro des coches impossible : ' + error.message, duration: 3000 })
+      }
+    }, 800)
+  }
 
   function toggleExo(jourId, nomCle) {
     setCheckedExos(prev => {
       const day = prev[jourId] || {}
       const next = { ...prev, [jourId]: { ...day, [nomCle]: !day[nomCle] } }
-      localStorage.setItem('sport_checked_exos', JSON.stringify(next))
+      persisterChecks(next)
       return next
     })
   }
@@ -1256,9 +1295,88 @@ export default function Sport() {
   function resetDay(jourId) {
     setCheckedExos(prev => {
       const next = { ...prev, [jourId]: {} }
-      localStorage.setItem('sport_checked_exos', JSON.stringify(next))
+      persisterChecks(next)
       return next
     })
+  }
+
+  async function loadChecks() {
+    const { data, error } = await supabase
+      .from('sport_checks')
+      .select('state, updated_at')
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (error || !data) return
+    const remoteTs = new Date(data.updated_at).getTime()
+    let localTs = 0
+    try { localTs = Number(localStorage.getItem('sport_checked_exos_ts')) || 0 } catch { /* ignore */ }
+    if (remoteTs > localTs && data.state && typeof data.state === 'object') {
+      setCheckedExos(data.state)
+      try {
+        localStorage.setItem('sport_checked_exos', JSON.stringify(data.state))
+        localStorage.setItem('sport_checked_exos_ts', String(remoteTs))
+      } catch { /* stockage indisponible */ }
+    }
+  }
+
+  // --- Exercices ajoutés par l'utilisateur ---
+  async function loadExtraExos() {
+    const { data, error } = await supabase
+      .from('sport_extra_exos')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('position', { ascending: true })
+    if (error) return []
+    const parSession = {}
+    for (const row of (data || [])) {
+      if (!parSession[row.session]) parSession[row.session] = []
+      parSession[row.session].push(row)
+    }
+    setExtraExos(parSession)
+    return data || []
+  }
+
+  async function ajouterExtraExo(session, { nom, series }) {
+    const existants = extraExos[session] || []
+    const { data, error } = await supabase
+      .from('sport_extra_exos')
+      .insert({
+        user_id: user.id,
+        session,
+        nom: nom.trim(),
+        series: series.trim() || null,
+        position: existants.length,
+      })
+      .select('*')
+      .single()
+    if (error) {
+      showToast({ type: 'erreur', message: 'Ajout impossible : ' + error.message, duration: 3000 })
+      return
+    }
+    setExtraExos(prev => ({ ...prev, [session]: [...(prev[session] || []), data] }))
+    showToast({ message: `« ${data.nom} » ajouté à la séance`, type: 'succes' })
+  }
+
+  async function supprimerExtraExo(session, id) {
+    const { error } = await supabase.from('sport_extra_exos').delete().eq('id', id)
+    if (error) {
+      showToast({ type: 'erreur', message: 'Suppression impossible : ' + error.message, duration: 3000 })
+      return
+    }
+    setExtraExos(prev => ({ ...prev, [session]: (prev[session] || []).filter(e => e.id !== id) }))
+    setModal(null)
+    showToast({ message: 'Exercice retiré de la séance', type: 'succes' })
+  }
+
+  // --- Masquer / réafficher un exercice du programme de base ---
+  function masquerExo(nomCle) {
+    saveCustomExo(nomCle, { masque: true })
+    setModal(null)
+  }
+
+  function reafficherExosMasques(session) {
+    const masques = session.exercices.filter(ex => customExos[ex.nom]?.masque)
+    for (const ex of masques) saveCustomExo(ex.nom, { masque: false })
   }
 
   async function saveCustomExo(nomCle, changes) {
@@ -1298,19 +1416,20 @@ export default function Sport() {
     localStorage.setItem('sport_custom_exos_cache', JSON.stringify(fromDB))
   }
 
-  async function loadImages() {
+  async function loadImages(extraRows = []) {
     const { data, error } = await supabase.storage
       .from(BUCKET)
       .list(user.id, { limit: 100 })
     if (error || !data || data.length === 0) return
 
-    // Build slug → exercise name reverse map
+    // Build slug → exercise name reverse map (programme de base + exos ajoutés)
     const slugToName = {}
     Object.values(SESSIONS).forEach(s => {
       s.exercices.forEach(ex => {
         if (!ex.warmup) slugToName[slugify(ex.nom)] = ex.nom
       })
     })
+    extraRows.forEach(row => { slugToName[slugify(row.nom)] = row.nom })
 
     const map = {}
     data.forEach(file => {
@@ -1329,7 +1448,7 @@ export default function Sport() {
     setCustomImages(map)
   }
 
-  // Effet déclaré APRÈS loadCustomExos/loadImages (règle react-hooks :
+  // Effet déclaré APRÈS les fonctions de chargement (règle react-hooks :
   // pas d'accès à une fonction avant sa déclaration dans un hook).
   // Fetch au montage : les setState ont lieu après les await (asynchrones) —
   // faux positif de set-state-in-effect.
@@ -1337,7 +1456,11 @@ export default function Sport() {
     if (!user) return
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadCustomExos()
-    loadImages()
+    loadChecks()
+    // Les images sont résolues par nom : on attend la liste des exos ajoutés
+    loadExtraExos().then(extras => loadImages(extras))
+    const timer = saveChecksTimer
+    return () => clearTimeout(timer.current)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user])
 
@@ -1390,6 +1513,25 @@ export default function Sport() {
   const jourActif = JOURS.find(j => j.id === jourActifId)
   const session = jourActif?.session ? SESSIONS[jourActif.session] : null
 
+  // Liste affichée de la séance : programme de base (sans les masqués)
+  // + exercices ajoutés par l'utilisateur (extras)
+  const exosMasques = session
+    ? session.exercices.filter(ex => customExos[ex.nom]?.masque)
+    : []
+  const exosVisibles = session
+    ? [
+        ...session.exercices.filter(ex => !customExos[ex.nom]?.masque),
+        ...(extraExos[jourActif.session] || []).map(row => ({
+          nom: row.nom,
+          series: row.series || '—',
+          notes: row.notes || '',
+          description: row.description || '',
+          extra: true,
+          extraId: row.id,
+        })),
+      ]
+    : []
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
 
@@ -1406,6 +1548,11 @@ export default function Sport() {
             isUploading={uploading === modal.ex.nom}
             onUpload={handleUpload}
             onSave={(changes) => saveCustomExo(modal.ex.nom, changes)}
+            onRetirer={
+              modal.ex.extra
+                ? () => supprimerExtraExo(modal.session, modal.ex.extraId)
+                : () => masquerExo(modal.ex.nom)
+            }
             isPPL={['push', 'pull', 'legs'].includes(modal.session)}
             user={user}
           />
@@ -1484,12 +1631,12 @@ export default function Sport() {
           </div>
 
           <div className="px-5 py-4 md:px-6 space-y-2">
-            {session.exercices.map((originalEx, i) => {
+            {exosVisibles.map((originalEx) => {
               const ex = { ...originalEx, ...(customExos[originalEx.nom] || {}) }
               const isChecked = !!(checkedExos[jourActifId] || {})[originalEx.nom]
               return (
                 <CarteExercice
-                  key={i}
+                  key={originalEx.extraId ?? originalEx.nom}
                   ex={ex}
                   couleur={session.couleur}
                   isChecked={isChecked}
@@ -1498,6 +1645,73 @@ export default function Sport() {
                 />
               )
             })}
+
+            {/* Exercices masqués — ligne discrète de restauration */}
+            {exosMasques.length > 0 && (
+              <button
+                onClick={() => reafficherExosMasques(session)}
+                className="w-full py-1.5 rounded-xl font-sans text-xs transition-colors duration-200 hover:bg-encre/[0.05]"
+                style={{ color: 'var(--encre-tertiaire)' }}
+              >
+                {exosMasques.length} exercice{exosMasques.length > 1 ? 's' : ''} masqué{exosMasques.length > 1 ? 's' : ''} — réafficher
+              </button>
+            )}
+
+            {/* Ajouter un exercice à la séance */}
+            {ajoutExo ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault()
+                  if (!ajoutExo.nom.trim()) return
+                  ajouterExtraExo(jourActif.session, ajoutExo)
+                  setAjoutExo(null)
+                }}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
+                style={{ background: 'color-mix(in srgb, var(--encre) 4%, transparent)', border: `1.5px dashed ${session.couleur}55` }}
+              >
+                <input
+                  autoFocus
+                  value={ajoutExo.nom}
+                  onChange={(e) => setAjoutExo(f => ({ ...f, nom: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setAjoutExo(null) }}
+                  placeholder="Nom de l'exercice"
+                  className="flex-1 min-w-0 bg-transparent font-sans text-sm focus:outline-none"
+                  style={{ color: 'var(--encre)' }}
+                  aria-label="Nom du nouvel exercice"
+                />
+                <input
+                  value={ajoutExo.series}
+                  onChange={(e) => setAjoutExo(f => ({ ...f, series: e.target.value }))}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setAjoutExo(null) }}
+                  placeholder="3 × 10"
+                  className="w-20 bg-transparent font-sans text-sm text-center focus:outline-none"
+                  style={{ color: session.couleur }}
+                  aria-label="Séries et répétitions"
+                />
+                <button type="submit" disabled={!ajoutExo.nom.trim()}
+                  className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-80 disabled:opacity-30"
+                  style={{ background: session.couleur, color: '#fff' }} aria-label="Ajouter">
+                  <Check size={13} strokeWidth={2.5} />
+                </button>
+                <button type="button" onClick={() => setAjoutExo(null)}
+                  className="w-7 h-7 rounded-full flex items-center justify-center transition-opacity hover:opacity-70 bg-encre/[0.08]"
+                  style={{ color: 'var(--encre-tertiaire)' }} aria-label="Annuler">
+                  <X size={12} strokeWidth={2} />
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => setAjoutExo({ nom: '', series: '' })}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-medium font-sans transition-all hover:opacity-70 active:scale-[0.98]"
+                style={{
+                  border: '1.5px dashed color-mix(in srgb, var(--encre) 18%, transparent)',
+                  color: 'var(--encre-tertiaire)',
+                }}
+              >
+                <Plus size={13} strokeWidth={1.75} />
+                Ajouter un exercice
+              </button>
+            )}
           </div>
 
           {session.note && (
@@ -1513,13 +1727,13 @@ export default function Sport() {
             </div>
           )}
 
-          {/* Barre de progression */}
+          {/* Barre de progression (basée sur les exercices visibles) */}
           {(() => {
             const dayChecks = checkedExos[jourActifId] || {}
-            const total = session.exercices.length
-            const done = session.exercices.filter(e => dayChecks[e.nom]).length
+            const total = exosVisibles.length
+            const done = exosVisibles.filter(e => dayChecks[e.nom]).length
             const pct = total > 0 ? done / total : 0
-            const fini = done === total
+            const fini = total > 0 && done === total
             return (
               <div className="px-5 md:px-6 pt-4 pb-2">
                 <div className="flex items-center justify-between mb-2">
@@ -1548,7 +1762,7 @@ export default function Sport() {
           {/* Bouton réinitialiser */}
           {(() => {
             const dayChecks = checkedExos[jourActifId] || {}
-            const done = session.exercices.filter(e => dayChecks[e.nom]).length
+            const done = exosVisibles.filter(e => dayChecks[e.nom]).length
             return (
               <div className="px-5 md:px-6 pb-5 pt-2">
                 <button

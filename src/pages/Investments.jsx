@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   TrendingUp, TrendingDown, Minus, Plus, X, Trash2, Lock, CheckCircle2,
-  ChevronLeft, ChevronRight, Calendar, BarChart2,
+  ChevronLeft, ChevronRight, Calendar, BarChart2, Pencil,
 } from 'lucide-react'
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, PieChart, Pie, Cell,
@@ -11,11 +11,14 @@ import {
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import PopupConfirmation from '../components/PopupConfirmation'
+import { SkeletonInvestments } from '../components/Skeletons'
 import { fetchMarkets, fetchStocks } from '../lib/newsApi'
 import {
   chargerInvestissements,
   ajouterInvestissement,
   cloturerInvestissement,
+  cloturerPartiel,
+  modifierInvestissement,
   supprimerInvestissement,
 } from '../lib/investmentsMutations'
 
@@ -558,27 +561,34 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
 }
 
 // ============================================================================
-// Formulaire — Clôturer (vendre)
+// Formulaire — Clôturer (vendre), totalement ou partiellement
 // ============================================================================
 function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
-  const [form, setForm] = useState({ date_vente: '', prix_vente: '' })
+  const [form, setForm] = useState({ date_vente: '', prix_vente: '', quantite: '' })
 
   // Réinitialise le formulaire quand la cible change — ajustement d'état
-  // pendant le rendu plutôt que dans un effet.
+  // pendant le rendu plutôt que dans un effet. Quantité pré-remplie = tout.
   const [prevInv, setPrevInv] = useState(investissement)
   if (prevInv !== investissement) {
     setPrevInv(investissement)
-    if (investissement) setForm({ date_vente: '', prix_vente: '' })
+    if (investissement) {
+      setForm({ date_vente: '', prix_vente: '', quantite: formatQte(investissement.quantite) })
+    }
   }
 
   const prixVente = Number(form.prix_vente)
+  const qte = Number(String(form.quantite).replace(',', '.'))
+  const qteTotale = investissement?.quantite ?? 0
+  const estPartiel = qte > 0 && qte < qteTotale - 1e-9
+
   // La vente ne peut pas être antérieure à l'achat (dates ISO comparables)
   const dateInvalide = !!(form.date_vente && investissement?.date_achat
     && form.date_vente < investissement.date_achat)
-  const valide = form.date_vente && prixVente > 0 && !dateInvalide
+  const qteInvalide = !(qte > 0) || qte > qteTotale + 1e-9
+  const valide = form.date_vente && prixVente > 0 && !dateInvalide && !qteInvalide
 
-  const pnl = investissement && prixVente > 0
-    ? (prixVente - investissement.prix_achat) * investissement.quantite
+  const pnl = investissement && prixVente > 0 && qte > 0
+    ? (prixVente - investissement.prix_achat) * Math.min(qte, qteTotale)
     : null
   const pnlPct = investissement && prixVente > 0
     ? (prixVente / investissement.prix_achat - 1) * 100
@@ -587,7 +597,12 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
   function handleSubmit(e) {
     e.preventDefault()
     if (!valide) return
-    onSubmit({ date_vente: form.date_vente, prix_vente: prixVente })
+    onSubmit({
+      date_vente: form.date_vente,
+      prix_vente: prixVente,
+      quantiteVendue: Math.min(qte, qteTotale),
+      estPartiel,
+    })
   }
 
   return (
@@ -607,14 +622,34 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
           </p>
         )}
 
-        <Champ label="Cours de vente ($) *">
-          <input
-            type="number" step="any" min="0"
-            value={form.prix_vente}
-            onChange={(e) => setForm((f) => ({ ...f, prix_vente: e.target.value }))}
-            placeholder="0.00" className={inputCls} required
-          />
-        </Champ>
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Cours de vente ($) *">
+            <input
+              type="number" step="any" min="0"
+              value={form.prix_vente}
+              onChange={(e) => setForm((f) => ({ ...f, prix_vente: e.target.value }))}
+              placeholder="0.00" className={inputCls} required
+            />
+          </Champ>
+          <Champ label="Quantité vendue *">
+            <input
+              type="number" step="any" min="0"
+              value={form.quantite}
+              onChange={(e) => setForm((f) => ({ ...f, quantite: e.target.value }))}
+              placeholder={investissement ? formatQte(qteTotale) : ''}
+              className={inputCls} required
+            />
+          </Champ>
+        </div>
+        {qteInvalide && form.quantite !== '' ? (
+          <p className="text-xs text-rouge -mt-2" role="alert">
+            Quantité invalide — tu détiens {formatQte(qteTotale)}.
+          </p>
+        ) : estPartiel ? (
+          <p className="text-xs text-encre-tertiaire -mt-2">
+            Vente partielle : {formatQte(qte)} vendu, {formatQte(qteTotale - qte)} restera en position ouverte.
+          </p>
+        ) : null}
 
         {pnl !== null && (
           <div className="rounded-md bg-velin-fonce px-4 py-3 text-sm">
@@ -632,7 +667,159 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
           >
             Annuler
           </button>
-          <BoutonSubmit disabled={!valide} loading={loading} label="Confirmer la vente" />
+          <BoutonSubmit
+            disabled={!valide}
+            loading={loading}
+            label={estPartiel ? 'Vendre une partie' : 'Confirmer la vente'}
+          />
+        </div>
+      </form>
+    </Modal>
+  )
+}
+
+// ============================================================================
+// Formulaire — Éditer une position existante
+// ============================================================================
+function FormulaireEdition({ investissement, onClose, onSubmit, loading }) {
+  const [form, setForm] = useState(null)
+
+  // Pré-remplit le formulaire quand la cible change — ajustement d'état
+  // pendant le rendu plutôt que dans un effet.
+  const [prevInv, setPrevInv] = useState(investissement)
+  if (prevInv !== investissement) {
+    setPrevInv(investissement)
+    if (investissement) {
+      setForm({
+        type: investissement.type,
+        nom: investissement.nom,
+        ticker: investissement.ticker || '',
+        date_achat: investissement.date_achat,
+        prix_achat: String(investissement.prix_achat),
+        quantite: formatQte(investissement.quantite),
+        notes: investissement.notes || '',
+        date_vente: investissement.date_vente || '',
+        prix_vente: investissement.prix_vente != null ? String(investissement.prix_vente) : '',
+      })
+    }
+  }
+
+  if (!form) return null
+  const estCloture = !!(investissement?.date_vente && investissement?.prix_vente)
+
+  const set = (field) => (e) => setForm((f) => ({ ...f, [field]: e.target.value }))
+  const prixAchat = Number(form.prix_achat)
+  const qte = Number(String(form.quantite).replace(',', '.'))
+  const prixVente = Number(form.prix_vente)
+
+  const dateInvalide = !!(estCloture && form.date_vente && form.date_achat
+    && form.date_vente < form.date_achat)
+  const valide = form.nom.trim() && form.date_achat && prixAchat > 0 && qte > 0
+    && (!estCloture || (form.date_vente && prixVente > 0)) && !dateInvalide
+
+  function handleSubmit(e) {
+    e.preventDefault()
+    if (!valide) return
+    const patch = {
+      type: form.type,
+      nom: form.nom,
+      ticker: form.ticker,
+      date_achat: form.date_achat,
+      prix_achat: prixAchat,
+      quantite: qte,
+      notes: form.notes.trim() || null,
+    }
+    if (estCloture) {
+      patch.date_vente = form.date_vente
+      patch.prix_vente = prixVente
+    }
+    onSubmit(patch)
+  }
+
+  return (
+    <Modal isOpen={!!investissement} onClose={onClose}>
+      <h2 className="font-serif italic font-medium text-2xl text-encre pr-8">
+        Modifier — {investissement?.nom}
+      </h2>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Champ label="Type">
+          <div className="grid grid-cols-4 gap-2">
+            {Object.entries(TYPES).map(([id, t]) => {
+              const selected = form.type === id
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, type: id }))}
+                  className={[
+                    'h-10 rounded-md text-sm font-medium font-sans transition-colors duration-150 border',
+                    selected
+                      ? `${t.bg} ${t.text} border-current/30`
+                      : 'bg-transparent text-encre-tertiaire border-encre/[0.10] hover:bg-velin-fonce hover:text-encre',
+                  ].join(' ')}
+                >
+                  {t.label}
+                </button>
+              )
+            })}
+          </div>
+        </Champ>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Nom *">
+            <input type="text" value={form.nom} onChange={set('nom')} className={inputCls} required />
+          </Champ>
+          <Champ label="Ticker">
+            <input
+              type="text" value={form.ticker}
+              onChange={(e) => setForm((f) => ({ ...f, ticker: e.target.value.toUpperCase() }))}
+              maxLength={12} className={inputCls}
+            />
+          </Champ>
+        </div>
+
+        <Champ label="Date d'achat *">
+          <DatePicker value={form.date_achat} onChange={(v) => setForm((f) => ({ ...f, date_achat: v }))} />
+        </Champ>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Champ label="Cours à l'achat ($) *">
+            <input type="number" step="any" min="0" value={form.prix_achat} onChange={set('prix_achat')} className={inputCls} required />
+          </Champ>
+          <Champ label="Quantité *">
+            <input type="number" step="any" min="0" value={form.quantite} onChange={set('quantite')} className={inputCls} required />
+          </Champ>
+        </div>
+
+        {estCloture && (
+          <>
+            <Champ label="Date de vente *">
+              <DatePicker value={form.date_vente} onChange={(v) => setForm((f) => ({ ...f, date_vente: v }))} />
+            </Champ>
+            {dateInvalide && (
+              <p className="text-xs text-rouge -mt-2" role="alert">
+                La date de vente ne peut pas être antérieure à la date d'achat.
+              </p>
+            )}
+            <Champ label="Cours de vente ($) *">
+              <input type="number" step="any" min="0" value={form.prix_vente} onChange={set('prix_vente')} className={inputCls} required />
+            </Champ>
+          </>
+        )}
+
+        <Champ label="Notes">
+          <input type="text" value={form.notes} onChange={set('notes')} placeholder="Optionnel…" className={inputCls} />
+        </Champ>
+
+        <div className="flex justify-end gap-2 mt-1">
+          <button
+            type="button" onClick={onClose}
+            className="h-10 px-4 rounded-md text-sm font-medium text-encre-secondaire hover:bg-velin-fonce transition-colors duration-200"
+          >
+            Annuler
+          </button>
+          <BoutonSubmit disabled={!valide} loading={loading} label="Enregistrer" />
         </div>
       </form>
     </Modal>
@@ -894,7 +1081,7 @@ function DonutStatCard({ data }) {
 }
 
 // ── Carte investissement ──────────────────────────────────────────────────────
-function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice, liveLoading }) {
+function CarteInvestissement({ inv, onCloturer, onEditer, onSupprimer, cloture, livePrice, liveLoading }) {
   const montantInvesti = inv.prix_achat * inv.quantite
   const estCloture = !!(inv.date_vente && inv.prix_vente)
   const pnl = estCloture ? (inv.prix_vente - inv.prix_achat) * inv.quantite : null
@@ -947,6 +1134,15 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
               className="h-10 w-10 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-bordeaux hover:bg-bordeaux/10 transition-colors duration-200"
             >
               <Lock size={14} strokeWidth={1.75} />
+            </button>
+          )}
+          {onEditer && (
+            <button
+              onClick={() => onEditer(inv)}
+              title="Modifier"
+              className="h-10 w-10 flex items-center justify-center rounded-md text-encre-tertiaire hover:text-encre hover:bg-velin-fonce transition-colors duration-200"
+            >
+              <Pencil size={14} strokeWidth={1.75} />
             </button>
           )}
           <button
@@ -1053,6 +1249,7 @@ export default function Investments() {
   const [saving, setSaving] = useState(false)
   const [modalAjout, setModalAjout] = useState(false)
   const [cloturerTarget, setCloturerTarget] = useState(null)
+  const [editerTarget, setEditerTarget] = useState(null)
   const [supprimerTarget, setSupprimerTarget] = useState(null)
   const [graphPortefeuilleOpen, setGraphPortefeuilleOpen] = useState(false)
 
@@ -1109,7 +1306,7 @@ export default function Investments() {
       await ajouterInvestissement(user.id, data)
       setModalAjout(false)
       await charger()
-      showToast({ message: `${data.nom} ajouté.` })
+      showToast({ message: `${data.nom} ajouté.`, type: 'succes' })
     } catch (err) {
       showToast({ type: 'erreur', message: err.message })
     } finally {
@@ -1117,14 +1314,35 @@ export default function Investments() {
     }
   }
 
-  async function handleCloturer(data) {
+  async function handleCloturer({ date_vente, prix_vente, quantiteVendue, estPartiel }) {
     setSaving(true)
     try {
-      await cloturerInvestissement(cloturerTarget.id, data)
       const nom = cloturerTarget.nom
-      setCloturerTarget(null)
+      if (estPartiel) {
+        await cloturerPartiel(cloturerTarget, { date_vente, prix_vente, quantiteVendue })
+        setCloturerTarget(null)
+        await charger()
+        showToast({ message: `${nom} : ${formatQte(quantiteVendue)} vendu, le reste reste ouvert.`, type: 'succes' })
+      } else {
+        await cloturerInvestissement(cloturerTarget.id, { date_vente, prix_vente })
+        setCloturerTarget(null)
+        await charger()
+        showToast({ message: `${nom} clôturé.`, type: 'succes' })
+      }
+    } catch (err) {
+      showToast({ type: 'erreur', message: err.message })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleEditer(patch) {
+    setSaving(true)
+    try {
+      await modifierInvestissement(editerTarget.id, patch)
+      setEditerTarget(null)
       await charger()
-      showToast({ message: `${nom} clôturé.` })
+      showToast({ message: `${patch.nom?.trim() || editerTarget.nom} modifié.`, type: 'succes' })
     } catch (err) {
       showToast({ type: 'erreur', message: err.message })
     } finally {
@@ -1175,7 +1393,11 @@ export default function Investments() {
         </button>
       </div>
 
+      {/* Squelette pendant le chargement (stats + grille) */}
+      {loading && <SkeletonInvestments />}
+
       {/* Résumé chiffres clés + donut sur la même ligne */}
+      {!loading && (
       <div className={`grid gap-3 mb-6 ${donutData.length >= 2 ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
         <StatCard
           label="Portefeuille"
@@ -1194,20 +1416,14 @@ export default function Investments() {
           value={ouvertes.length}
           sub={cloturees.length > 0 ? `${cloturees.length} clôturée${cloturees.length > 1 ? 's' : ''}` : undefined}
         />
-        {!loading && donutData.length >= 2 && (
+        {donutData.length >= 2 && (
           <DonutStatCard data={donutData} />
         )}
       </div>
+      )}
 
       {/* Contenu */}
-      {loading ? (
-        <div className="flex items-center justify-center py-16">
-          <span
-            className="animate-spin h-6 w-6 border-2 border-t-transparent rounded-full"
-            style={{ borderColor: 'var(--or)', borderTopColor: 'transparent' }}
-          />
-        </div>
-      ) : investissements.length === 0 ? (
+      {loading ? null : investissements.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4 text-center">
           <TrendingUp size={44} className="text-or opacity-40" aria-hidden="true" />
           <p className="font-serif italic text-xl text-encre-secondaire">Aucun investissement enregistré</p>
@@ -1241,6 +1457,7 @@ export default function Investments() {
                       key={inv.id}
                       inv={inv}
                       onCloturer={setCloturerTarget}
+                      onEditer={setEditerTarget}
                       onSupprimer={setSupprimerTarget}
                       livePrice={getLivePrice(inv, liveMarkets, liveStocks)}
                       liveLoading={liveLoading}
@@ -1273,6 +1490,7 @@ export default function Investments() {
                       inv={inv}
                       cloture
                       onCloturer={null}
+                      onEditer={setEditerTarget}
                       onSupprimer={setSupprimerTarget}
                       livePrice={null}
                       liveLoading={false}
@@ -1296,6 +1514,12 @@ export default function Investments() {
         investissement={cloturerTarget}
         onClose={() => setCloturerTarget(null)}
         onSubmit={handleCloturer}
+        loading={saving}
+      />
+      <FormulaireEdition
+        investissement={editerTarget}
+        onClose={() => setEditerTarget(null)}
+        onSubmit={handleEditer}
         loading={saving}
       />
       <PopupConfirmation

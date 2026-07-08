@@ -1,4 +1,7 @@
 {
+  "crons": [
+    { "path": "/api/cron-recurrences", "schedule": "0 3 * * *" }
+  ],
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],

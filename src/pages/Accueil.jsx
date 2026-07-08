@@ -26,7 +26,8 @@ import PetiteEnveloppe from '../components/PetiteEnveloppe'
 import BoutonNouvelleEnveloppe from '../components/BoutonNouvelleEnveloppe'
 import PopupConfirmation from '../components/PopupConfirmation'
 import Graphique from '../components/Graphique'
-import { LoaderNoble, SyncingDot } from '../components/Toast'
+import { SyncingDot } from '../components/Toast'
+import { SkeletonAccueil } from '../components/Skeletons'
 import { dernierMouvement, reconstruireHistorique, mouvementsDeLArbre } from '../lib/calculs'
 import { formatEuros } from '../lib/formatters'
 
@@ -426,7 +427,7 @@ export default function Accueil() {
   }, [])
 
   // ----- États précoces -----
-  if (loading) return <LoaderNoble message="Lecture du grand livre..." />
+  if (loading) return <SkeletonAccueil />
   if (error) {
     return (
       <div className="surface-velin p-6 max-w-2xl mx-auto">
