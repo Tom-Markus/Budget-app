@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import PopupConfirmation from '../components/PopupConfirmation'
 import { fetchMarkets, fetchStocks } from '../lib/newsApi'
+import { fetchFx } from '../lib/widgetsApi'
 import {
   chargerInvestissements,
   ajouterInvestissement,
@@ -53,13 +54,6 @@ function formatEur(n) {
   }).format(n)
 }
 
-function formatUsd(n) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency', currency: 'USD',
-    minimumFractionDigits: 2, maximumFractionDigits: 2,
-  }).format(n)
-}
-
 function formatPct(n) {
   return (n >= 0 ? '+' : '') + n.toFixed(2) + ' %'
 }
@@ -81,24 +75,31 @@ function formatDateCompacte(d) {
 }
 
 // ============================================================================
-// Helper — prix live d'un investissement
+// Helper — prix live d'un investissement, EN EUROS
+// ----------------------------------------------------------------------------
+// Les cours saisis par l'utilisateur (achat/vente) sont en euros, comme tous
+// les montants de l'app. Pour comparer, les prix live sont donc ramenés en € :
+//   - crypto / or : CoinGecko fournit directement le prix EUR (exact)
+//   - actions / ETF : Yahoo cote en USD → conversion via le taux EUR/USD
+//     (eurUsd = nombre de dollars pour 1 €) ; sans taux, pas de prix live.
 // ============================================================================
-function getLivePrice(inv, liveMarkets, liveStocks) {
+function getLivePrice(inv, liveMarkets, liveStocks, eurUsd) {
   if (!inv || !liveMarkets) return null
 
   if (inv.type === 'or') {
-    return liveMarkets.gold?.usd ?? null
+    return liveMarkets.gold?.eur ?? null
   }
 
   if (inv.type === 'crypto') {
     if (!inv.ticker) return null
     const coinKey = CRYPTO_TICKER_MAP[inv.ticker.toUpperCase()]
-    return coinKey ? (liveMarkets[coinKey]?.usd ?? null) : null
+    return coinKey ? (liveMarkets[coinKey]?.eur ?? null) : null
   }
 
   if (inv.type === 'action' || inv.type === 'etf') {
-    if (!inv.ticker || !liveStocks) return null
-    return liveStocks[inv.ticker.toLowerCase()]?.price ?? null
+    if (!inv.ticker || !liveStocks || !(eurUsd > 0)) return null
+    const usd = liveStocks[inv.ticker.toLowerCase()]?.price
+    return usd != null ? usd / eurUsd : null
   }
 
   return null
@@ -107,7 +108,7 @@ function getLivePrice(inv, liveMarkets, liveStocks) {
 // ============================================================================
 // Helper — historique de valeur du portefeuille
 // ============================================================================
-function buildPortfolioHistory(investissements, liveMarkets, liveStocks) {
+function buildPortfolioHistory(investissements, liveMarkets, liveStocks, eurUsd) {
   if (!investissements || investissements.length === 0) return []
 
   const events = []
@@ -143,11 +144,11 @@ function buildPortfolioHistory(investissements, liveMarkets, liveStocks) {
     })
   }
 
-  // Point "aujourd'hui" : positions ouvertes au prix live si dispo, sinon coût
+  // Point "aujourd'hui" : positions ouvertes au prix live (en €) si dispo, sinon coût
   const today = new Date().toISOString().slice(0, 10)
   let liveOpenValue = 0
   for (const inv of openPositions.values()) {
-    const lp = getLivePrice(inv, liveMarkets, liveStocks)
+    const lp = getLivePrice(inv, liveMarkets, liveStocks, eurUsd)
     liveOpenValue += (lp ?? inv.prix_achat) * inv.quantite
   }
   points.push({ date: today, valeur: Math.max(0, liveOpenValue + closedProceeds) })
@@ -517,14 +518,14 @@ function FormulaireAjout({ isOpen, onClose, onSubmit, loading }) {
         </Champ>
 
         <div className="grid grid-cols-2 gap-3">
-          <Champ label="Cours à l'achat *">
+          <Champ label="Cours à l'achat (€) *">
             <input
               type="number" step="any" min="0"
               value={form.cours_achat} onChange={set('cours_achat')}
               placeholder="ex : 182.50" className={inputCls} required
             />
           </Champ>
-          <Champ label="Montant payé *">
+          <Champ label="Montant payé (€) *">
             <input
               type="number" step="any" min="0"
               value={form.montant_paye} onChange={set('montant_paye')}
@@ -610,7 +611,7 @@ function FormulaireCloturer({ investissement, onClose, onSubmit, loading }) {
           </p>
         )}
 
-        <Champ label="Cours de vente *">
+        <Champ label="Cours de vente (€) *">
           <input
             type="number" step="any" min="0"
             value={form.prix_vente}
@@ -711,20 +712,20 @@ function LiveTooltip({ active, payload }) {
     }}>
       <div className="t-label-noble">{formatDateCompacte(date)}</div>
       <div className="font-sans font-medium text-encre tabular-nums mt-0.5">
-        {formatUsd(valeur)}
+        {formatEur(valeur)}
       </div>
     </div>
   )
 }
 
 // ── Graphe portefeuille (modal) ───────────────────────────────────────────────
-function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liveStocks }) {
+function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liveStocks, eurUsd }) {
   const chartGrid = 'var(--chart-grid)'
   const chartAxis = 'var(--chart-axis)'
 
   const points = useMemo(
-    () => buildPortfolioHistory(investissements, liveMarkets, liveStocks),
-    [investissements, liveMarkets, liveStocks],
+    () => buildPortfolioHistory(investissements, liveMarkets, liveStocks, eurUsd),
+    [investissements, liveMarkets, liveStocks, eurUsd],
   )
 
   useEffect(() => {
@@ -765,6 +766,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
                 <h3 id="graph-portfolio-titre" className="t-h2 mt-1">Portefeuille complet</h3>
                 <p className="text-xs text-encre-tertiaire mt-1">
                   Positions ouvertes au prix {liveMarkets ? 'live' : 'coût'} + positions clôturées
+                  — en euros{liveMarkets ? ' (cours USD convertis au taux EUR/USD du jour)' : ''}
                 </p>
               </div>
               <button
@@ -813,7 +815,7 @@ function GraphePortefeuille({ isOpen, onClose, investissements, liveMarkets, liv
                   <YAxis
                     stroke={chartAxis} fontSize={11} tickLine={false}
                     axisLine={{ stroke: chartAxis }}
-                    tickFormatter={(v) => '$' + v.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+                    tickFormatter={(v) => v.toLocaleString('fr-BE', { maximumFractionDigits: 0 }) + ' €'}
                     width={64}
                     domain={[0, 'auto']}
                   />
@@ -973,17 +975,17 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
             </>
           )}
         </div>
-        {/* Comparaison des cours pour les positions clôturées */}
+        {/* Comparaison des cours (en €) pour les positions clôturées */}
         {estCloture && (
           <div className="flex items-center gap-1.5 text-xs">
             <span className="tabular-nums text-encre-tertiaire">
-              {inv.prix_achat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatEur(inv.prix_achat)}
             </span>
             <span className="text-encre-tertiaire/40" aria-hidden="true">→</span>
             <span
               className={`tabular-nums font-medium ${inv.prix_vente >= inv.prix_achat ? 'text-vert' : 'text-rouge'}`}
             >
-              {inv.prix_vente.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              {formatEur(inv.prix_vente)}
             </span>
           </div>
         )}
@@ -992,7 +994,7 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
       {/* Montants + P&L réalisé */}
       <div className="flex items-end justify-between gap-2">
         <div className="text-xs text-encre-tertiaire leading-5">
-          {formatQte(inv.quantite)} × {inv.prix_achat.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          {formatQte(inv.quantite)} × {formatEur(inv.prix_achat)}
           <br />
           <span className="text-encre font-medium text-sm">{formatEur(montantInvesti)}</span>
         </div>
@@ -1014,15 +1016,15 @@ function CarteInvestissement({ inv, onCloturer, onSupprimer, cloture, livePrice,
             <div className="flex-1 h-4 bg-encre/6 rounded animate-pulse" />
           ) : livePrice != null ? (
             <>
-              <span className="text-xs text-encre-tertiaire">
+              <span className="text-xs text-encre-tertiaire" title="Prix live en euros (cours USD convertis au taux EUR/USD)">
                 Live{' '}
                 <span className="font-medium text-encre tabular-nums">
-                  {formatUsd(livePrice)}
+                  {formatEur(livePrice)}
                 </span>
               </span>
               {pnlLive !== null && (
                 <span className={`text-sm font-medium tabular-nums ${pnlLive >= 0 ? 'text-vert' : 'text-rouge'}`}>
-                  {pnlLive >= 0 ? '+' : ''}{formatUsd(pnlLive)}
+                  {pnlLive >= 0 ? '+' : ''}{formatEur(pnlLive)}
                   <span className="text-xs ml-1 font-normal">
                     ({pnlLivePct >= 0 ? '+' : ''}{pnlLivePct.toFixed(2)} %)
                   </span>
@@ -1062,7 +1064,12 @@ export default function Investments() {
   // Prix live
   const [liveMarkets, setLiveMarkets] = useState(null)
   const [liveStocks,  setLiveStocks]  = useState(null)
+  const [liveFx,      setLiveFx]      = useState(null)
   const [liveLoading, setLiveLoading] = useState(true)
+
+  // Taux EUR/USD (dollars pour 1 €) pour convertir les cours Yahoo (USD) en €.
+  // Source primaire : Alpha Vantage (via fetchMarkets) ; repli : taux BCE (/api/fx).
+  const eurUsd = liveMarkets?.eurusd?.rate ?? liveFx?.rates?.USD ?? null
 
   // loading démarre à true et ne repasse jamais à true : les rechargements
   // après ajout/clôture rafraîchissent la liste en place, sans flash de
@@ -1090,10 +1097,11 @@ export default function Investments() {
       // liveLoading démarre à true (useState) — pas besoin de le re-lever ici,
       // les refresh périodiques mettent à jour les prix sans état de chargement.
       try {
-        const [m, s] = await Promise.all([fetchMarkets(), fetchStocks()])
+        const [m, s, f] = await Promise.all([fetchMarkets(), fetchStocks(), fetchFx()])
         if (!mounted) return
         setLiveMarkets(m)
         setLiveStocks(s)
+        setLiveFx(f)
       } catch {
         // silencieux : P&L live simplement absent
       } finally {
@@ -1245,7 +1253,7 @@ export default function Investments() {
                       inv={inv}
                       onCloturer={setCloturerTarget}
                       onSupprimer={setSupprimerTarget}
-                      livePrice={getLivePrice(inv, liveMarkets, liveStocks)}
+                      livePrice={getLivePrice(inv, liveMarkets, liveStocks, eurUsd)}
                       liveLoading={liveLoading}
                     />
                   ))}
@@ -1318,6 +1326,7 @@ export default function Investments() {
         investissements={investissements}
         liveMarkets={liveMarkets}
         liveStocks={liveStocks}
+        eurUsd={eurUsd}
       />
     </>
   )
