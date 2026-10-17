@@ -1061,7 +1061,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {/* Colonne droite — performances + photo */}
             <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto px-4 pt-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
               {perfSection}
-              <div className="mt-4">{photoBouton}</div>
+              
             </div>
           </div>
 
@@ -1137,7 +1137,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
                 )}
               </div>
-              {editing ? retirerBouton : photoBouton}
+              {editing && (<>{photoBouton}{retirerBouton}</>)}
             </div>
           </div>
         )}
