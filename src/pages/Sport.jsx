@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Pencil, Check, X, Plus, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info, EyeOff } from 'lucide-react'
+import { Pencil, Check, X, Plus, ChevronLeft, ChevronRight, Calendar, Camera, RotateCcw, TrendingUp, Info, Trash2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
@@ -727,8 +727,9 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
     fontFamily: 'inherit',
   }
 
-  // « Retirer de la séance » — masque un exercice du programme de base,
-  // ou supprime définitivement un exercice ajouté par l'utilisateur.
+  // « Supprimer l'exercice » — affiché dans le mode édition (crayon).
+  // Exercice du programme de base : il est masqué (réaffichable via la ligne
+  // « N exercices masqués » sous la séance). Exercice ajouté : supprimé pour de bon.
   const retirerBouton = onRetirer && (
     <button
       onClick={onRetirer}
@@ -739,8 +740,8 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
         color: 'var(--rouge)',
       }}
     >
-      <EyeOff size={13} strokeWidth={1.75} />
-      {ex.extra ? 'Supprimer cet exercice' : 'Retirer de la séance'}
+      <Trash2 size={13} strokeWidth={1.75} />
+      Supprimer l'exercice
     </button>
   )
 
@@ -1060,7 +1061,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
             {/* Colonne droite — performances + photo */}
             <div className="sm:flex-1 sm:min-h-0 sm:overflow-y-auto px-4 pt-5" style={{ paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom, 0px))' }}>
               {perfSection}
-              <div className="mt-4">{photoBouton}{retirerBouton}</div>
+              <div className="mt-4">{photoBouton}</div>
             </div>
           </div>
 
@@ -1136,7 +1137,7 @@ function ModalExercice({ ex, nomCle, couleur, onClose, customImage, isUploading,
                   <p className="font-sans text-sm italic" style={{ color: 'var(--encre-tertiaire)' }}>Aucune description — clique sur ✏️ pour en ajouter une.</p>
                 )}
               </div>
-              {!editing && (<>{photoBouton}{retirerBouton}</>)}
+              {editing ? retirerBouton : photoBouton}
             </div>
           </div>
         )}
@@ -1365,13 +1366,14 @@ export default function Sport() {
     }
     setExtraExos(prev => ({ ...prev, [session]: (prev[session] || []).filter(e => e.id !== id) }))
     setModal(null)
-    showToast({ message: 'Exercice retiré de la séance', type: 'succes' })
+    showToast({ message: 'Exercice supprimé', type: 'succes' })
   }
 
   // --- Masquer / réafficher un exercice du programme de base ---
   function masquerExo(nomCle) {
     saveCustomExo(nomCle, { masque: true })
     setModal(null)
+    showToast({ message: 'Exercice supprimé (réaffichable sous la séance)', type: 'succes' })
   }
 
   function reafficherExosMasques(session) {

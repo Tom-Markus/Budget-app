@@ -11,7 +11,7 @@ import { AppContext } from '../hooks/useApp'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import {
-  calculerSoldes, calculerARepartir, simulerAnnulationSure,
+  calculerSoldes, calculerARepartir, simulerAnnulationSure, descendantsIds,
 } from '../lib/calculs'
 import { formatEuros } from '../lib/formatters'
 import * as mutations from '../lib/mutations'
@@ -100,14 +100,14 @@ export function AppProvider({ children }) {
       }
     })()
 
-    // Filtre user_id sur envelopes : la RLS couvre déjà INSERT/UPDATE, mais
-    // les événements DELETE de Postgres Changes ne sont PAS filtrés par la
-    // RLS — sans ce filtre on recevrait les suppressions de tous les comptes.
-    // (movements n'a pas de colonne user_id : pas de filtre possible, mais
-    // les payloads DELETE ne contiennent que l'id — sans impact.)
+    // PAS de filtre `user_id=` ici : Supabase ne délivre aucun événement
+    // DELETE sur un canal filtré, ce qui empêchait les suppressions
+    // d'apparaître en direct. Les payloads DELETE ne contiennent que l'id
+    // (appliquerDelta ne retire que ce qu'on a déjà) et la RLS filtre
+    // INSERT/UPDATE : aucune donnée d'un autre compte n'arrive jusqu'ici.
     const envCh = supabase.channel(`envelopes-${uid}`)
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'envelopes', filter: `user_id=eq.${uid}` },
+        { event: '*', schema: 'public', table: 'envelopes' },
         (payload) => mounted && setEnvelopes(prev => appliquerDelta(prev, payload)))
       .subscribe()
     const mvCh = supabase.channel(`movements-${uid}`)
@@ -307,6 +307,20 @@ export function AppProvider({ children }) {
         const solde = soldeDe(envId)
         const aEnfants = aDesEnfants(envId)
         await mutations.supprimerEnveloppe(env, solde, aEnfants, patrimoine?.id, modeAvecEnfants)
+
+        // Mise à jour locale immédiate (ne dépend pas du temps réel) :
+        // cascade → l'enveloppe, ses descendants et leurs mouvements disparaissent ;
+        // promote → l'enveloppe disparaît et ses enfants remontent d'un niveau.
+        if (aEnfants && modeAvecEnfants === 'promote') {
+          setEnvelopes(prev => prev
+            .filter(e => e.id !== envId)
+            .map(e => e.parent_id === envId ? { ...e, parent_id: env.parent_id } : e))
+          setMouvements(prev => prev.filter(m => m.envelope_id !== envId))
+        } else {
+          const retires = new Set([envId, ...descendantsIds(envId, envelopes)])
+          setEnvelopes(prev => prev.filter(e => !retires.has(e.id)))
+          setMouvements(prev => prev.filter(m => !retires.has(m.envelope_id)))
+        }
         showToast({ message: `« ${env.title} » supprimée`, type: 'succes' })
       }),
 
