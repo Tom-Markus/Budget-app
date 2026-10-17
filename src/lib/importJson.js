@@ -95,6 +95,10 @@ export function validerImport(data) {
     if (!parId.has(e.parent_id)) {
       throw new Error(`« ${e.title} » référence une enveloppe parente absente du fichier.`)
     }
+    // Miroir de la migration 007 : seul un parent de type normal est accepté
+    if (parId.get(e.parent_id).type !== 'normal') {
+      throw new Error(`« ${e.title} » a un parent qui n'est pas une enveloppe normale.`)
+    }
     const vus = new Set([e.id])
     let cur = parId.get(e.parent_id)
     while (cur) {
